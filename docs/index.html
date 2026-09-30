@@ -51,7 +51,7 @@
         </div>
       </div>
       <div class="hero-art">
-        <img id="heroShot" data-img="fleet" alt="" />
+        <img id="heroShot" data-img="planet" alt="" />
       </div>
     </section>
 
@@ -139,5 +139,10 @@
     })();
   </script>
   <script src="js/app.js"></script>
+  <script>
+    document.querySelectorAll("select option").forEach(function (opt) {
+      opt.textContent = opt.textContent.replace(/\s*[·•]?\s*BASE\s*$/i, "");
+    });
+  </script>
 </body>
 </html>
