@@ -16,6 +16,7 @@ window.BLAZARSWAP = {
   totalFeeBps: 30,
   tokens: [
     { symbol: "BzB", name: "BlazarBits", address: "0x462D8d82C2B2D2DDabf7f8a93928De09d47A5807", decimals: 18, isBase: true, logo: "https://i.imgur.com/BiGUlnC.png" },
+    { symbol: "BBY", name: "BlazarByte", address: "0xb837f0e111596348A27e424e43938eb01753cf34", decimals: 9, logo: "https://polygonscan.com/token/images/blazarbytes_32.png" },
     { symbol: "WPOL", name: "Wrapped POL", address: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270", decimals: 18, logo: "https://polygonscan.com/token/images/polygonmatic_new_32.png" },
     { symbol: "USDC", name: "USD Coin", address: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359", decimals: 6, logo: "https://polygonscan.com/token/images/centre-usdc_32.png" },
     { symbol: "WBTC", name: "Wrapped BTC", address: "0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6", decimals: 8, logo: "https://polygonscan.com/token/images/wbtc_32.png" },
