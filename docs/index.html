@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BlazarSwap</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="space alt-blazar" id="space"></div>
+  <div class="stars"></div>
+  <div class="stars2"></div>
+  <div class="vignette"></div>
+
+  <header>
+    <div class="brand">
+      <img data-img="coin" alt="BlazarSwap" />
+      <div>
+        <h1>BlazarSwap</h1>
+        <span>Polygon DEX</span>
+      </div>
+    </div>
+    <div class="wallet">
+      <div class="chip" id="networkChip">Not connected</div>
+      <button class="connect" id="connectBtn">Connect</button>
+    </div>
+  </header>
+
+  <img class="floater" data-img="fighter" alt="" />
+
+  <main>
+    <section class="film" aria-hidden="true">
+      <img class="wide" data-img="blazar" alt="" />
+      <img data-img="fleet" alt="" />
+      <img data-img="planet" alt="" />
+    </section>
+
+    <section class="hero">
+      <div class="hero-copy">
+        <h2>Swap tokens</h2>
+        <p>
+          Uniswap V2-style exchange on Polygon. Base token is BlazarBits (BzB).
+          Swap fee is 0.30%. 0.25% goes to liquidity providers. 0.05% goes to the fee address.
+        </p>
+        <div class="stats">
+          <div class="stat"><b>0.05%</b><small>Protocol fee</small></div>
+          <div class="stat"><b>0.25%</b><small>LP fee</small></div>
+          <div class="stat"><b>BzB</b><small>Base token</small></div>
+          <div class="stat"><b id="pairCount">—</b><small>Pairs</small></div>
+        </div>
+      </div>
+      <div class="hero-art">
+        <img id="heroShot" data-img="fleet" alt="" />
+      </div>
+    </section>
+
+    <section class="desk">
+      <div class="tabs" role="tablist">
+        <button class="active" data-tab="swap" type="button">Swap</button>
+        <button data-tab="add" type="button">Add liquidity</button>
+        <button data-tab="positions" type="button">Your positions</button>
+      </div>
+
+      <div class="stack">
+        <div class="panel card pane visible" id="pane-swap" data-card="swap">
+          <h3>Swap</h3>
+          <div class="leg">
+            <div class="leg-top"><span>From</span><span id="balIn">Balance —</span></div>
+            <div class="leg-top">
+              <input id="amountIn" type="text" inputmode="decimal" placeholder="0.0" />
+              <select id="tokenIn"></select>
+            </div>
+          </div>
+          <div class="flip"><button id="flipBtn" title="Switch tokens" type="button">⇅</button></div>
+          <div class="leg">
+            <div class="leg-top"><span>To</span><span id="balOut">Balance —</span></div>
+            <div class="leg-top">
+              <input id="amountOut" type="text" inputmode="decimal" placeholder="0.0" />
+              <select id="tokenOut"></select>
+            </div>
+          </div>
+          <div class="meta">
+            <div><span>Route</span><span id="routeLabel">—</span></div>
+            <div><span>Price</span><span id="priceLabel">—</span></div>
+            <div><span>Price impact</span><span id="impactLabel">—</span></div>
+            <div><span>Minimum received</span><span id="minOutLabel">—</span></div>
+            <div><span>Slippage</span><span><input id="slippage" type="text" value="0.50" style="width:64px;font-size:14px" /> %</span></div>
+          </div>
+          <button class="primary full" id="swapBtn" type="button">Swap</button>
+          <div class="log" id="swapLog">Connect a wallet to swap.</div>
+        </div>
+
+        <div class="panel card pane" id="pane-add" data-card="add">
+          <h3>Add liquidity</h3>
+          <div class="field">
+            <label>Token A</label>
+            <select id="liqTokenA"></select>
+            <input id="liqAmtA" type="text" placeholder="Amount A" />
+          </div>
+          <div class="field">
+            <label>Token B</label>
+            <select id="liqTokenB"></select>
+            <input id="liqAmtB" type="text" placeholder="Amount B" />
+          </div>
+          <button class="primary full" id="addLiqBtn" type="button">Add liquidity</button>
+          <button class="ghost full" id="createPairBtn" type="button" style="margin-top:10px">Create pair</button>
+          <div class="log" id="liqLog">Enter amounts for both tokens.</div>
+        </div>
+
+        <div class="panel card pane" id="pane-positions" data-card="positions">
+          <h3>Your positions</h3>
+          <div class="field">
+            <label>Remove LP</label>
+            <select id="removePair"></select>
+            <input id="removePct" type="text" value="100" placeholder="% to remove" />
+          </div>
+          <button class="ghost full" id="removeLiqBtn" type="button">Remove liquidity</button>
+          <div class="pools" id="poolList"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+  <script src="js/images.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/abis.js"></script>
+  <script>
+    (function () {
+      var imgs = window.BLAZAR_IMGS || {};
+      document.querySelectorAll("[data-img]").forEach(function (el) {
+        if (imgs[el.getAttribute("data-img")]) el.src = imgs[el.getAttribute("data-img")];
+      });
+      var space = document.getElementById("space");
+      if (space && imgs.blazar) {
+        space.style.backgroundImage = "linear-gradient(180deg, rgba(3,7,18,0.22), rgba(3,7,18,0.78)), url(" + imgs.blazar + ")";
+      }
+    })();
+  </script>
+  <script src="js/app.js"></script>
+</body>
+</html>
