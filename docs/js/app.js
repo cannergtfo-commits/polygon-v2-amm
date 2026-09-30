@@ -3,7 +3,7 @@
   const ABIS = window.BLAZAR_ABIS;
   const ZERO = "0x0000000000000000000000000000000000000000";
   const $ = (id) => document.getElementById(id);
-  const state = { provider: null, signer: null, account: null, chainId: null };
+  const state = { provider: null, signer: null, account: null, chainId: null, bal: {} };
   const configured = () => CFG.router && CFG.router !== ZERO && CFG.factory !== ZERO && CFG.baseToken !== ZERO;
   function tokenByAddress(addr) {
     if (!addr) return null;
@@ -69,7 +69,33 @@
   const router = () => new ethers.Contract(CFG.router, ABIS.Router, state.signer || state.provider);
   const factory = () => new ethers.Contract(CFG.factory, ABIS.Factory, state.signer || state.provider);
   const erc20 = (addr) => new ethers.Contract(addr, ABIS.ERC20, state.signer || state.provider);
-  async function ensureAllowance(token, owner, spender, amount) {
+  function slipBps() {
+    const raw = String(($("slippage") && $("slippage").value) || "0.5").replace("%", "").trim();
+    const n = Number(raw);
+    if (!Number.isFinite(n) || n < 0) return 50;
+    return BigInt(Math.min(5000, Math.round(n * 100)));
+  }
+  function applySlip(amount) {
+    const bps = slipBps();
+    if (bps <= 0n) return amount;
+    const min = amount - (amount * bps) / 10000n;
+    return min < 0n ? 0n : min;
+  }
+  function unitsToInput(amount, decimals) {
+    let text = ethers.formatUnits(amount, decimals);
+    if (text.includes(".")) text = text.replace(/0+$/, "").replace(/\.$/, "");
+    return text || "0";
+  }
+  function syncSlip(value, source) {
+    const v = String(value);
+    document.querySelectorAll(".slip-input").forEach((el) => { if (el !== source) el.value = v; });
+    const n = Number(v);
+    document.querySelectorAll("[data-slip]").forEach((btn) => {
+      btn.classList.toggle("on", Number(btn.dataset.slip) === n);
+    });
+    try { localStorage.setItem("blazar_slip", v); } catch {}
+  }
+  async function ensureAllowance(token, owner, spender, amount, logId) {
     if (!spender || spender.toLowerCase() !== CFG.router.toLowerCase()) {
       throw new Error("Approve blocked: spender is not the BlazarSwap router.");
     }
@@ -77,7 +103,8 @@
     const c = erc20(token);
     const current = await c.allowance(owner, spender);
     if (current >= amount) return;
-    setLog("swapLog", "Approve token…");
+    const t = tokenByAddress(token);
+    setLog(logId || "swapLog", "Approve " + ethers.formatUnits(amount, t.decimals) + " " + t.symbol + " (exact)");
     const tx = await c.approve(spender, amount);
     await tx.wait();
   }
@@ -108,6 +135,7 @@
       if (!token || !token.address) { lab.textContent = "Balance —"; return; }
       try {
         const bal = await erc20(token.address).balanceOf(state.account);
+        state.bal[selId] = bal;
         lab.textContent = fmtBal(bal, token);
       } catch {
         lab.textContent = "Balance —";
@@ -145,9 +173,9 @@
       const impact = ((spot - exec) / spot) * 100;
       $("priceLabel").textContent = "1 " + tin.symbol + " ≈ " + (Number(out) / Number(amountIn)).toPrecision(6) + " " + tout.symbol;
       $("impactLabel").textContent = isFinite(impact) ? impact.toFixed(3) + "%" : "—";
-      const slip = Number($("slippage").value || "0.5") / 100;
-      const minOut = out - (out * BigInt(Math.floor(slip * 10000))) / 10000n;
+      const minOut = applySlip(out);
       $("minOutLabel").textContent = ethers.formatUnits(minOut, tout.decimals) + " " + tout.symbol;
+      if ($("approveLabel")) $("approveLabel").textContent = unitsToInput(amountIn, tin.decimals) + " " + tin.symbol + " exact";
     } catch {
       $("amountOut").value = "";
       $("priceLabel").textContent = "No pool or no liquidity";
@@ -164,9 +192,8 @@
       if (amountIn === 0n) throw new Error("Enter an input amount.");
       const path = [tin.address, tout.address];
       const amounts = await router().getAmountsOut(amountIn, path);
-      const slip = Number($("slippage").value || "0.5") / 100;
-      const minOut = amounts[1] - (amounts[1] * BigInt(Math.floor(slip * 10000))) / 10000n;
-      await ensureAllowance(tin.address, state.account, CFG.router, amountIn);
+      const minOut = applySlip(amounts[1]);
+      await ensureAllowance(tin.address, state.account, CFG.router, amountIn, "swapLog");
       setLog("swapLog", "Sending swap…");
       const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
       const tx = await router().swapExactTokensForTokens(amountIn, minOut, path, state.account, deadline);
@@ -187,11 +214,12 @@
       const amtA = parseAmt($("liqAmtA").value, a.decimals);
       const amtB = parseAmt($("liqAmtB").value, b.decimals);
       if (amtA === 0n || amtB === 0n) throw new Error("Both amounts required.");
-      await ensureAllowance(a.address, state.account, CFG.router, amtA);
-      await ensureAllowance(b.address, state.account, CFG.router, amtB);
+      if ($("approveLiqLabel")) $("approveLiqLabel").textContent = unitsToInput(amtA, a.decimals) + " " + a.symbol + " + " + unitsToInput(amtB, b.decimals) + " " + b.symbol;
+      await ensureAllowance(a.address, state.account, CFG.router, amtA, "liqLog");
+      await ensureAllowance(b.address, state.account, CFG.router, amtB, "liqLog");
       const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
-      const minA = amtA - amtA * 50n / 10000n;
-      const minB = amtB - amtB * 50n / 10000n;
+      const minA = applySlip(amtA);
+      const minB = applySlip(amtB);
       setLog("liqLog", "Adding liquidity…");
       const tx = await router().addLiquidity(a.address, b.address, amtA, amtB, minA, minB, state.account, deadline);
       await tx.wait();
@@ -228,16 +256,22 @@
       const token1 = await pair.token1();
       const current = await pair.allowance(state.account, CFG.router);
       if (current < liquidity) {
+        setLog("posLog", "Approve LP tokens (exact share)");
         const txA = await pair.approve(CFG.router, liquidity);
         await txA.wait();
       }
+      const reserves = await pair.getReserves();
+      const supply = await pair.totalSupply();
+      const exp0 = supply === 0n ? 0n : liquidity * reserves[0] / supply;
+      const exp1 = supply === 0n ? 0n : liquidity * reserves[1] / supply;
       const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
-      const tx = await router().removeLiquidity(token0, token1, liquidity, 0, 0, state.account, deadline);
+      setLog("posLog", "Removing liquidity…");
+      const tx = await router().removeLiquidity(token0, token1, liquidity, applySlip(exp0), applySlip(exp1), state.account, deadline);
       await tx.wait();
-      setLog("liqLog", "Removed. " + tx.hash, "ok");
+      setLog("posLog", "Removed. " + tx.hash, "ok");
       await refreshPairs();
     } catch (err) {
-      setLog("liqLog", err.shortMessage || err.message || String(err), "err");
+      setLog("posLog", err.shortMessage || err.message || String(err), "err");
     }
   }
   async function refreshPairs() {
@@ -294,6 +328,41 @@
       quoteOut();
       refreshBalances();
     });
+    async function fillMax(selectId, inputId) {
+      if (!state.account) await connect();
+      await refreshBalances();
+      const token = tokenByAddress($(selectId).value);
+      const bal = state.bal[selectId];
+      if (!token || bal == null) return;
+      $(inputId).value = unitsToInput(bal, token.decimals);
+      if (inputId === "amountIn") quoteOut();
+      if (inputId === "liqAmtA" || inputId === "liqAmtB") {
+        const a = tokenByAddress($("liqTokenA").value);
+        const b = tokenByAddress($("liqTokenB").value);
+        const amtA = parseAmt($("liqAmtA").value, a.decimals);
+        const amtB = parseAmt($("liqAmtB").value, b.decimals);
+        if ($("approveLiqLabel")) $("approveLiqLabel").textContent = (amtA > 0n ? unitsToInput(amtA, a.decimals) + " " + a.symbol : "—") + " + " + (amtB > 0n ? unitsToInput(amtB, b.decimals) + " " + b.symbol : "—");
+      }
+    }
+    $("maxIn").addEventListener("click", () => fillMax("tokenIn", "amountIn").catch((err) => setLog("swapLog", err.shortMessage || err.message || String(err), "err")));
+    $("maxA").addEventListener("click", () => fillMax("liqTokenA", "liqAmtA").catch((err) => setLog("liqLog", err.shortMessage || err.message || String(err), "err")));
+    $("maxB").addEventListener("click", () => fillMax("liqTokenB", "liqAmtB").catch((err) => setLog("liqLog", err.shortMessage || err.message || String(err), "err")));
+    $("maxRemove").addEventListener("click", () => { $("removePct").value = "100"; });
+    document.querySelectorAll("[data-slip]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const v = btn.dataset.slip;
+        document.querySelectorAll(".slip-input").forEach((el) => { el.value = v; });
+        syncSlip(v);
+        quoteOut();
+      });
+    });
+    document.querySelectorAll(".slip-input").forEach((el) => {
+      el.addEventListener("input", () => { syncSlip(el.value, el); quoteOut(); });
+    });
+    try {
+      const saved = localStorage.getItem("blazar_slip");
+      if (saved) { document.querySelectorAll(".slip-input").forEach((el) => { el.value = saved; }); syncSlip(saved); }
+    } catch {}
     $("amountIn").addEventListener("input", quoteOut);
     $("tokenIn").addEventListener("change", () => { quoteOut(); refreshBalances(); });
     $("tokenOut").addEventListener("change", () => { quoteOut(); refreshBalances(); });
