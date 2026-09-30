@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>V2 Exchange</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <div class="brand"><span class="logo"></span><span id="brandName">V2 Exchange</span></div>
+    <nav>
+      <button class="active" data-tab="swap">Swap</button>
+      <button data-tab="pool">Pool</button>
+    </nav>
+    <button class="connect" id="connectBtn">Connect wallet</button>
+  </header>
+  <main class="wrap">
+    <section class="card" id="swapTab">
+      <h2>Swap</h2>
+      <div class="leg">
+        <label>From</label>
+        <div class="row">
+          <input id="amountIn" type="number" min="0" step="any" placeholder="0.0" />
+          <select id="tokenIn"></select>
+        </div>
+        <div class="bal" id="balIn"></div>
+      </div>
+      <button class="flip" id="flipBtn">↓</button>
+      <div class="leg">
+        <label>To</label>
+        <div class="row">
+          <input id="amountOut" type="number" min="0" step="any" placeholder="0.0" readonly />
+          <select id="tokenOut"></select>
+        </div>
+        <div class="bal" id="balOut"></div>
+      </div>
+      <div class="meta" id="quoteMeta">0.30% swap fee · 0.05% protocol cut on Polygon</div>
+      <div class="status" id="swapStatus"></div>
+      <button class="primary" id="swapBtn" disabled>Connect wallet</button>
+    </section>
+    <section class="card hidden" id="poolTab">
+      <h2>Add liquidity</h2>
+      <div class="leg">
+        <label>Token A</label>
+        <div class="row"><input id="liqA" type="number" min="0" step="any" placeholder="0.0" /><select id="tokenA"></select></div>
+      </div>
+      <div class="leg">
+        <label>Token B</label>
+        <div class="row"><input id="liqB" type="number" min="0" step="any" placeholder="0.0" /><select id="tokenB"></select></div>
+      </div>
+      <div class="status" id="poolStatus"></div>
+      <button class="primary" id="addBtn" disabled>Add liquidity</button>
+      <h2 style="margin-top:28px">Remove liquidity</h2>
+      <div class="leg">
+        <label>LP tokens to burn</label>
+        <div class="row"><input id="lpAmt" type="number" min="0" step="any" placeholder="0.0" /></div>
+        <div class="bal" id="lpBal"></div>
+      </div>
+      <button class="primary" id="removeBtn" disabled>Remove liquidity</button>
+    </section>
+    <p class="note">Polygon PoS. feeTo <code id="feeToLabel"></code>. Edit <code>config.js</code> after Remix deploy.</p>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.umd.min.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
