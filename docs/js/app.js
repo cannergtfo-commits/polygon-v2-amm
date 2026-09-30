@@ -70,11 +70,15 @@
   const factory = () => new ethers.Contract(CFG.factory, ABIS.Factory, state.signer || state.provider);
   const erc20 = (addr) => new ethers.Contract(addr, ABIS.ERC20, state.signer || state.provider);
   async function ensureAllowance(token, owner, spender, amount) {
+    if (!spender || spender.toLowerCase() !== CFG.router.toLowerCase()) {
+      throw new Error("Approve blocked: spender is not the BlazarSwap router.");
+    }
+    if (!amount || amount <= 0n) throw new Error("Approve blocked: bad amount.");
     const c = erc20(token);
     const current = await c.allowance(owner, spender);
     if (current >= amount) return;
     setLog("swapLog", "Approve token…");
-    const tx = await c.approve(spender, ethers.MaxUint256);
+    const tx = await c.approve(spender, amount);
     await tx.wait();
   }
   async function refreshBalances() {
@@ -203,7 +207,7 @@
       const token1 = await pair.token1();
       const current = await pair.allowance(state.account, CFG.router);
       if (current < liquidity) {
-        const txA = await pair.approve(CFG.router, ethers.MaxUint256);
+        const txA = await pair.approve(CFG.router, liquidity);
         await txA.wait();
       }
       const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
