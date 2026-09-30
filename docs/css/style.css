@@ -61,5 +61,6 @@ select{font-size:16px;width:auto;cursor:pointer}
 .floater{position:fixed;right:2%;bottom:6%;width:min(280px,28vw);pointer-events:none;z-index:1;opacity:.88;animation:fly 22s ease-in-out infinite alternate}
 @keyframes fly{from{transform:rotate(-4deg)}to{transform:translate3d(-18px,-28px,0) rotate(3deg)}}
 @media(max-width:900px){header{flex-wrap:wrap;gap:12px}.hero,.film{grid-template-columns:1fr}.floater{display:none}.pool-row{grid-template-columns:1fr}}
-.tok-pick{display:inline-flex;align-items:center;gap:8px}
+.tok-pick{display:inline-flex;align-items:center;gap:8px;background:#fff;border-radius:10px;padding:2px 8px 2px 4px}
 .tok-icon{width:22px;height:22px;border-radius:50%;object-fit:cover;border:1px solid var(--stroke);background:#111;flex:none}
+.tok-pick select,select option{color:#111!important;background:#fff}
