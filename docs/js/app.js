@@ -205,6 +205,76 @@
       setLog("swapLog", err.shortMessage || err.message || String(err), "err");
     }
   }
+
+  function safeParse(raw, decimals) {
+    try { return parseAmt(String(raw || "").trim().replace(/\.$/, ""), decimals); }
+    catch { return 0n; }
+  }
+  let liqQuoteSeq = 0;
+  function paintLiqApproval() {
+    if (!$("approveLiqLabel")) return;
+    const a = tokenByAddress($("liqTokenA").value);
+    const b = tokenByAddress($("liqTokenB").value);
+    if (!a || !b) return;
+    const amtA = safeParse($("liqAmtA").value, a.decimals);
+    const amtB = safeParse($("liqAmtB").value, b.decimals);
+    const left = amtA > 0n ? unitsToInput(amtA, a.decimals) + " " + a.symbol : "—";
+    const right = amtB > 0n ? unitsToInput(amtB, b.decimals) + " " + b.symbol : "—";
+    $("approveLiqLabel").textContent = left + " + " + right;
+  }
+  async function quoteLiq(sourceId) {
+    const seq = ++liqQuoteSeq;
+    const a = tokenByAddress($("liqTokenA").value);
+    const b = tokenByAddress($("liqTokenB").value);
+    if (!configured() || !a || !b || a.address.toLowerCase() === b.address.toLowerCase()) return;
+    const fromA = sourceId !== "liqAmtB";
+    const raw = $(fromA ? "liqAmtA" : "liqAmtB").value;
+    const otherEl = $(fromA ? "liqAmtB" : "liqAmtA");
+    const otherToken = fromA ? b : a;
+    if (!raw || Number(raw) <= 0) { paintLiqApproval(); return; }
+    let amount;
+    try {
+      amount = parseAmt(String(raw).trim().replace(/\.$/, ""), (fromA ? a : b).decimals);
+    } catch {
+      return;
+    }
+    if (amount === 0n) { paintLiqApproval(); return; }
+    try {
+      const provider = state.provider || new ethers.JsonRpcProvider((CFG.rpcUrls && CFG.rpcUrls[0]) || CFG.rpcUrl);
+      const r = new ethers.Contract(CFG.router, ABIS.Router, provider);
+      const reserves = await r.getReserves(a.address, b.address);
+      if (seq !== liqQuoteSeq) return;
+      const reserveA = reserves[0];
+      const reserveB = reserves[1];
+      if (reserveA === 0n || reserveB === 0n) {
+        $("liqLog").textContent = "New pair. Enter both amounts to set the starting price.";
+        $("liqLog").className = "log";
+        paintLiqApproval();
+        return;
+      }
+      const reserveIn = fromA ? reserveA : reserveB;
+      const reserveOut = fromA ? reserveB : reserveA;
+      const quoted = (amount * reserveOut) / reserveIn;
+      if (seq !== liqQuoteSeq) return;
+      if (quoted === 0n) {
+        otherEl.value = "";
+        $("liqLog").textContent = "Amount is too small to match this pool 50/50.";
+        $("liqLog").className = "log";
+        paintLiqApproval();
+        return;
+      }
+      otherEl.value = unitsToInput(quoted, otherToken.decimals);
+      $("liqLog").textContent = "Pair exists. Other amount set for a 50/50 deposit.";
+      $("liqLog").className = "log";
+      paintLiqApproval();
+    } catch {
+      if (seq !== liqQuoteSeq) return;
+      $("liqLog").textContent = "No pair yet. Enter both amounts, or create the pair.";
+      $("liqLog").className = "log";
+      paintLiqApproval();
+    }
+  }
+
   async function addLiquidity() {
     try {
       if (!state.signer) await connect();
@@ -336,13 +406,7 @@
       if (!token || bal == null) return;
       $(inputId).value = unitsToInput(bal, token.decimals);
       if (inputId === "amountIn") quoteOut();
-      if (inputId === "liqAmtA" || inputId === "liqAmtB") {
-        const a = tokenByAddress($("liqTokenA").value);
-        const b = tokenByAddress($("liqTokenB").value);
-        const amtA = parseAmt($("liqAmtA").value, a.decimals);
-        const amtB = parseAmt($("liqAmtB").value, b.decimals);
-        if ($("approveLiqLabel")) $("approveLiqLabel").textContent = (amtA > 0n ? unitsToInput(amtA, a.decimals) + " " + a.symbol : "—") + " + " + (amtB > 0n ? unitsToInput(amtB, b.decimals) + " " + b.symbol : "—");
-      }
+      if (inputId === "liqAmtA" || inputId === "liqAmtB") await quoteLiq(inputId);
     }
     $("maxIn").addEventListener("click", () => fillMax("tokenIn", "amountIn").catch((err) => setLog("swapLog", err.shortMessage || err.message || String(err), "err")));
     $("maxA").addEventListener("click", () => fillMax("liqTokenA", "liqAmtA").catch((err) => setLog("liqLog", err.shortMessage || err.message || String(err), "err")));
@@ -366,8 +430,15 @@
     $("amountIn").addEventListener("input", quoteOut);
     $("tokenIn").addEventListener("change", () => { quoteOut(); refreshBalances(); });
     $("tokenOut").addEventListener("change", () => { quoteOut(); refreshBalances(); });
-    $("liqTokenA").addEventListener("change", refreshBalances);
-    $("liqTokenB").addEventListener("change", refreshBalances);
+    $("liqAmtA").addEventListener("input", () => quoteLiq("liqAmtA"));
+    $("liqAmtB").addEventListener("input", () => quoteLiq("liqAmtB"));
+    const onLiqToken = () => {
+      refreshBalances();
+      if ($("liqAmtA").value) quoteLiq("liqAmtA");
+      else quoteLiq("liqAmtB");
+    };
+    $("liqTokenA").addEventListener("change", onLiqToken);
+    $("liqTokenB").addEventListener("change", onLiqToken);
     $("addLiqBtn").addEventListener("click", addLiquidity);
     $("createPairBtn").addEventListener("click", createPair);
     $("removeLiqBtn").addEventListener("click", removeLiquidity);
