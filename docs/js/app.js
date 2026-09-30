@@ -81,18 +81,38 @@
     const tx = await c.approve(spender, amount);
     await tx.wait();
   }
+  function fmtBal(amount, token) {
+    const n = Number(ethers.formatUnits(amount, token.decimals));
+    let text = "—";
+    if (Number.isFinite(n)) {
+      if (n === 0) text = "0";
+      else if (n >= 1000) text = n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+      else if (n >= 1) text = n.toLocaleString(undefined, { maximumFractionDigits: 4 });
+      else text = n.toPrecision(4);
+    }
+    return "Balance " + text + (token.symbol ? " " + token.symbol : "");
+  }
   async function refreshBalances() {
     if (!state.account || !configured()) return;
-    const tin = tokenByAddress($("tokenIn").value);
-    const tout = tokenByAddress($("tokenOut").value);
-    try {
-      const [bin, bout] = await Promise.all([erc20(tin.address).balanceOf(state.account), erc20(tout.address).balanceOf(state.account)]);
-      $("balIn").textContent = "Balance " + Number(ethers.formatUnits(bin, tin.decimals)).toPrecision(6);
-      $("balOut").textContent = "Balance " + Number(ethers.formatUnits(bout, tout.decimals)).toPrecision(6);
-    } catch {
-      $("balIn").textContent = "Balance —";
-      $("balOut").textContent = "Balance —";
-    }
+    const rows = [
+      ["tokenIn", "balIn"],
+      ["tokenOut", "balOut"],
+      ["liqTokenA", "balLiqA"],
+      ["liqTokenB", "balLiqB"]
+    ];
+    await Promise.all(rows.map(async ([selId, labId]) => {
+      const lab = $(labId);
+      const sel = $(selId);
+      if (!lab || !sel) return;
+      const token = tokenByAddress(sel.value);
+      if (!token || !token.address) { lab.textContent = "Balance —"; return; }
+      try {
+        const bal = await erc20(token.address).balanceOf(state.account);
+        lab.textContent = fmtBal(bal, token);
+      } catch {
+        lab.textContent = "Balance —";
+      }
+    }));
   }
   async function quoteOut() {
     if (!configured() || !state.provider) return;
@@ -177,6 +197,7 @@
       await tx.wait();
       setLog("liqLog", "Done. " + tx.hash, "ok");
       await refreshPairs();
+      await refreshBalances();
     } catch (err) {
       setLog("liqLog", err.shortMessage || err.message || String(err), "err");
     }
@@ -260,6 +281,7 @@
         btn.classList.add("active");
         document.querySelectorAll(".pane").forEach((p) => p.classList.remove("visible"));
         $("pane-" + btn.dataset.tab).classList.add("visible");
+        if (btn.dataset.tab === "add") refreshBalances();
       });
     });
     $("connectBtn").addEventListener("click", connect);
@@ -275,12 +297,17 @@
     $("amountIn").addEventListener("input", quoteOut);
     $("tokenIn").addEventListener("change", () => { quoteOut(); refreshBalances(); });
     $("tokenOut").addEventListener("change", () => { quoteOut(); refreshBalances(); });
+    $("liqTokenA").addEventListener("change", refreshBalances);
+    $("liqTokenB").addEventListener("change", refreshBalances);
     $("addLiqBtn").addEventListener("click", addLiquidity);
     $("createPairBtn").addEventListener("click", createPair);
     $("removeLiqBtn").addEventListener("click", removeLiquidity);
     if (window.ethereum) {
       window.ethereum.on("accountsChanged", () => connect());
       window.ethereum.on("chainChanged", () => window.location.reload());
+      window.ethereum.request({ method: "eth_accounts" }).then((accounts) => {
+        if (accounts && accounts.length) connect();
+      }).catch(() => {});
     }
     refreshPairs();
   }
