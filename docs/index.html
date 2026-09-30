@@ -8,6 +8,16 @@
   <link rel="icon" type="image/png" sizes="64x64" href="favicon.png" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
   <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .bal-row{display:inline-flex;align-items:center;gap:8px}
+    .max{font-family:Syne,sans-serif;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#021018;background:linear-gradient(90deg,#3ee0ff,#7af);border:0;border-radius:999px;padding:4px 8px;cursor:pointer}
+    .slip-row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+    .slip-picks{display:inline-flex;align-items:center;gap:6px;justify-content:flex-end}
+    .slip-picks button{font-family:Sora,sans-serif;font-size:12px;color:var(--muted);background:transparent;border:1px solid var(--stroke);border-radius:999px;padding:4px 8px;cursor:pointer}
+    .slip-picks button.on{color:#021018;background:linear-gradient(90deg,#3ee0ff,#7af);border-color:transparent}
+    .slip-input{width:58px!important;max-width:58px;font-size:14px!important;font-weight:600;margin:0!important;padding:4px 6px!important;background:rgba(0,0,0,.35);border:1px solid var(--stroke);border-radius:8px;color:var(--text)}
+    .field-top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+  </style>
 </head>
 <body>
   <div class="space alt-blazar" id="space"></div>
@@ -71,7 +81,7 @@
         <div class="panel card pane visible" id="pane-swap" data-card="swap">
           <h3>Swap</h3>
           <div class="leg">
-            <div class="leg-top"><span>From</span><span id="balIn">Balance —</span></div>
+            <div class="leg-top"><span>From</span><span class="bal-row"><button class="max" id="maxIn" type="button">Max</button><span id="balIn">Balance —</span></span></div>
             <div class="leg-top">
               <input id="amountIn" type="text" inputmode="decimal" placeholder="0.0" />
               <select id="tokenIn"></select>
@@ -90,7 +100,8 @@
             <div><span>Price</span><span id="priceLabel">—</span></div>
             <div><span>Price impact</span><span id="impactLabel">—</span></div>
             <div><span>Minimum received</span><span id="minOutLabel">—</span></div>
-            <div><span>Slippage</span><span><input id="slippage" type="text" value="0.50" style="width:64px;font-size:14px" /> %</span></div>
+            <div class="slip-row"><span>Slippage</span><span class="slip-picks"><button type="button" data-slip="0.1">0.1%</button><button type="button" data-slip="0.5" class="on">0.5%</button><button type="button" data-slip="1">1%</button><input class="slip-input" id="slippage" type="text" inputmode="decimal" value="0.50" />%</span></div>
+            <div><span>Approval</span><span id="approveLabel">Exact amount</span></div>
           </div>
           <button class="primary full" id="swapBtn" type="button">Swap</button>
           <div class="log" id="swapLog">Connect a wallet to swap.</div>
@@ -99,18 +110,22 @@
         <div class="panel card pane" id="pane-add" data-card="add">
           <h3>Add liquidity</h3>
           <div class="leg">
-            <div class="leg-top"><span>Token A</span><span id="balLiqA">Balance —</span></div>
+            <div class="leg-top"><span>Token A</span><span class="bal-row"><button class="max" id="maxA" type="button">Max</button><span id="balLiqA">Balance —</span></span></div>
             <div class="leg-top">
               <input id="liqAmtA" type="text" inputmode="decimal" placeholder="0.0" />
               <select id="liqTokenA"></select>
             </div>
           </div>
           <div class="leg">
-            <div class="leg-top"><span>Token B</span><span id="balLiqB">Balance —</span></div>
+            <div class="leg-top"><span>Token B</span><span class="bal-row"><button class="max" id="maxB" type="button">Max</button><span id="balLiqB">Balance —</span></span></div>
             <div class="leg-top">
               <input id="liqAmtB" type="text" inputmode="decimal" placeholder="0.0" />
               <select id="liqTokenB"></select>
             </div>
+          </div>
+          <div class="meta">
+            <div class="slip-row"><span>Slippage</span><span class="slip-picks"><button type="button" data-slip="0.1">0.1%</button><button type="button" data-slip="0.5" class="on">0.5%</button><button type="button" data-slip="1">1%</button><input class="slip-input" id="slippageAdd" type="text" inputmode="decimal" value="0.50" />%</span></div>
+            <div><span>Approval</span><span id="approveLiqLabel">Exact amounts</span></div>
           </div>
           <button class="primary full" id="addLiqBtn" type="button">Add liquidity</button>
           <button class="ghost full" id="createPairBtn" type="button" style="margin-top:10px">Create pair</button>
@@ -120,11 +135,15 @@
         <div class="panel card pane" id="pane-positions" data-card="positions">
           <h3>Your positions</h3>
           <div class="field">
-            <label>Remove LP</label>
+            <div class="field-top"><label>Remove LP</label><button class="max" id="maxRemove" type="button">Max</button></div>
             <select id="removePair"></select>
             <input id="removePct" type="text" value="100" placeholder="% to remove" />
           </div>
+          <div class="meta">
+            <div class="slip-row"><span>Slippage</span><span class="slip-picks"><button type="button" data-slip="0.1">0.1%</button><button type="button" data-slip="0.5" class="on">0.5%</button><button type="button" data-slip="1">1%</button><input class="slip-input" id="slippageRemove" type="text" inputmode="decimal" value="0.50" />%</span></div>
+          </div>
           <button class="ghost full" id="removeLiqBtn" type="button">Remove liquidity</button>
+          <div class="log" id="posLog">Slippage sets the minimum tokens you accept back.</div>
           <div class="pools" id="poolList"></div>
         </div>
       </div>
@@ -147,7 +166,7 @@
       }
     })();
   </script>
-  <script src="js/app.js?v=bal2"></script>
+  <script src="js/app.js?v=slip1"></script>
   <script src="js/token-ui.js"></script>
   <script src="js/music.js"></script>
   <script>
