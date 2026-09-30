@@ -4,21 +4,43 @@
   if (!audio || !btn) return;
   var muted = localStorage.getItem("blazar_mute") !== "0";
   function label() {
-    btn.textContent = muted ? "Sound off" : "Sound on";
+    btn.textContent = muted ? "Sound on" : "Mute";
     btn.setAttribute("aria-pressed", muted ? "true" : "false");
   }
   function apply() {
-    audio.muted = muted;
     audio.volume = 0.35;
-    if (muted) audio.pause();
-    else audio.play().catch(function () {});
-    localStorage.setItem("blazar_mute", muted ? "1" : "0");
-    label();
+    audio.muted = muted;
+    if (muted) {
+      audio.pause();
+      localStorage.setItem("blazar_mute", "1");
+      label();
+      return;
+    }
+    var pending = audio.play();
+    if (pending && pending.then) {
+      pending.then(function () {
+        localStorage.setItem("blazar_mute", "0");
+        label();
+      }).catch(function () {
+        muted = true;
+        audio.pause();
+        localStorage.setItem("blazar_mute", "1");
+        label();
+      });
+    } else {
+      localStorage.setItem("blazar_mute", "0");
+      label();
+    }
   }
   btn.addEventListener("click", function () {
     muted = !muted;
     apply();
   });
+  audio.addEventListener("error", function () {
+    muted = true;
+    localStorage.setItem("blazar_mute", "1");
+    label();
+  });
   label();
-  if (!muted) audio.play().catch(function () {});
+  if (!muted) apply();
 })();
