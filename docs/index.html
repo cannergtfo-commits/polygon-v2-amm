@@ -27,7 +27,8 @@
     .trade-row{display:grid;grid-template-columns:minmax(420px,560px) minmax(0,1fr);gap:18px;align-items:stretch}
     @media(max-width:900px){.trade-row{grid-template-columns:1fr}.chart-frame{min-height:420px}}
     .wrap-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
-    .wrap-actions .full{margin-top:0}
+    video.floater{object-fit:cover;border-radius:22px;animation:fly 22s ease-in-out infinite alternate,jetglow 2.4s ease-in-out infinite}
+    @keyframes jetglow{0%,100%{filter:drop-shadow(0 0 8px rgba(62,224,255,.45)) drop-shadow(0 0 18px rgba(62,224,255,.2))}50%{filter:drop-shadow(0 0 16px rgba(62,224,255,.95)) drop-shadow(0 0 36px rgba(80,190,255,.55))}}
   </style>
 </head>
 <body>
@@ -52,7 +53,7 @@
   </header>
   <audio id="bgm" loop preload="auto" src="audio/theme.mp3"></audio>
 
-  <img class="floater" data-img="fighter" alt="" />
+  <video class="floater" src="video/fighter.mp4" poster="https://i.imgur.com/zGd7VZ4.jpeg" autoplay muted loop playsinline></video>
 
   <main>
     <section class="film" aria-hidden="true">
