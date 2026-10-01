@@ -23,9 +23,9 @@
         opt.value = t.address;
         opt.textContent = t.symbol + (t.isBase ? " · BASE" : "");
         el.appendChild(opt);
-        if (id === "tokenIn" && t.isBase) el.selectedIndex = i;
-        if (id === "tokenOut" && !t.isBase && el.selectedIndex === 0) el.selectedIndex = i;
-        if (id === "liqTokenB" && t.isBase) el.selectedIndex = i;
+        if (id === "tokenIn" && t.isNative) el.selectedIndex = el.options.length - 1;
+        if (id === "tokenOut" && t.isBase) el.selectedIndex = el.options.length - 1;
+        if (id === "liqTokenB" && t.isBase) el.selectedIndex = el.options.length - 1;
       });
     });
   }
