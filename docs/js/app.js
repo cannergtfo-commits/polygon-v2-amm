@@ -9,11 +9,16 @@
     if (!addr) return null;
     return CFG.tokens.find((t) => t.address.toLowerCase() === addr.toLowerCase()) || { symbol: addr.slice(0, 6), name: "Unknown", address: addr, decimals: 18 };
   }
+  function routeAddress(token) {
+    return token && token.isNative ? CFG.weth : token.address;
+  }
   function fillSelects() {
     ["tokenIn", "tokenOut", "liqTokenA", "liqTokenB"].forEach((id) => {
       const el = $(id);
+      const swap = id === "tokenIn" || id === "tokenOut";
       el.innerHTML = "";
       CFG.tokens.forEach((t, i) => {
+        if (t.isNative && !swap) return;
         const opt = document.createElement("option");
         opt.value = t.address;
         opt.textContent = t.symbol + (t.isBase ? " · BASE" : "");
@@ -65,6 +70,7 @@
     }
     await refreshBalances();
     await refreshPairs();
+    quoteOut();
   }
   const router = () => new ethers.Contract(CFG.router, ABIS.Router, state.signer || state.provider);
   const factory = () => new ethers.Contract(CFG.factory, ABIS.Factory, state.signer || state.provider);
@@ -134,7 +140,9 @@
       const token = tokenByAddress(sel.value);
       if (!token || !token.address) { lab.textContent = "Balance —"; return; }
       try {
-        const bal = await erc20(token.address).balanceOf(state.account);
+        const bal = token.isNative
+          ? await state.provider.getBalance(state.account)
+          : await erc20(token.address).balanceOf(state.account);
         state.bal[selId] = bal;
         lab.textContent = fmtBal(bal, token);
       } catch {
@@ -147,12 +155,16 @@
     if (!configured() || !state.provider) return;
     const tin = tokenByAddress($("tokenIn").value);
     const tout = tokenByAddress($("tokenOut").value);
-    if (!tin || !tout || tin.address === tout.address) return;
+    if (!tin || !tout || routeAddress(tin).toLowerCase() === routeAddress(tout).toLowerCase()) {
+      $("amountOut").value = "";
+      if (tin && tout && tin.address !== tout.address) $("priceLabel").textContent = "POL and WPOL are the same asset";
+      return;
+    }
     const raw = $("amountIn").value;
     if (!raw || Number(raw) <= 0) { $("amountOut").value = ""; return; }
     const amountIn = parseAmt(raw, tin.decimals);
-    const path = [tin.address, tout.address];
-    $("routeLabel").textContent = tin.symbol + " → " + tout.symbol;
+    const path = [routeAddress(tin), routeAddress(tout)];
+    $("routeLabel").textContent = tin.symbol + (tin.isNative ? " (wrap)" : "") + " → " + tout.symbol + (tout.isNative ? " (unwrap)" : "");
     try {
       const r = router();
       const amounts = await r.getAmountsOut(amountIn, path);
@@ -160,13 +172,13 @@
       $("amountOut").value = ethers.formatUnits(out, tout.decimals);
       let resIn, resOut;
       try {
-        [resIn, resOut] = await r.getReserves(tin.address, tout.address);
+        [resIn, resOut] = await r.getReserves(routeAddress(tin), routeAddress(tout));
       } catch {
-        const pairAddr = await factory().getPair(tin.address, tout.address);
+        const pairAddr = await factory().getPair(routeAddress(tin), routeAddress(tout));
         const pair = new ethers.Contract(pairAddr, ABIS.Pair, state.provider);
         const token0 = await pair.token0();
         const reserves = await pair.getReserves();
-        if (tin.address.toLowerCase() === token0.toLowerCase()) { resIn = reserves[0]; resOut = reserves[1]; }
+        if (routeAddress(tin).toLowerCase() === token0.toLowerCase()) { resIn = reserves[0]; resOut = reserves[1]; }
         else { resIn = reserves[1]; resOut = reserves[0]; }
       }
       const spot = Number(resOut) / Number(resIn);
@@ -176,7 +188,7 @@
       $("impactLabel").textContent = isFinite(impact) ? impact.toFixed(3) + "%" : "—";
       const minOut = applySlip(out);
       $("minOutLabel").textContent = ethers.formatUnits(minOut, tout.decimals) + " " + tout.symbol;
-      if ($("approveLabel")) $("approveLabel").textContent = unitsToInput(amountIn, tin.decimals) + " " + tin.symbol + " exact";
+      if ($("approveLabel")) $("approveLabel").textContent = tin.isNative ? "None. POL wraps inside this swap." : unitsToInput(amountIn, tin.decimals) + " " + tin.symbol + " exact";
     } catch {
       $("amountOut").value = "";
       $("priceLabel").textContent = "No pool or no liquidity";
@@ -189,15 +201,26 @@
       if (!configured()) throw new Error("Set factory and router in js/config.js.");
       const tin = tokenByAddress($("tokenIn").value);
       const tout = tokenByAddress($("tokenOut").value);
+      if (routeAddress(tin).toLowerCase() === routeAddress(tout).toLowerCase()) throw new Error("POL and WPOL are the same asset.");
       const amountIn = parseAmt($("amountIn").value, tin.decimals);
       if (amountIn === 0n) throw new Error("Enter an input amount.");
-      const path = [tin.address, tout.address];
+      const path = [routeAddress(tin), routeAddress(tout)];
       const amounts = await router().getAmountsOut(amountIn, path);
-      const minOut = applySlip(amounts[1]);
-      await ensureAllowance(tin.address, state.account, CFG.router, amountIn, "swapLog");
-      setLog("swapLog", "Sending swap…");
+      const minOut = applySlip(amounts[amounts.length - 1]);
       const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
-      const tx = await router().swapExactTokensForTokens(amountIn, minOut, path, state.account, deadline);
+      let tx;
+      if (tin.isNative) {
+        setLog("swapLog", "Wrapping POL and swapping…");
+        tx = await router().swapExactETHForTokens(minOut, path, state.account, deadline, { value: amountIn });
+      } else if (tout.isNative) {
+        await ensureAllowance(tin.address, state.account, CFG.router, amountIn, "swapLog");
+        setLog("swapLog", "Swapping and unwrapping to POL…");
+        tx = await router().swapExactTokensForETH(amountIn, minOut, path, state.account, deadline);
+      } else {
+        await ensureAllowance(tin.address, state.account, CFG.router, amountIn, "swapLog");
+        setLog("swapLog", "Sending swap…");
+        tx = await router().swapExactTokensForTokens(amountIn, minOut, path, state.account, deadline);
+      }
       setLog("swapLog", "Pending " + tx.hash);
       await tx.wait();
       setLog("swapLog", "Done. " + tx.hash, "ok");
@@ -382,6 +405,10 @@
   function chartUrl(id, kind) {
     return "https://www.geckoterminal.com/polygon_pos/" + kind + "/" + id + "?embed=1&info=0&swaps=0&light_chart=0&chart_type=price&resolution=15m&bg_color=030712";
   }
+  function chartToken(addr) {
+    const t = tokenByAddress(addr);
+    return t && t.isNative ? CFG.weth : addr;
+  }
   async function loadChart(addr) {
     const frame = $("geckoChart");
     if (!frame || !addr) return;
@@ -461,7 +488,7 @@
       $("amountIn").value = $("amountOut").value;
       quoteOut();
       refreshBalances();
-      loadChart($("tokenOut").value);
+      loadChart(chartToken($("tokenOut").value));
     });
     async function fillMax(selectId, inputId) {
       if (!state.account) await connect();
@@ -469,7 +496,9 @@
       const token = tokenByAddress($(selectId).value);
       const bal = state.bal[selectId];
       if (!token || bal == null) return;
-      $(inputId).value = unitsToInput(bal, token.decimals);
+      const keep = token.isNative ? ethers.parseEther("0.05") : 0n;
+      const spend = bal > keep ? bal - keep : 0n;
+      $(inputId).value = unitsToInput(token.isNative ? spend : bal, token.decimals);
       if (inputId === "amountIn") quoteOut();
       if (inputId === "liqAmtA" || inputId === "liqAmtB") await quoteLiq(inputId);
     }
@@ -494,7 +523,7 @@
     } catch {}
     $("amountIn").addEventListener("input", quoteOut);
     $("tokenIn").addEventListener("change", () => { quoteOut(); refreshBalances(); });
-    $("tokenOut").addEventListener("change", () => { quoteOut(); refreshBalances(); loadChart($("tokenOut").value); });
+    $("tokenOut").addEventListener("change", () => { quoteOut(); refreshBalances(); loadChart(chartToken($("tokenOut").value)); });
     $("liqAmtA").addEventListener("input", () => quoteLiq("liqAmtA"));
     $("liqAmtB").addEventListener("input", () => quoteLiq("liqAmtB"));
     const onLiqToken = () => {
@@ -521,7 +550,7 @@
       await refreshWrapBals();
       $("wrapAmt").value = unitsToInput(state.bal.wpol || 0n, 18);
     })().catch((err) => setLog("wrapLog", err.shortMessage || err.message || String(err), "err")));
-    loadChart($("tokenOut").value);
+    loadChart(chartToken($("tokenOut").value));
     if (window.ethereum) {
       window.ethereum.on("accountsChanged", () => connect());
       window.ethereum.on("chainChanged", () => window.location.reload());
