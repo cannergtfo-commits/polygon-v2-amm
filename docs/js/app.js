@@ -141,6 +141,7 @@
         lab.textContent = "Balance —";
       }
     }));
+    await refreshWrapBals();
   }
   async function quoteOut() {
     if (!configured() || !state.provider) return;
@@ -377,6 +378,68 @@
       $("pairCount").textContent = "—";
     }
   }
+  const chartCache = {};
+  function chartUrl(id, kind) {
+    return "https://www.geckoterminal.com/polygon_pos/" + kind + "/" + id + "?embed=1&info=0&swaps=0&light_chart=0&chart_type=price&resolution=15m&bg_color=030712";
+  }
+  async function loadChart(addr) {
+    const frame = $("geckoChart");
+    if (!frame || !addr) return;
+    const a = addr.toLowerCase();
+    if (frame.dataset.addr === a) return;
+    frame.dataset.addr = a;
+    const token = tokenByAddress(addr);
+    const link = $("chartLink");
+    if (link) {
+      link.href = "https://www.geckoterminal.com/polygon_pos/tokens/" + a;
+      link.textContent = (token && token.symbol ? token.symbol : "Token") + " on GeckoTerminal";
+    }
+    let src = chartCache[a] || chartUrl(a, "tokens");
+    if (!chartCache[a]) {
+      try {
+        const res = await fetch("https://api.geckoterminal.com/api/v2/networks/polygon_pos/tokens/" + a + "/pools?page=1");
+        if (res.ok) {
+          const body = await res.json();
+          const pool = body.data && body.data[0] && body.data[0].attributes && body.data[0].attributes.address;
+          if (pool) src = chartUrl(String(pool).toLowerCase(), "pools");
+        }
+      } catch {}
+      chartCache[a] = src;
+    }
+    frame.src = src;
+  }
+  async function refreshWrapBals() {
+    if (!state.account || !$("balPol")) return;
+    try {
+      const [pol, wrapped] = await Promise.all([
+        state.provider.getBalance(state.account),
+        erc20(CFG.weth).balanceOf(state.account)
+      ]);
+      state.bal.pol = pol;
+      state.bal.wpol = wrapped;
+      $("balPol").textContent = "POL " + unitsToInput(pol, 18);
+      $("balWpol").textContent = "WPOL " + unitsToInput(wrapped, 18);
+    } catch {
+      $("balPol").textContent = "POL —";
+      $("balWpol").textContent = "WPOL —";
+    }
+  }
+  async function wrapPol(unwrap) {
+    try {
+      if (!state.signer) await connect();
+      const amt = parseAmt($("wrapAmt").value, 18);
+      if (amt === 0n) throw new Error("Enter an amount.");
+      const c = new ethers.Contract(CFG.weth, ["function deposit() payable", "function withdraw(uint256)"], state.signer);
+      setLog("wrapLog", unwrap ? "Unwrapping WPOL…" : "Wrapping POL…");
+      const tx = unwrap ? await c.withdraw(amt) : await c.deposit({ value: amt });
+      setLog("wrapLog", "Pending " + tx.hash);
+      await tx.wait();
+      setLog("wrapLog", (unwrap ? "Unwrapped. " : "Wrapped. ") + tx.hash, "ok");
+      await refreshBalances();
+    } catch (err) {
+      setLog("wrapLog", err.shortMessage || err.message || String(err), "err");
+    }
+  }
   function wireUi() {
     fillSelects();
     document.querySelectorAll(".tabs button").forEach((btn) => {
@@ -386,6 +449,7 @@
         document.querySelectorAll(".pane").forEach((p) => p.classList.remove("visible"));
         $("pane-" + btn.dataset.tab).classList.add("visible");
         if (btn.dataset.tab === "add") refreshBalances();
+        if (btn.dataset.tab === "wrap") refreshWrapBals();
       });
     });
     $("connectBtn").addEventListener("click", connect);
@@ -397,6 +461,7 @@
       $("amountIn").value = $("amountOut").value;
       quoteOut();
       refreshBalances();
+      loadChart($("tokenOut").value);
     });
     async function fillMax(selectId, inputId) {
       if (!state.account) await connect();
@@ -429,7 +494,7 @@
     } catch {}
     $("amountIn").addEventListener("input", quoteOut);
     $("tokenIn").addEventListener("change", () => { quoteOut(); refreshBalances(); });
-    $("tokenOut").addEventListener("change", () => { quoteOut(); refreshBalances(); });
+    $("tokenOut").addEventListener("change", () => { quoteOut(); refreshBalances(); loadChart($("tokenOut").value); });
     $("liqAmtA").addEventListener("input", () => quoteLiq("liqAmtA"));
     $("liqAmtB").addEventListener("input", () => quoteLiq("liqAmtB"));
     const onLiqToken = () => {
@@ -442,6 +507,21 @@
     $("addLiqBtn").addEventListener("click", addLiquidity);
     $("createPairBtn").addEventListener("click", createPair);
     $("removeLiqBtn").addEventListener("click", removeLiquidity);
+    $("wrapBtn").addEventListener("click", () => wrapPol(false));
+    $("unwrapBtn").addEventListener("click", () => wrapPol(true));
+    $("maxPol").addEventListener("click", () => (async () => {
+      if (!state.account) await connect();
+      await refreshWrapBals();
+      const keep = ethers.parseEther("0.05");
+      const bal = state.bal.pol || 0n;
+      $("wrapAmt").value = unitsToInput(bal > keep ? bal - keep : 0n, 18);
+    })().catch((err) => setLog("wrapLog", err.shortMessage || err.message || String(err), "err")));
+    $("maxWpol").addEventListener("click", () => (async () => {
+      if (!state.account) await connect();
+      await refreshWrapBals();
+      $("wrapAmt").value = unitsToInput(state.bal.wpol || 0n, 18);
+    })().catch((err) => setLog("wrapLog", err.shortMessage || err.message || String(err), "err")));
+    loadChart($("tokenOut").value);
     if (window.ethereum) {
       window.ethereum.on("accountsChanged", () => connect());
       window.ethereum.on("chainChanged", () => window.location.reload());
