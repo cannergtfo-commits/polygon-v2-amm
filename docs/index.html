@@ -17,12 +17,15 @@
     .slip-picks button.on{color:#021018;background:linear-gradient(90deg,#3ee0ff,#7af);border-color:transparent}
     .slip-input{width:58px!important;max-width:58px;font-size:14px!important;font-weight:600;margin:0!important;padding:4px 6px!important;background:rgba(0,0,0,.35);border:1px solid var(--stroke);border-radius:8px;color:var(--text)}
     .field-top{display:flex;justify-content:space-between;align-items:center;gap:12px}
-    .chart-wrap{width:min(560px,100%);margin:18px auto 0}
+    .chart-wrap{width:auto;margin:0;display:flex;flex-direction:column;min-width:0}
     .chart-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
     .chart-top h3{font-family:Syne,sans-serif;letter-spacing:.14em;font-size:13px;text-transform:uppercase;color:var(--cyan)}
     .chart-top a{color:var(--muted);font-size:12px}
-    .chart-frame{height:420px;border:1px solid var(--stroke);border-radius:18px;overflow:hidden;background:#030712}
+    .chart-frame{flex:1;height:auto;min-height:560px;border:1px solid var(--stroke);border-radius:18px;overflow:hidden;background:#030712}
     .chart-frame iframe{width:100%;height:100%;border:0}
+    .desk{width:100%;margin:0 0 40px}
+    .trade-row{display:grid;grid-template-columns:minmax(420px,560px) minmax(0,1fr);gap:18px;align-items:stretch}
+    @media(max-width:900px){.trade-row{grid-template-columns:1fr}.chart-frame{min-height:420px}}
     .wrap-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
     .wrap-actions .full{margin-top:0}
   </style>
@@ -86,6 +89,7 @@
         <button data-tab="wrap" type="button">Wrap</button>
       </div>
 
+      <div class="trade-row">
       <div class="stack">
         <div class="panel card pane visible" id="pane-swap" data-card="swap">
           <h3>Swap</h3>
@@ -179,15 +183,16 @@
           <div class="log" id="wrapLog">1 POL becomes 1 WPOL. Max POL leaves 0.05 POL for gas.</div>
         </div>
       </div>
-    </section>
 
-    <section class="chart-wrap">
-      <div class="chart-top">
-        <h3>Chart</h3>
-        <a id="chartLink" href="https://www.geckoterminal.com/polygon_pos" target="_blank" rel="noopener">GeckoTerminal</a>
-      </div>
-      <div class="chart-frame">
-        <iframe id="geckoChart" title="GeckoTerminal chart" loading="lazy" allow="clipboard-write" allowfullscreen></iframe>
+      <section class="chart-wrap">
+        <div class="chart-top">
+          <h3>Chart</h3>
+          <a id="chartLink" href="https://www.geckoterminal.com/polygon_pos" target="_blank" rel="noopener">GeckoTerminal</a>
+        </div>
+        <div class="chart-frame">
+          <iframe id="geckoChart" title="GeckoTerminal chart" loading="lazy" allow="clipboard-write" allowfullscreen></iframe>
+        </div>
+      </section>
       </div>
     </section>
   </main>
