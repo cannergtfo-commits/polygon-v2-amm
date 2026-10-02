@@ -9,34 +9,37 @@
     body { margin: 0; font-family: Georgia, serif; background: #16141a; color: #f3ead8; }
     main { max-width: 980px; margin: 0 auto; padding: 40px 20px 80px; }
     h1 { font-weight: 500; font-size: 42px; margin-bottom: 8px; }
-    p { color: #cbbfaa; line-height: 1.45; max-width: 640px; }
+    p { color: #cbbfaa; line-height: 1.45; max-width: 680px; }
     .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 28px; }
-    a.card { color: inherit; text-decoration: none; background: #221e27; border-radius: 18px; overflow: hidden; }
+    .card { color: inherit; text-decoration: none; background: #221e27; border-radius: 18px; overflow: hidden; }
+    .card a.pic { display: block; }
     img { width: 100%; display: block; }
     .card div { padding: 12px 14px 16px; }
     small { letter-spacing: .08em; text-transform: uppercase; color: #a89880; }
+    code { font-family: ui-monospace, monospace; font-size: 12px; color: #efe4d0; word-break: break-all; }
+    .links { margin-top: 8px; display: flex; gap: 12px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; }
+    .links a { color: #f0c36a; }
     @media (max-width: 800px) { .row { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
   <main>
     <h1>Fun POL pictures</h1>
-    <p>Three sets of one hundred drawings. They are pictures. They are listed at 5 POL. They are not a claim on anything else.</p>
+    <p>Three sets of one hundred drawings. They are pictures only. They do not validate anything, and they are not a claim on POL or anything else. The ask, once the OpenSea listings are up, is 5 POL each.</p>
     <div class="row" id="row"></div>
   </main>
   <script>
     const sets = [
-      ["sleepy", "Sleepy Validators"],
-      ["stubs", "Night Market Stubs"],
-      ["moths", "Crystal Moths"]
+      ["sleepy", "Sleepy Validators", "SLPV", "0x33C3DAeb3C05408bF9d07eBe0C31C7EF0E77b529"],
+      ["stubs", "Night Market Stubs", "STUB", "0xeAb37Db42162f53857b529Bdd1FD0F44DB2B7a77"],
+      ["moths", "Crystal Moths", "MOTH", "0xB2e8fC21873e33Da703e2e64970E4Bb2F4339060"]
     ];
     const row = document.getElementById("row");
-    for (const [dir, name] of sets) {
-      const a = document.createElement("a");
-      a.className = "card";
-      a.href = dir + "/1.json";
-      a.innerHTML = '<img src="' + dir + '/1.png" alt="" /><div><small>100 pictures</small><h2>' + name + '</h2></div>';
-      row.appendChild(a);
+    for (const [dir, name, symbol, addr] of sets) {
+      const card = document.createElement("article");
+      card.className = "card";
+      card.innerHTML = '<a class="pic" href="https://opensea.io/item/polygon/' + addr + '/1"><img src="' + dir + '/1.png" alt="" /></a><div><small>' + symbol + ' · 100 pictures</small><h2>' + name + '</h2><code>' + addr + '</code><div class="links"><a href="https://opensea.io/item/polygon/' + addr + '/1">OpenSea #1</a><a href="https://polygonscan.com/address/' + addr + '">Polygonscan</a></div></div>';
+      row.appendChild(card);
     }
   </script>
 </body>

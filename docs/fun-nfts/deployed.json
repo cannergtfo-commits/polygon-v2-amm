@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Sleepy Validators",
+    "symbol": "SLPV",
+    "address": "0x33C3DAeb3C05408bF9d07eBe0C31C7EF0E77b529",
+    "deployTx": "0xbfcce7ae18fbbbb76536f455e16b52d3d92cedfce114d941c12a8feb4f289bbc",
+    "mintTx": "0x4fe0f028be42fdbb547b2c2dd94bcc9cc5f4113b7004746de40ac29c56089662",
+    "base": "https://cannergtfo-commits.github.io/polygon-v2-amm/fun-nfts/sleepy/",
+    "supply": 100,
+    "askPol": 5
+  },
+  {
+    "name": "Night Market Stubs",
+    "symbol": "STUB",
+    "address": "0xeAb37Db42162f53857b529Bdd1FD0F44DB2B7a77",
+    "deployTx": "0xf87e3d4b6f80ff9a292b0a87d435d8f53182218d83c131e8ffef2278ddbae60e",
+    "mintTx": "0x39f955746fe4e7542001bf3a55214c88be0db1980f579da9b35e3c9482ff0483",
+    "base": "https://cannergtfo-commits.github.io/polygon-v2-amm/fun-nfts/stubs/",
+    "supply": 100,
+    "askPol": 5
+  },
+  {
+    "name": "Crystal Moths",
+    "symbol": "MOTH",
+    "address": "0xB2e8fC21873e33Da703e2e64970E4Bb2F4339060",
+    "deployTx": "0x7be1bcbf0ce33a82fc477132c2a690e3c005147c2c05b09fda9fbe6b5ca70638",
+    "mintTx": "0x5f1a963b5af4c6e600cb9834cc7f31fc84b795fb7e8b0567470ad1e7c61ebc42",
+    "base": "https://cannergtfo-commits.github.io/polygon-v2-amm/fun-nfts/moths/",
+    "supply": 100,
+    "askPol": 5
+  }
+]
