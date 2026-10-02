@@ -8,9 +8,12 @@
     staking: "0x3d8C5cB54B3E2a18cf6F8015833aAC6B484Df72E",
     bzb: "0x462d8d82c2b2d2ddabf7f8a93928de09d47a5807",
     wbtc: "0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6",
-    weth: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619"
+    weth: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
+    wpol: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
+    quick: "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff"
   };
   const TOKENS = [
+    { key: "pol", label: "POL", address: M.wpol, decimals: 18, native: true },
     { key: "bzb", label: "BzB", address: M.bzb, decimals: 18 },
     { key: "wbtc", label: "WBTC", address: M.wbtc, decimals: 8 },
     { key: "weth", label: "WETH", address: M.weth, decimals: 18 }
@@ -144,9 +147,27 @@
       const token = tokenByKey($("m421ZapToken").value);
       const amount = ethers.parseUnits($("m421ZapAmt").value || "0", token.decimals);
       if (amount === 0n) throw new Error("Enter a zap amount.");
+      let zapToken = token.address;
+      let zapAmount = amount;
+      if (token.native) {
+        setLog("Buying WETH with POL…");
+        const quick = new ethers.Contract(M.quick, [
+          "function getAmountsOut(uint256,address[]) view returns (uint256[])",
+          "function swapExactETHForTokens(uint256,address[],address,uint256) payable returns (uint256[])"
+        ], signer);
+        const weth = new ethers.Contract(M.weth, ERC20, signer);
+        const before = await weth.balanceOf(account);
+        const quoted = await quick.getAmountsOut(amount, [M.wpol, M.weth]);
+        const minOut = (quoted[quoted.length - 1] * 97n) / 100n;
+        const swapTx = await quick.swapExactETHForTokens(minOut, [M.wpol, M.weth], account, Math.floor(Date.now() / 1000) + 1200, { value: amount });
+        await swapTx.wait();
+        zapAmount = (await weth.balanceOf(account)) - before;
+        if (zapAmount <= 0n) throw new Error("POL swap returned no WETH.");
+        zapToken = M.weth;
+      }
       setLog("Swapping into the basket…");
-      await approve(token.address, M.vault, amount);
-      const tx = await new ethers.Contract(M.vault, VAULT, signer).zapIn(token.address, amount, 0, 300, 1500);
+      await approve(zapToken, M.vault, zapAmount);
+      const tx = await new ethers.Contract(M.vault, VAULT, signer).zapIn(zapToken, zapAmount, 0, 300, 1500);
       await tx.wait();
       setLog("Zap deposited.", "ok");
       await loadDesk();
