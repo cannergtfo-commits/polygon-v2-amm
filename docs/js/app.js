@@ -15,10 +15,8 @@
   function fillSelects() {
     ["tokenIn", "tokenOut", "liqTokenA", "liqTokenB"].forEach((id) => {
       const el = $(id);
-      const swap = id === "tokenIn" || id === "tokenOut";
       el.innerHTML = "";
-      CFG.tokens.forEach((t, i) => {
-        if (t.isNative && !swap) return;
+      CFG.tokens.forEach((t) => {
         const opt = document.createElement("option");
         opt.value = t.address;
         opt.textContent = t.symbol + (t.isBase ? " · BASE" : "");
@@ -28,6 +26,13 @@
         if (id === "liqTokenB" && t.isBase) el.selectedIndex = el.options.length - 1;
       });
     });
+    paintLiqLabels();
+  }
+  function paintLiqLabels() {
+    const a = $("liqTokenA") && tokenByAddress($("liqTokenA").value);
+    const b = $("liqTokenB") && tokenByAddress($("liqTokenB").value);
+    if ($("liqLabelA")) $("liqLabelA").textContent = a && a.symbol ? a.symbol : "Token";
+    if ($("liqLabelB")) $("liqLabelB").textContent = b && b.symbol ? b.symbol : "Token";
   }
   function setLog(id, msg, kind) {
     const el = $(id);
@@ -188,9 +193,21 @@
     if (!configured() || !state.provider) return;
     const tin = tokenByAddress($("tokenIn").value);
     const tout = tokenByAddress($("tokenOut").value);
-    if (!tin || !tout || routeAddress(tin).toLowerCase() === routeAddress(tout).toLowerCase()) {
+    const same = tin && tout && routeAddress(tin).toLowerCase() === routeAddress(tout).toLowerCase();
+    if (!tin || !tout || (same && tin.address.toLowerCase() === tout.address.toLowerCase())) {
       $("amountOut").value = "";
-      if (tin && tout && tin.address !== tout.address) $("priceLabel").textContent = "POL and WPOL are the same asset";
+      return;
+    }
+    if (same) {
+      const rawSame = $("amountIn").value;
+      const wrapping = !!tin.isNative;
+      $("routeLabel").textContent = wrapping ? "Wrap POL" : "Unwrap WPOL";
+      $("priceLabel").textContent = "1 POL = 1 WPOL";
+      $("impactLabel").textContent = "0%";
+      if (!rawSame || Number(rawSame) <= 0) { $("amountOut").value = ""; $("minOutLabel").textContent = "—"; return; }
+      $("amountOut").value = rawSame;
+      $("minOutLabel").textContent = rawSame + " " + tout.symbol;
+      if ($("approveLabel")) $("approveLabel").textContent = "None. 1:1 " + (wrapping ? "wrap" : "unwrap") + ".";
       return;
     }
     const raw = $("amountIn").value;
@@ -234,9 +251,20 @@
       if (!configured()) throw new Error("Set factory and router in js/config.js.");
       const tin = tokenByAddress($("tokenIn").value);
       const tout = tokenByAddress($("tokenOut").value);
-      if (routeAddress(tin).toLowerCase() === routeAddress(tout).toLowerCase()) throw new Error("POL and WPOL are the same asset.");
       const amountIn = parseAmt($("amountIn").value, tin.decimals);
       if (amountIn === 0n) throw new Error("Enter an input amount.");
+      const same = routeAddress(tin).toLowerCase() === routeAddress(tout).toLowerCase();
+      if (same) {
+        if (tin.address.toLowerCase() === tout.address.toLowerCase()) throw new Error("Pick two different tokens.");
+        const wrapped = new ethers.Contract(CFG.weth, ["function deposit() payable", "function withdraw(uint256)"], state.signer);
+        setLog("swapLog", tin.isNative ? "Wrapping POL…" : "Unwrapping WPOL…");
+        const txw = tin.isNative ? await wrapped.deposit({ value: amountIn }) : await wrapped.withdraw(amountIn);
+        setLog("swapLog", "Pending " + txw.hash);
+        await txw.wait();
+        setLog("swapLog", "Done. " + txw.hash, "ok");
+        await refreshBalances();
+        return;
+      }
       const path = [routeAddress(tin), routeAddress(tout)];
       const amounts = await router().getAmountsOut(amountIn, path);
       const minOut = applySlip(amounts[amounts.length - 1]);
@@ -283,7 +311,12 @@
     const seq = ++liqQuoteSeq;
     const a = tokenByAddress($("liqTokenA").value);
     const b = tokenByAddress($("liqTokenB").value);
-    if (!configured() || !a || !b || a.address.toLowerCase() === b.address.toLowerCase()) return;
+    if (!configured() || !a || !b || routeAddress(a).toLowerCase() === routeAddress(b).toLowerCase()) {
+      if (a && b && routeAddress(a).toLowerCase() === routeAddress(b).toLowerCase() && a.address.toLowerCase() !== b.address.toLowerCase()) {
+        $("liqLog").textContent = "POL and WPOL are the same asset. Pick another token.";
+      }
+      return;
+    }
     const fromA = sourceId !== "liqAmtB";
     const raw = $(fromA ? "liqAmtA" : "liqAmtB").value;
     const otherEl = $(fromA ? "liqAmtB" : "liqAmtA");
@@ -299,7 +332,7 @@
     try {
       const provider = state.provider || new ethers.JsonRpcProvider((CFG.rpcUrls && CFG.rpcUrls[0]) || CFG.rpcUrl);
       const r = new ethers.Contract(CFG.router, ABIS.Router, provider);
-      const reserves = await r.getReserves(a.address, b.address);
+      const reserves = await r.getReserves(routeAddress(a), routeAddress(b));
       if (seq !== liqQuoteSeq) return;
       const reserveA = reserves[0];
       const reserveB = reserves[1];
@@ -342,13 +375,26 @@
       const amtB = parseAmt($("liqAmtB").value, b.decimals);
       if (amtA === 0n || amtB === 0n) throw new Error("Both amounts required.");
       if ($("approveLiqLabel")) $("approveLiqLabel").textContent = unitsToInput(amtA, a.decimals) + " " + a.symbol + " + " + unitsToInput(amtB, b.decimals) + " " + b.symbol;
-      await ensureAllowance(a.address, state.account, CFG.router, amtA, "liqLog");
-      await ensureAllowance(b.address, state.account, CFG.router, amtB, "liqLog");
+      if (routeAddress(a).toLowerCase() === routeAddress(b).toLowerCase()) throw new Error("POL and WPOL are the same asset.");
+      if (a.isNative) {
+        setLog("liqLog", "Wrapping POL…");
+        const wrapTx = await new ethers.Contract(CFG.weth, ["function deposit() payable"], state.signer).deposit({ value: amtA });
+        await wrapTx.wait();
+      }
+      if (b.isNative) {
+        setLog("liqLog", "Wrapping POL…");
+        const wrapTx = await new ethers.Contract(CFG.weth, ["function deposit() payable"], state.signer).deposit({ value: amtB });
+        await wrapTx.wait();
+      }
+      const addrA = routeAddress(a);
+      const addrB = routeAddress(b);
+      await ensureAllowance(addrA, state.account, CFG.router, amtA, "liqLog");
+      await ensureAllowance(addrB, state.account, CFG.router, amtB, "liqLog");
       const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
       const minA = applySlip(amtA);
       const minB = applySlip(amtB);
       setLog("liqLog", "Adding liquidity…");
-      const tx = await router().addLiquidity(a.address, b.address, amtA, amtB, minA, minB, state.account, deadline);
+      const tx = await router().addLiquidity(addrA, addrB, amtA, amtB, minA, minB, state.account, deadline);
       await tx.wait();
       setLog("liqLog", "Done. " + tx.hash, "ok");
       await refreshPairs();
@@ -361,7 +407,9 @@
     try {
       if (!state.signer) await connect();
       setLog("liqLog", "Creating pair…");
-      const tx = await factory().createPair($("liqTokenA").value, $("liqTokenB").value);
+      const a = tokenByAddress($("liqTokenA").value);
+      const b = tokenByAddress($("liqTokenB").value);
+      const tx = await factory().createPair(routeAddress(a), routeAddress(b));
       await tx.wait();
       setLog("liqLog", "Pair created. " + tx.hash, "ok");
       await refreshPairs();
@@ -508,8 +556,7 @@
         btn.classList.add("active");
         document.querySelectorAll(".pane").forEach((p) => p.classList.remove("visible"));
         $("pane-" + btn.dataset.tab).classList.add("visible");
-        if (btn.dataset.tab === "add") refreshBalances();
-        if (btn.dataset.tab === "wrap") refreshWrapBals();
+        if (btn.dataset.tab === "add") { paintLiqLabels(); refreshBalances(); }
       });
     });
     $("connectBtn").addEventListener("click", (ev) => {
@@ -569,6 +616,7 @@
     $("liqAmtA").addEventListener("input", () => quoteLiq("liqAmtA"));
     $("liqAmtB").addEventListener("input", () => quoteLiq("liqAmtB"));
     const onLiqToken = () => {
+      paintLiqLabels();
       refreshBalances();
       if ($("liqAmtA").value) quoteLiq("liqAmtA");
       else quoteLiq("liqAmtB");
@@ -578,20 +626,6 @@
     $("addLiqBtn").addEventListener("click", addLiquidity);
     $("createPairBtn").addEventListener("click", createPair);
     $("removeLiqBtn").addEventListener("click", removeLiquidity);
-    $("wrapBtn").addEventListener("click", () => wrapPol(false));
-    $("unwrapBtn").addEventListener("click", () => wrapPol(true));
-    $("maxPol").addEventListener("click", () => (async () => {
-      if (!state.account) await connect();
-      await refreshWrapBals();
-      const keep = ethers.parseEther("0.05");
-      const bal = state.bal.pol || 0n;
-      $("wrapAmt").value = unitsToInput(bal > keep ? bal - keep : 0n, 18);
-    })().catch((err) => setLog("wrapLog", err.shortMessage || err.message || String(err), "err")));
-    $("maxWpol").addEventListener("click", () => (async () => {
-      if (!state.account) await connect();
-      await refreshWrapBals();
-      $("wrapAmt").value = unitsToInput(state.bal.wpol || 0n, 18);
-    })().catch((err) => setLog("wrapLog", err.shortMessage || err.message || String(err), "err")));
     loadChart(chartToken($("tokenOut").value));
     if (window.ethereum) {
       window.ethereum.on("accountsChanged", (accounts) => {
