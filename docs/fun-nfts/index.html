@@ -25,7 +25,7 @@
 <body>
   <main>
     <h1>Fun POL pictures</h1>
-    <p>Three sets of one hundred drawings. They are pictures only. They do not validate anything, and they are not a claim on POL or anything else. The ask, once the OpenSea listings are up, is 5 POL each.</p>
+    <p>Three sets of one hundred drawings. They are pictures only. They do not validate anything, and they are not a claim on POL or anything else. Each one is listed on Rarible for 5 POL.</p>
     <div class="row" id="row"></div>
   </main>
   <script>
@@ -38,7 +38,7 @@
     for (const [dir, name, symbol, addr] of sets) {
       const card = document.createElement("article");
       card.className = "card";
-      card.innerHTML = '<a class="pic" href="https://opensea.io/item/polygon/' + addr + '/1"><img src="' + dir + '/1.png" alt="" /></a><div><small>' + symbol + ' · 100 pictures</small><h2>' + name + '</h2><code>' + addr + '</code><div class="links"><a href="https://opensea.io/item/polygon/' + addr + '/1">OpenSea #1</a><a href="https://polygonscan.com/address/' + addr + '">Polygonscan</a></div></div>';
+      card.innerHTML = '<a class="pic" href="https://rarible.com/token/polygon/' + addr.toLowerCase() + ':1"><img src="' + dir + '/1.png" alt="" /></a><div><small>' + symbol + ' · 100 pictures · 5 POL</small><h2>' + name + '</h2><code>' + addr + '</code><div class="links"><a href="https://rarible.com/token/polygon/' + addr.toLowerCase() + ':1">Rarible #1</a><a href="https://opensea.io/item/polygon/' + addr + '/1">OpenSea</a><a href="https://polygonscan.com/address/' + addr + '">Polygonscan</a></div></div>';
       row.appendChild(card);
     }
   </script>
