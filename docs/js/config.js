@@ -22,6 +22,7 @@ window.BLAZARSWAP = {
     { symbol: "USDC", name: "USD Coin", address: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359", decimals: 6, logo: "https://polygonscan.com/token/images/centre-usdc_32.png" },
     { symbol: "WBTC", name: "Wrapped BTC", address: "0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6", decimals: 8, logo: "https://polygonscan.com/token/images/wbtc_32.png" },
     { symbol: "USDT", name: "Tether USD", address: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", decimals: 6, logo: "https://polygonscan.com/token/images/tether_32.png" },
-    { symbol: "WETH", name: "Wrapped Ether", address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619", decimals: 18, logo: "https://polygonscan.com/token/images/weth_32.png" }
+    { symbol: "WETH", name: "Wrapped Ether", address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619", decimals: 18, logo: "https://polygonscan.com/token/images/weth_32.png" },
+    { symbol: "M421", name: "Markarian 421", address: "0xd2aD34cab1fc6ee954276d28c67E219875397420", decimals: 18, logo: "m421.jpg" }
   ]
 };

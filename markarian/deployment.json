@@ -1,0 +1,12 @@
+{
+  "chainId": 137,
+  "vault": "0x213C7a13CC3C8A519867FA29cB010c575FBBB4F8",
+  "share": "0xd2aD34cab1fc6ee954276d28c67E219875397420",
+  "staking": "0x3d8C5cB54B3E2a18cf6F8015833aAC6B484Df72E",
+  "vaultTx": "0x354793457cd7a1e367e11b3cea07fc5511a8741fd281ff36b979f4cd7e006db7",
+  "stakeTx": "0xd2ff758bc23e78f75b4b9c5cc0cae35eab6dd01524044db94ea3fe427d75ef47",
+  "start": 1790923889,
+  "daily": "500000000000000000000",
+  "deployer": "0x17c55f4c92F8b1430Db3D60206B38a4B552CF722",
+  "description": "Bitcoin, Ether, and a blazar bit walked into a jet and only one object came out. Markarian 421 is that receipt: equal parts digital gold, digital gas, and actual BlazarBits, pointed at the real Markarian 421 like it has somewhere to be. It does not pulse in radio. It just lets you leave with your third."
+}

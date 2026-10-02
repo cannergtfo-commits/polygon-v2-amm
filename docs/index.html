@@ -7,7 +7,7 @@
   <link rel="icon" href="favicon.ico" sizes="any" />
   <link rel="icon" type="image/png" sizes="64x64" href="favicon.png" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-  <link rel="stylesheet" href="css/style.css?v=logo1" />
+  <link rel="stylesheet" href="css/style.css?v=m421" />
   <style>
     .bal-row{display:inline-flex;align-items:center;gap:8px}
     .max{font-family:Syne,sans-serif;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#021018;background:linear-gradient(90deg,#3ee0ff,#7af);border:0;border-radius:999px;padding:4px 8px;cursor:pointer}
@@ -205,11 +205,77 @@
       </section>
       </div>
     </section>
+
+    <section class="m421" id="markarian">
+      <div class="m421-head">
+        <img src="m421.jpg" alt="Jet of the blazar Markarian 421" />
+        <div>
+          <p class="kicker">Basket · M421</p>
+          <h2>Markarian 421</h2>
+          <p>Bitcoin, Ether, and a blazar bit walked into a jet and only one object came out. Markarian 421 is that receipt: equal parts digital gold, digital gas, and actual BlazarBits. It does not pulse in radio. It just lets you leave with your third.</p>
+        </div>
+      </div>
+      <div class="m421-stats">
+        <article><b id="m421Bzb">—</b><small>BzB in basket</small></article>
+        <article><b id="m421Wbtc">—</b><small>WBTC in basket</small></article>
+        <article><b id="m421Weth">—</b><small>WETH in basket</small></article>
+        <article><b id="m421Supply">—</b><small>Receipt supply</small></article>
+      </div>
+      <div class="panel">
+        <div class="m421-top">
+          <div>
+            <h3 id="m421Rate">—</h3>
+            <p id="m421Fund" class="m421-note">Rewards: 500 BzB/day for 100 days, 250 for the next 100, then 100. Send BzB to the staking contract.</p>
+            <p id="m421Pos" class="m421-note">Connect to see your M421.</p>
+          </div>
+          <button class="connect" id="m421Account" type="button">Use wallet</button>
+        </div>
+        <div class="tabs m421-tabs">
+          <button class="active" id="m421tab-deposit" data-m421tab="deposit" type="button">Deposit</button>
+          <button id="m421tab-withdraw" data-m421tab="withdraw" type="button">Withdraw</button>
+          <button id="m421tab-stake" data-m421tab="stake" type="button">Stake</button>
+        </div>
+        <div id="m421-deposit">
+          <div class="m421-grid">
+            <label>BzB<input id="m421AmtBzb" type="text" inputmode="decimal" placeholder="0.0" /></label>
+            <label>WBTC<input id="m421AmtWbtc" type="text" inputmode="decimal" placeholder="0.0" /></label>
+            <label>WETH<input id="m421AmtWeth" type="text" inputmode="decimal" placeholder="0.0" /></label>
+          </div>
+          <button class="primary full" id="m421Deposit" type="button">Deposit equal basket</button>
+          <div class="m421-grid two">
+            <label>Zap with
+              <select id="m421ZapToken"><option value="weth">WETH</option><option value="wbtc">WBTC</option><option value="bzb">BzB</option></select>
+            </label>
+            <label>Amount<input id="m421ZapAmt" type="text" inputmode="decimal" placeholder="0.0" /></label>
+          </div>
+          <button class="ghost full" id="m421ZapIn" type="button">Zap in</button>
+        </div>
+        <div id="m421-withdraw" hidden>
+          <label class="m421-field">M421 to burn<input id="m421Shares" type="text" inputmode="decimal" placeholder="0.0" /></label>
+          <button class="primary full" id="m421Withdraw" type="button">Withdraw my portion</button>
+          <label class="m421-field">Zap out into
+            <select id="m421ZapOutToken"><option value="weth">WETH</option><option value="wbtc">WBTC</option><option value="bzb">BzB</option></select>
+          </label>
+          <button class="ghost full" id="m421ZapOut" type="button">Zap out</button>
+        </div>
+        <div id="m421-stake" hidden>
+          <label class="m421-field">M421<input id="m421StakeAmt" type="text" inputmode="decimal" placeholder="0.0" /></label>
+          <div class="m421-actions">
+            <button class="primary full" id="m421Stake" type="button">Stake</button>
+            <button class="ghost full" id="m421Unstake" type="button">Unstake</button>
+            <button class="ghost full" id="m421Claim" type="button">Claim BzB</button>
+            <button class="ghost full" id="m421Exit" type="button">Exit</button>
+          </div>
+          <p class="m421-note">Staking contract <a href="https://polygonscan.com/address/0x3d8C5cB54B3E2a18cf6F8015833aAC6B484Df72E" target="_blank" rel="noopener">0x3d8C…f72E</a>. Vault <a href="https://polygonscan.com/address/0x213C7a13CC3C8A519867FA29cB010c575FBBB4F8" target="_blank" rel="noopener">0x213C…B4F8</a>.</p>
+        </div>
+        <div class="log" id="m421Log">The basket is empty until the first equal-value deposit.</div>
+      </div>
+    </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
   <script src="js/images.js"></script>
-  <script src="js/config.js?v=pol1"></script>
+  <script src="js/config.js?v=m421"></script>
   <script src="js/abis.js?v=pol1"></script>
   <script>
     (function () {
@@ -224,6 +290,7 @@
     })();
   </script>
   <script src="js/app.js?v=logout1"></script>
+  <script src="js/m421.js?v=m421"></script>
   <script src="js/token-ui.js"></script>
   <script src="js/music.js?v=snd1"></script>
   <script>

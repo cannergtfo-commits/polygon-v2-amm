@@ -15,6 +15,12 @@ Hosted from `docs/` on GitHub Pages.
 
 If the URL 404s, open **Settings → Pages** and set Source to **GitHub Actions**, then rerun the **Deploy GitHub Pages** workflow.
 
+## Markarian 421
+
+Equal-value basket of BzB, WBTC, and WETH. The receipt is M421. Stake it on the site, under the swap desk, to earn BzB.
+
+See [markarian/MARKARIAN.md](./markarian/MARKARIAN.md).
+
 ## Remix deploy
 
 See [REMIX.md](./REMIX.md).
