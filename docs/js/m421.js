@@ -44,6 +44,7 @@
   const $ = (id) => document.getElementById(id);
   let signer = null;
   let account = null;
+  let px = null;
 
   function trim(value, digits) {
     const n = Number(value);
@@ -58,6 +59,39 @@
   }
   function read() {
     return new ethers.JsonRpcProvider(M.rpc, M.chainId, { staticNetwork: true });
+  }
+  async function loadPrices(provider) {
+    const router = new ethers.Contract(M.quick, ["function getAmountsOut(uint256,address[]) view returns (uint256[])"], provider);
+    const btcFeed = new ethers.Contract(BTC_USD, FEED, provider);
+    const ethFeed = new ethers.Contract(ETH_USD, FEED, provider);
+    const [spot, btcRound, ethRound] = await Promise.all([
+      router.getAmountsOut(10n ** 18n, [M.bzb, USDC]),
+      btcFeed.latestRoundData(),
+      ethFeed.latestRoundData()
+    ]);
+    return { usdPerBzb: spot[1] * 100n, btcPrice: BigInt(btcRound[1]), ethPrice: BigInt(ethRound[1]) };
+  }
+  function usdOf(kind, amount, prices) {
+    if (!prices || amount === 0n) return 0n;
+    if (kind === "bzb") return (amount * prices.usdPerBzb) / 10n ** 18n;
+    if (kind === "wbtc") return (amount * prices.btcPrice) / 10n ** 8n;
+    return (amount * prices.ethPrice) / 10n ** 18n;
+  }
+  function fmtUsd(usd8) {
+    const n = Number(usd8) / 1e8;
+    if (!Number.isFinite(n)) return "—";
+    if (n > 0 && n < 0.01) return "$" + n.toPrecision(2);
+    return n.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 2 });
+  }
+  function paintInputUsd() {
+    if (!px) return;
+    ["bzb", "wbtc", "weth"].forEach((kind) => {
+      const el = $("m421In" + kind[0].toUpperCase() + kind.slice(1) + "Usd");
+      if (!el) return;
+      let amount = 0n;
+      try { amount = ethers.parseUnits(String($(fields[kind].id).value || "0").trim() || "0", fields[kind].dec); } catch { amount = 0n; }
+      el.textContent = fmtUsd(usdOf(kind, amount, px));
+    });
   }
   async function loadDesk() {
     const provider = read();
@@ -74,6 +108,17 @@
     $("m421Wbtc").textContent = trim(ethers.formatUnits(rt, 8), 6);
     $("m421Weth").textContent = trim(ethers.formatUnits(re, 18), 6);
     $("m421Supply").textContent = trim(ethers.formatUnits(supply, 18), 4) + " M421";
+    try {
+      px = await loadPrices(provider);
+      $("m421BzbUsd").textContent = fmtUsd(usdOf("bzb", rb, px));
+      $("m421WbtcUsd").textContent = fmtUsd(usdOf("wbtc", rt, px));
+      $("m421WethUsd").textContent = fmtUsd(usdOf("weth", re, px));
+      paintInputUsd();
+    } catch {
+      $("m421BzbUsd").textContent = "—";
+      $("m421WbtcUsd").textContent = "—";
+      $("m421WethUsd").textContent = "—";
+    }
     const now = Math.floor(Date.now() / 1000);
     const day = now <= Number(start) ? 1 : Math.floor((now - Number(start)) / 86400) + 1;
     const available = funded > allocated ? funded - allocated : 0n;
@@ -262,6 +307,7 @@
       fillLock = true;
       others.forEach((k) => { $(fields[k].id).value = ""; });
       fillLock = false;
+      paintInputUsd();
       return;
     }
     const amount = ethers.parseUnits(raw, fields[source].dec);
@@ -311,10 +357,12 @@
     fillLock = true;
     others.forEach((k) => { $(fields[k].id).value = out[k] > 0n ? showUnits(out[k], fields[k].dec) : ""; });
     fillLock = false;
+    paintInputUsd();
     setLog(note);
   }
   function scheduleFill(source) {
     if (fillLock) return;
+    paintInputUsd();
     clearTimeout(fillTimer);
     fillTimer = setTimeout(() => {
       quoteEqual(source).catch((err) => setLog(err.shortMessage || err.message || "Could not match the basket.", "err"));
