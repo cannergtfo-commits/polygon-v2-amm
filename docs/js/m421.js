@@ -27,7 +27,9 @@
     "function withdraw(uint256,uint256,uint256,uint256)",
     "function zapIn(address,uint256,uint256,uint256,uint256) returns (uint256)",
     "function zapOut(uint256,address,uint256,uint256)",
-    "function values(uint256,uint256,uint256) view returns (uint256,uint256,uint256)"
+    "function values(uint256,uint256,uint256) view returns (uint256,uint256,uint256)",
+    "function router() view returns (address)",
+    "function route(address,address) view returns (address[])"
   ];
   const SHARE = ["function totalSupply() view returns (uint256)", "function balanceOf(address) view returns (uint256)"];
   const STAKE = [
@@ -160,6 +162,7 @@
       $("m421-" + name).hidden = name !== mode;
       $("m421tab-" + name).classList.toggle("active", name === mode);
     });
+    if (mode === "withdraw") scheduleOut();
   }
 
   function m421Bps() {
@@ -174,11 +177,13 @@
     btn.addEventListener("click", () => {
       $("m421Slippage").value = btn.getAttribute("data-m421slip");
       document.querySelectorAll("[data-m421slip]").forEach((b) => b.classList.toggle("on", b === btn));
+      scheduleOut();
     });
   });
   $("m421Slippage").addEventListener("input", () => {
     const current = String($("m421Slippage").value || "").trim();
     document.querySelectorAll("[data-m421slip]").forEach((b) => b.classList.toggle("on", b.getAttribute("data-m421slip") === current));
+    scheduleOut();
   });
   document.querySelectorAll("[data-m421tab]").forEach((btn) => {
     btn.addEventListener("click", () => show(btn.getAttribute("data-m421tab")));
@@ -417,5 +422,62 @@
   $("m421AmtWbtc").addEventListener("input", () => scheduleFill("wbtc"));
   $("m421AmtWeth").addEventListener("input", () => scheduleFill("weth"));
 
+  let outTimer = null;
+  function scheduleOut() {
+    clearTimeout(outTimer);
+    outTimer = setTimeout(() => {
+      quoteBasketOut().catch((err) => {
+        if ($("m421ZapOutQuote")) $("m421ZapOutQuote").textContent = err.shortMessage || err.message || "Quote failed.";
+      });
+    }, 250);
+  }
+  async function quoteBasketOut() {
+    const raw = String($("m421Shares").value || "").trim();
+    if (!raw || Number(raw) === 0) {
+      $("m421OutBzb").textContent = "—";
+      $("m421OutWbtc").textContent = "—";
+      $("m421OutWeth").textContent = "—";
+      $("m421ZapOutQuote").textContent = "Enter M421 to see what the zap returns.";
+      return;
+    }
+    const shares = ethers.parseUnits(raw, 18);
+    const provider = read();
+    const vault = new ethers.Contract(M.vault, VAULT, provider);
+    const share = new ethers.Contract(M.share, SHARE, provider);
+    const [rb, rt, re, supply] = await Promise.all([
+      vault.reserveBzb(), vault.reserveWbtc(), vault.reserveWeth(), share.totalSupply()
+    ]);
+    if (supply === 0n) {
+      $("m421OutBzb").textContent = "0";
+      $("m421OutWbtc").textContent = "0";
+      $("m421OutWeth").textContent = "0";
+      $("m421ZapOutQuote").textContent = "The basket is empty.";
+      return;
+    }
+    const bzb = (rb * shares) / supply;
+    const wbtc = (rt * shares) / supply;
+    const weth = (re * shares) / supply;
+    const bps = m421Bps();
+    const fmt = (amount, decimals) => showUnits(amount, decimals) + " · min " + showUnits(cut(amount, bps), decimals);
+    $("m421OutBzb").textContent = fmt(bzb, 18);
+    $("m421OutWbtc").textContent = fmt(wbtc, 8);
+    $("m421OutWeth").textContent = fmt(weth, 18);
+    const token = tokenByKey($("m421ZapOutToken").value);
+    const router = new ethers.Contract(await vault.router(), ["function getAmountsOut(uint256,address[]) view returns (uint256[])"], provider);
+    let got = token.key === "bzb" ? bzb : token.key === "wbtc" ? wbtc : weth;
+    const legs = [["bzb", bzb, M.bzb], ["wbtc", wbtc, M.wbtc], ["weth", weth, M.weth]];
+    for (const [key, amt, addr] of legs) {
+      if (key === token.key || amt === 0n) continue;
+      const path = await vault.route(addr, token.address);
+      const amounts = await router.getAmountsOut(amt, path);
+      got += amounts[amounts.length - 1];
+    }
+    const swapBps = Math.min(1000, bps);
+    $("m421ZapOutQuote").textContent = "About " + showUnits(got, token.decimals) + " " + token.label + " · min " + showUnits(cut(got, swapBps), token.decimals);
+  }
+  $("m421Shares").addEventListener("input", scheduleOut);
+  $("m421ZapOutToken").addEventListener("change", scheduleOut);
+
+  window.m421Refresh = () => loadDesk().catch((err) => setLog(err.shortMessage || err.message || "Desk unavailable", "err"));
   loadDesk().catch((err) => setLog(err.shortMessage || err.message || "Desk unavailable", "err"));
 })();
