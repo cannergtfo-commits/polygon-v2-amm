@@ -26,7 +26,8 @@
     "function deposit(uint256,uint256,uint256,uint256,uint256) returns (uint256)",
     "function withdraw(uint256,uint256,uint256,uint256)",
     "function zapIn(address,uint256,uint256,uint256,uint256) returns (uint256)",
-    "function zapOut(uint256,address,uint256,uint256)"
+    "function zapOut(uint256,address,uint256,uint256)",
+    "function values(uint256,uint256,uint256) view returns (uint256,uint256,uint256)"
   ];
   const SHARE = ["function totalSupply() view returns (uint256)", "function balanceOf(address) view returns (uint256)"];
   const STAKE = [
@@ -175,6 +176,17 @@
       const wbtc = ethers.parseUnits($("m421AmtWbtc").value || "0", 8);
       const weth = ethers.parseUnits($("m421AmtWeth").value || "0", 18);
       if (bzb === 0n || wbtc === 0n || weth === 0n) throw new Error("Enter all three amounts.");
+      const reader = new ethers.Contract(M.vault, VAULT, read());
+      const supply = await new ethers.Contract(M.share, SHARE, read()).totalSupply();
+      if (supply === 0n) {
+        const [va, vb, vc] = await reader.values(bzb, wbtc, weth);
+        const hi = va > vb ? (va > vc ? va : vc) : (vb > vc ? vb : vc);
+        const lo = va < vb ? (va < vc ? va : vc) : (vb < vc ? vb : vc);
+        if (lo === 0n) throw new Error("One amount is too small to price. Use a larger deposit.");
+        const drift = ((hi - lo) * 10000n) / hi;
+        if (drift > 500n) throw new Error("Not equal value. Those three are " + (Number(drift) / 100).toFixed(2) + "% apart. The BzB pool is small, so use a smaller amount and let the other two fill.");
+        if (va + vb + vc < 1000000000n) throw new Error("The first deposit has to be at least $10 in total.");
+      }
       setLog("Approving basket tokens…");
       await approve(M.bzb, M.vault, bzb);
       await approve(M.wbtc, M.vault, wbtc);
@@ -299,6 +311,29 @@
     const s = ethers.formatUnits(amount, decimals);
     return s.includes(".") ? s.replace(/0+$/, "").replace(/\.$/, "") : s;
   }
+  async function bzbForUsd(provider, router, targetUsd) {
+    const factory = new ethers.Contract("0x5757371414417b8c6caad45baef941abc7d3ab32", ["function getPair(address,address) view returns (address)"], provider);
+    const pairAddr = await factory.getPair(M.bzb, USDC);
+    if (!pairAddr || pairAddr === ethers.ZeroAddress) throw new Error("No BzB/USDC pool to price the basket.");
+    const pair = new ethers.Contract(pairAddr, [
+      "function getReserves() view returns (uint112,uint112,uint32)",
+      "function token0() view returns (address)"
+    ], provider);
+    const [reserves, token0] = await Promise.all([pair.getReserves(), pair.token0()]);
+    const usdcSide = token0.toLowerCase() === USDC.toLowerCase();
+    const reserveOut = usdcSide ? reserves[0] : reserves[1];
+    const reserveIn = usdcSide ? reserves[1] : reserves[0];
+    const amountOut = targetUsd / 100n;
+    if (amountOut === 0n || amountOut >= reserveOut) {
+      const cap = Number((reserveOut - 1n) * 100n) / 1e8;
+      throw new Error("BzB's pool can only match about $" + cap.toFixed(2) + " per token. Use a smaller amount.");
+    }
+    let guess = (amountOut * reserveIn * 1000n) / ((reserveOut - amountOut) * 997n) + 1n;
+    const quoted = (await router.getAmountsOut(guess, [M.bzb, USDC]))[1] * 100n;
+    if (quoted > 0n && quoted !== targetUsd) guess = (guess * targetUsd) / quoted;
+    if (guess === 0n) throw new Error("Amount is too small to match BzB.");
+    return guess;
+  }
   async function quoteEqual(source) {
     const seq = ++fillSeq;
     const raw = String($(fields[source].id).value || "").trim();
@@ -342,14 +377,7 @@
       else if (source === "wbtc") usd = (amount * btcPrice) / 10n ** 8n;
       else usd = (amount * ethPrice) / one;
       if (usd === 0n) return;
-      if (source !== "bzb") {
-        let guess = (usd * one) / usdPerBzb;
-        if (guess > 0n) {
-          const got = (await router.getAmountsOut(guess, [M.bzb, USDC]))[1] * 100n;
-          if (got > 0n) guess = (guess * usd) / got;
-        }
-        out.bzb = guess;
-      }
+      if (source !== "bzb") out.bzb = await bzbForUsd(provider, router, usd);
       if (source !== "wbtc") out.wbtc = (usd * 10n ** 8n) / btcPrice;
       if (source !== "weth") out.weth = (usd * one) / ethPrice;
     }
