@@ -162,6 +162,24 @@
     });
   }
 
+  function m421Bps() {
+    const n = Number(String($("m421Slippage").value || "").trim());
+    if (!Number.isFinite(n) || n < 0) return 500;
+    return Math.min(2000, Math.round(n * 100));
+  }
+  function cut(amount, bps) {
+    return amount * BigInt(Math.max(0, 10000 - bps)) / 10000n;
+  }
+  document.querySelectorAll("[data-m421slip]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      $("m421Slippage").value = btn.getAttribute("data-m421slip");
+      document.querySelectorAll("[data-m421slip]").forEach((b) => b.classList.toggle("on", b === btn));
+    });
+  });
+  $("m421Slippage").addEventListener("input", () => {
+    const current = String($("m421Slippage").value || "").trim();
+    document.querySelectorAll("[data-m421slip]").forEach((b) => b.classList.toggle("on", b.getAttribute("data-m421slip") === current));
+  });
   document.querySelectorAll("[data-m421tab]").forEach((btn) => {
     btn.addEventListener("click", () => show(btn.getAttribute("data-m421tab")));
   });
@@ -178,21 +196,31 @@
       if (bzb === 0n || wbtc === 0n || weth === 0n) throw new Error("Enter all three amounts.");
       const reader = new ethers.Contract(M.vault, VAULT, read());
       const supply = await new ethers.Contract(M.share, SHARE, read()).totalSupply();
+      let minShares = 0n;
       if (supply === 0n) {
         const [va, vb, vc] = await reader.values(bzb, wbtc, weth);
         const hi = va > vb ? (va > vc ? va : vc) : (vb > vc ? vb : vc);
         const lo = va < vb ? (va < vc ? va : vc) : (vb < vc ? vb : vc);
         if (lo === 0n) throw new Error("One amount is too small to price. Use a larger deposit.");
         const drift = ((hi - lo) * 10000n) / hi;
-        if (drift > 500n) throw new Error("Not equal value. Those three are " + (Number(drift) / 100).toFixed(2) + "% apart. The BzB pool is small, so use a smaller amount and let the other two fill.");
+        const bps = m421Bps();
+        if (drift > BigInt(bps)) throw new Error("Not equal value. Those three are " + (Number(drift) / 100).toFixed(2) + "% apart. Raise slippage, up to 20%, or use a smaller amount.");
         if (va + vb + vc < 1000000000n) throw new Error("The first deposit has to be at least $10 in total.");
+        minShares = cut((va + vb + vc) * (10n ** 10n), bps);
+      } else {
+        const [rb, rt, re] = await Promise.all([reader.reserveBzb(), reader.reserveWbtc(), reader.reserveWeth()]);
+        const sb = (bzb * supply) / rb;
+        const st = (wbtc * supply) / rt;
+        const se = (weth * supply) / re;
+        const shares = sb < st ? (sb < se ? sb : se) : (st < se ? st : se);
+        minShares = cut(shares, m421Bps());
       }
       setLog("Approving basket tokens…");
       await approve(M.bzb, M.vault, bzb);
       await approve(M.wbtc, M.vault, wbtc);
       await approve(M.weth, M.vault, weth);
       setLog("Depositing…");
-      const tx = await new ethers.Contract(M.vault, VAULT, signer).deposit(bzb, wbtc, weth, 0, 500);
+      const tx = await new ethers.Contract(M.vault, VAULT, signer).deposit(bzb, wbtc, weth, minShares, m421Bps());
       await tx.wait();
       setLog("Deposited. M421 is in your wallet.", "ok");
       await loadDesk();
@@ -215,7 +243,8 @@
         const weth = new ethers.Contract(M.weth, ERC20, signer);
         const before = await weth.balanceOf(account);
         const quoted = await quick.getAmountsOut(amount, [M.wpol, M.weth]);
-        const minOut = (quoted[quoted.length - 1] * 97n) / 100n;
+        const hopBps = Math.min(1000, m421Bps());
+        const minOut = (quoted[quoted.length - 1] * BigInt(10000 - hopBps)) / 10000n;
         const swapTx = await quick.swapExactETHForTokens(minOut, [M.wpol, M.weth], account, Math.floor(Date.now() / 1000) + 1200, { value: amount });
         await swapTx.wait();
         zapAmount = (await weth.balanceOf(account)) - before;
@@ -224,7 +253,7 @@
       }
       setLog("Swapping into the basket…");
       await approve(zapToken, M.vault, zapAmount);
-      const tx = await new ethers.Contract(M.vault, VAULT, signer).zapIn(zapToken, zapAmount, 0, 300, 1500);
+      const tx = await new ethers.Contract(M.vault, VAULT, signer).zapIn(zapToken, zapAmount, 0, Math.min(1000, m421Bps()), m421Bps());
       await tx.wait();
       setLog("Zap deposited.", "ok");
       await loadDesk();
@@ -235,7 +264,17 @@
       await wallet();
       const shares = ethers.parseUnits($("m421Shares").value || "0", 18);
       if (shares === 0n) throw new Error("Enter an M421 amount.");
-      const tx = await new ethers.Contract(M.vault, VAULT, signer).withdraw(shares, 0, 0, 0);
+      const bps = m421Bps();
+      const vault = new ethers.Contract(M.vault, VAULT, read());
+      const share = new ethers.Contract(M.share, SHARE, read());
+      const [rb, rt, re, supply] = await Promise.all([vault.reserveBzb(), vault.reserveWbtc(), vault.reserveWeth(), share.totalSupply()]);
+      if (supply === 0n) throw new Error("Nothing in the basket yet.");
+      const tx = await new ethers.Contract(M.vault, VAULT, signer).withdraw(
+        shares,
+        cut((rb * shares) / supply, bps),
+        cut((rt * shares) / supply, bps),
+        cut((re * shares) / supply, bps)
+      );
       await tx.wait();
       setLog("Your share of BzB, WBTC, and WETH is back.", "ok");
       await loadDesk();
@@ -247,7 +286,7 @@
       const token = tokenByKey($("m421ZapOutToken").value);
       const shares = ethers.parseUnits($("m421Shares").value || "0", 18);
       if (shares === 0n) throw new Error("Enter an M421 amount.");
-      const tx = await new ethers.Contract(M.vault, VAULT, signer).zapOut(shares, token.address, 0, 300);
+      const tx = await new ethers.Contract(M.vault, VAULT, signer).zapOut(shares, token.address, 0, Math.min(1000, m421Bps()));
       await tx.wait();
       setLog("Withdrew into " + token.label + ".", "ok");
       await loadDesk();
