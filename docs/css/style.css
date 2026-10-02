@@ -74,6 +74,7 @@ select{font-size:16px;width:auto;cursor:pointer}
 .m421-stats article{border:1px solid var(--stroke);border-radius:16px;padding:12px;background:rgba(0,0,0,.22)}
 .m421-stats b{display:block;font-family:Syne,sans-serif;font-size:18px}
 .m421-stats small{color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-size:11px}
+.m421-usd,.m421 label .m421-usd{display:block;margin-top:4px;color:var(--cyan);font-style:normal;font-size:13px;letter-spacing:0;text-transform:none}
 .m421-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
 .m421-note{color:var(--muted);font-size:14px;line-height:1.45;margin-top:6px}
 .m421-note a{color:var(--cyan)}
