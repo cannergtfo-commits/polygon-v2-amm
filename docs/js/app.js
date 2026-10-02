@@ -550,13 +550,14 @@
   }
   function wireUi() {
     fillSelects();
-    document.querySelectorAll(".tabs button").forEach((btn) => {
+    document.querySelectorAll(".desk > .tabs [data-tab]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        document.querySelectorAll(".tabs button").forEach((b) => b.classList.remove("active"));
+        document.querySelectorAll(".desk > .tabs [data-tab]").forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
-        document.querySelectorAll(".pane").forEach((p) => p.classList.remove("visible"));
+        document.querySelectorAll(".stack > .pane").forEach((p) => p.classList.remove("visible"));
         $("pane-" + btn.dataset.tab).classList.add("visible");
         if (btn.dataset.tab === "add") { paintLiqLabels(); refreshBalances(); }
+        if (btn.dataset.tab === "m421" && window.m421Refresh) window.m421Refresh();
       });
     });
     $("connectBtn").addEventListener("click", (ev) => {
