@@ -283,9 +283,9 @@
     } catch (err) { setLog(err.shortMessage || err.message, "err"); }
   });
 
-  const USDC = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
-  const BTC_USD = "0xc907E116054ad103354f2D350FD2514433D57F6f";
-  const ETH_USD = "0xF9680D99d6C9589e2a93a78A04A279E509205945";
+  const USDC = "0x2791bca1f2de4661ed88a30c99a7a9449aa84174";
+  const BTC_USD = "0xc907e116054ad103354f2d350fd2514433d57f6f";
+  const ETH_USD = "0xf9680d99d6c9589e2a93a78a04a279e509205945";
   const FEED = ["function latestRoundData() view returns (uint80,int256,uint256,uint256,uint80)"];
   const fields = {
     bzb: { id: "m421AmtBzb", dec: 18 },
