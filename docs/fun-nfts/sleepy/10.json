@@ -1,0 +1,27 @@
+{
+  "name": "Sleepy Validators #10",
+  "description": "One hundred validators who nodded off between the mempool and the next block. Fun pictures only. They do not validate anything, and they are not a claim on POL or anything else.",
+  "image": "https://cannergtfo-commits.github.io/polygon-v2-amm/fun-nfts/sleepy/10.png",
+  "attributes": [
+    {
+      "trait_type": "Mood",
+      "value": "out cold"
+    },
+    {
+      "trait_type": "Hat",
+      "value": "beanie"
+    },
+    {
+      "trait_type": "Blush",
+      "value": "pink"
+    },
+    {
+      "trait_type": "Stars",
+      "value": 5
+    },
+    {
+      "trait_type": "Shell",
+      "value": "moss"
+    }
+  ]
+}

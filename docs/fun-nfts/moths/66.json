@@ -1,0 +1,23 @@
+{
+  "name": "Crystal Moths #66",
+  "description": "Moths that mistook a gas lamp for the moon. Decorative pictures only. No utility, no roadmap, no hidden mint.",
+  "image": "https://cannergtfo-commits.github.io/polygon-v2-amm/fun-nfts/moths/66.png",
+  "attributes": [
+    {
+      "trait_type": "Hue",
+      "value": "115\u00b0"
+    },
+    {
+      "trait_type": "Pattern",
+      "value": "dots"
+    },
+    {
+      "trait_type": "Spots",
+      "value": 5
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "closed"
+    }
+  ]
+}

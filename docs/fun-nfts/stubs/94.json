@@ -1,0 +1,23 @@
+{
+  "name": "Night Market Stubs #94",
+  "description": "Torn tickets to markets that were never held. Admit one imagination. Not redeemable for POL, merch, or a seat.",
+  "image": "https://cannergtfo-commits.github.io/polygon-v2-amm/fun-nfts/stubs/94.png",
+  "attributes": [
+    {
+      "trait_type": "Venue",
+      "value": "After Gas"
+    },
+    {
+      "trait_type": "Ink",
+      "value": "red"
+    },
+    {
+      "trait_type": "Tear",
+      "value": "left"
+    },
+    {
+      "trait_type": "Stamp",
+      "value": "none"
+    }
+  ]
+}
