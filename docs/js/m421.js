@@ -238,5 +238,91 @@
     } catch (err) { setLog(err.shortMessage || err.message, "err"); }
   });
 
+  const USDC = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
+  const BTC_USD = "0xc907E116054ad103354f2D350FD2514433D57F6f";
+  const ETH_USD = "0xF9680D99d6C9589e2a93a78A04A279E509205945";
+  const FEED = ["function latestRoundData() view returns (uint80,int256,uint256,uint256,uint80)"];
+  const fields = {
+    bzb: { id: "m421AmtBzb", dec: 18 },
+    wbtc: { id: "m421AmtWbtc", dec: 8 },
+    weth: { id: "m421AmtWeth", dec: 18 }
+  };
+  let fillLock = false;
+  let fillSeq = 0;
+  let fillTimer = null;
+  function showUnits(amount, decimals) {
+    const s = ethers.formatUnits(amount, decimals);
+    return s.includes(".") ? s.replace(/0+$/, "").replace(/\.$/, "") : s;
+  }
+  async function quoteEqual(source) {
+    const seq = ++fillSeq;
+    const raw = String($(fields[source].id).value || "").trim();
+    const others = Object.keys(fields).filter((k) => k !== source);
+    if (!raw || Number(raw) === 0) {
+      fillLock = true;
+      others.forEach((k) => { $(fields[k].id).value = ""; });
+      fillLock = false;
+      return;
+    }
+    const amount = ethers.parseUnits(raw, fields[source].dec);
+    const provider = read();
+    const vault = new ethers.Contract(M.vault, VAULT.concat(["function router() view returns (address)"]), provider);
+    const share = new ethers.Contract(M.share, SHARE, provider);
+    const [rb, rt, re, supply, routerAddr] = await Promise.all([
+      vault.reserveBzb(), vault.reserveWbtc(), vault.reserveWeth(), share.totalSupply(), vault.router()
+    ]);
+    if (seq !== fillSeq) return;
+    const reserves = { bzb: rb, wbtc: rt, weth: re };
+    const out = {};
+    let note = "Matched to equal value.";
+    if (supply > 0n && rb > 0n && rt > 0n && re > 0n) {
+      if (reserves[source] === 0n) return;
+      others.forEach((k) => { out[k] = (amount * reserves[k]) / reserves[source]; });
+      note = "Matched to the basket.";
+    } else {
+      const router = new ethers.Contract(routerAddr, ["function getAmountsOut(uint256,address[]) view returns (uint256[])"], provider);
+      const btcFeed = new ethers.Contract(BTC_USD, FEED, provider);
+      const ethFeed = new ethers.Contract(ETH_USD, FEED, provider);
+      const one = 10n ** 18n;
+      const [, btcPx] = await btcFeed.latestRoundData();
+      const [, ethPx] = await ethFeed.latestRoundData();
+      const btcPrice = BigInt(btcPx);
+      const ethPrice = BigInt(ethPx);
+      const spot = await router.getAmountsOut(one, [M.bzb, USDC]);
+      const usdPerBzb = spot[1] * 100n;
+      if (usdPerBzb === 0n || btcPrice <= 0n || ethPrice <= 0n) throw new Error("Price unavailable.");
+      let usd;
+      if (source === "bzb") usd = (await router.getAmountsOut(amount, [M.bzb, USDC]))[1] * 100n;
+      else if (source === "wbtc") usd = (amount * btcPrice) / 10n ** 8n;
+      else usd = (amount * ethPrice) / one;
+      if (usd === 0n) return;
+      if (source !== "bzb") {
+        let guess = (usd * one) / usdPerBzb;
+        if (guess > 0n) {
+          const got = (await router.getAmountsOut(guess, [M.bzb, USDC]))[1] * 100n;
+          if (got > 0n) guess = (guess * usd) / got;
+        }
+        out.bzb = guess;
+      }
+      if (source !== "wbtc") out.wbtc = (usd * 10n ** 8n) / btcPrice;
+      if (source !== "weth") out.weth = (usd * one) / ethPrice;
+    }
+    if (seq !== fillSeq) return;
+    fillLock = true;
+    others.forEach((k) => { $(fields[k].id).value = out[k] > 0n ? showUnits(out[k], fields[k].dec) : ""; });
+    fillLock = false;
+    setLog(note);
+  }
+  function scheduleFill(source) {
+    if (fillLock) return;
+    clearTimeout(fillTimer);
+    fillTimer = setTimeout(() => {
+      quoteEqual(source).catch((err) => setLog(err.shortMessage || err.message || "Could not match the basket.", "err"));
+    }, 350);
+  }
+  $("m421AmtBzb").addEventListener("input", () => scheduleFill("bzb"));
+  $("m421AmtWbtc").addEventListener("input", () => scheduleFill("wbtc"));
+  $("m421AmtWeth").addEventListener("input", () => scheduleFill("weth"));
+
   loadDesk().catch((err) => setLog(err.shortMessage || err.message || "Desk unavailable", "err"));
 })();
