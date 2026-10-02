@@ -110,7 +110,7 @@
         <div class="panel card pane visible" id="pane-swap" data-card="swap">
           <h3>Swap</h3>
           <div class="leg">
-            <div class="leg-top"><span>From</span><span class="bal-row"><button class="max" id="maxIn" type="button">Max</button><span id="balIn">Balance —</span></span></div>
+            <div class="leg-top"><span>From<em class="liq-px" id="swapPriceIn"></em></span><span class="bal-row"><button class="max" id="maxIn" type="button">Max</button><span id="balIn">Balance —</span></span></div>
             <div class="leg-top">
               <input id="amountIn" type="text" inputmode="decimal" placeholder="0.0" />
               <select id="tokenIn"></select>
@@ -118,7 +118,7 @@
           </div>
           <div class="flip"><button id="flipBtn" title="Switch tokens" type="button">⇅</button></div>
           <div class="leg">
-            <div class="leg-top"><span>To</span><span id="balOut">Balance —</span></div>
+            <div class="leg-top"><span>To<em class="liq-px" id="swapPriceOut"></em></span><span id="balOut">Balance —</span></div>
             <div class="leg-top">
               <input id="amountOut" type="text" inputmode="decimal" placeholder="0.0" />
               <select id="tokenOut"></select>
@@ -288,7 +288,7 @@
       }
     })();
   </script>
-  <script src="js/app.js?v=px1"></script>
+  <script src="js/app.js?v=px2"></script>
   <script src="js/m421.js?v=sale1"></script>
   <script src="js/token-ui.js"></script>
   <script src="js/music.js?v=snd1"></script>
