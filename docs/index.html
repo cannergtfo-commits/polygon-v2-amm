@@ -35,36 +35,6 @@
     @keyframes fly-out{from{transform:rotate(-4deg)}to{transform:translate3d(10px,14px,0) rotate(3deg)}}
     #m421Slippage{width:64px;margin:0;padding:4px 8px;background:rgba(0,0,0,.35);border:1px solid var(--stroke);border-radius:8px;color:var(--text);font-family:Sora,sans-serif;font-size:14px}
     #pane-m421:not(.visible){display:none}
-    #pane-draw:not(.visible){display:none}
-    .desk>.tabs{overflow-x:auto}
-    .desk>.tabs button{flex:1 0 auto;white-space:nowrap}
-    .draw-note{color:var(--muted);font-size:13px;line-height:1.45;margin:8px 0}
-    .draw-note a,.draw-winners a{color:var(--cyan)}
-    .draw-field{display:block;margin:10px 0;color:var(--muted);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
-    .draw-field input,.draw-field textarea,.draw-field select{width:100%;margin-top:6px;background:rgba(0,0,0,.28);border:1px solid var(--stroke);border-radius:12px;padding:10px 12px;color:var(--text);font-size:15px;font-family:Sora,sans-serif;text-transform:none;letter-spacing:0}
-    .draw-field textarea{min-height:72px;resize:vertical;font-family:"JetBrains Mono",monospace;font-size:12px}
-    .draw-token-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
-    .draw-field .draw-token-row input{margin-top:0}
-    .draw-token-row button{margin-top:6px}
-    .draw-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-    .draw-list{max-height:220px;overflow:auto;margin:8px 0 12px;border:1px solid var(--stroke);border-radius:14px;background:rgba(0,0,0,.22)}
-    .draw-holder{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-bottom:1px solid var(--stroke);font-size:13px;text-transform:none;letter-spacing:0;color:var(--text)}
-    .draw-holder:last-child{border-bottom:0}
-    .draw-holder.dim{color:var(--muted)}
-    .draw-holder input{width:auto;margin:0 8px 0 0}
-    .draw-kicker{font-family:Syne,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--cyan);font-size:12px;margin:12px 0 8px}
-    .draw-prize{display:grid;grid-template-columns:96px minmax(0,1fr) 92px;gap:8px;margin-bottom:8px}
-    .draw-prize input,.draw-prize select{width:100%;margin:0;background:rgba(0,0,0,.28);border:1px solid var(--stroke);border-radius:12px;padding:8px 10px;color:var(--text);font-size:14px;font-family:Sora,sans-serif}
-    .draw-phase{font-family:Syne,sans-serif;font-size:22px;text-transform:capitalize;margin-top:8px}
-    .draw-resume{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}
-    .draw-resume button{margin-bottom:10px}
-    .draw-actions{display:grid;gap:8px;margin-top:8px}
-    .draw-winners{margin:6px 0 0 16px;font-size:13px}
-    @media(max-width:900px){
-      .desk>.tabs{display:grid;grid-template-columns:1fr 1fr;overflow:visible;border-radius:18px}
-      .desk>.tabs button{font-size:10px;padding:8px 4px}
-      .draw-grid,.draw-prize,.draw-resume{grid-template-columns:1fr}
-    }
     .pane.m421{margin-top:0}
     .liq-px{margin-left:8px;color:var(--cyan);font-style:normal;font-size:13px;letter-spacing:0;text-transform:none}
     .m421-out{display:grid;gap:6px;margin:10px 0 12px}
@@ -134,7 +104,6 @@
         <button data-tab="add" type="button">Add liquidity</button>
         <button data-tab="positions" type="button">Your positions</button>
         <button data-tab="m421" type="button">M421</button>
-        <button data-tab="draw" type="button">Raffle</button>
       </div>
 
       <div class="trade-row">
@@ -287,53 +256,6 @@
             <div class="log" id="m421Log">Enter one amount. The other two fill to match.</div>
           </div>
         </div>
-        <div class="panel card pane" id="pane-draw" data-card="draw">
-          <h3>Holder raffle</h3>
-          <p class="draw-note">A wallet that holds the token is a ticket. Contracts, pools, and smart wallets are left out. The prize can be tokens, an NFT, or both, dropped on the wallets the draw lands on.</p>
-          <label class="draw-field">Ticket token
-            <span class="draw-token-row">
-              <input id="drawToken" type="text" placeholder="0x…" spellcheck="false" />
-              <button class="ghost" id="drawBzb" type="button">BzB</button>
-            </span>
-          </label>
-          <label class="draw-field">Or paste wallets
-            <textarea id="drawPaste" placeholder="Leave empty to load holders from the explorer"></textarea>
-          </label>
-          <button class="ghost full draw-act" id="drawFind" type="button">Find holders</button>
-          <div id="drawFound" hidden>
-            <p class="draw-note" id="drawMeta"></p>
-            <div class="draw-list" id="drawList"></div>
-          </div>
-          <div class="draw-grid">
-            <label class="draw-field">Tickets
-              <select id="drawMode">
-                <option value="weight">One per whole token</option>
-                <option value="each">One per wallet</option>
-              </select>
-            </label>
-            <label class="draw-field">Minimum balance
-              <input id="drawMin" type="text" inputmode="decimal" value="1" />
-            </label>
-            <label class="draw-field">Winners
-              <input id="drawWinners" type="text" inputmode="numeric" value="1" />
-            </label>
-          </div>
-          <p class="draw-note" id="drawSeat">Find holders first.</p>
-          <p class="draw-kicker">Prizes</p>
-          <div id="drawPrizes"></div>
-          <button class="ghost full draw-act" id="drawAddPrize" type="button">Add another prize</button>
-          <button class="primary full draw-act" id="drawCreate" type="button">Create the draw</button>
-          <div class="draw-resume">
-            <label class="draw-field">Draw number
-              <input id="drawId" type="text" inputmode="numeric" placeholder="0" />
-            </label>
-            <button class="connect" id="drawAccount" type="button">Use wallet</button>
-          </div>
-          <div id="drawStatus"><p class="draw-note">No draw loaded yet. The number appears after you create one.</p></div>
-          <div class="draw-actions" id="drawActions"></div>
-          <div class="log" id="drawLog">Contracts are checked on-chain before anyone is entered. The ticket count is read a block after the list closes.</div>
-          <p class="draw-note">Contract <a href="https://polygonscan.com/address/0x48c66cd325FB48603E783166924Dee6f901aD2Bf" target="_blank" rel="noopener">0x48c6…D2Bf</a>. At most 120 wallets. After you commit, prizes cannot be taken back. The winner is a later block hash.</p>
-        </div>
       </div>
 
       <section class="chart-wrap">
@@ -367,9 +289,8 @@
       }
     })();
   </script>
-  <script src="js/app.js?v=px2"></script>
+  <script src="js/app.js?v=flip1"></script>
   <script src="js/m421.js?v=sale1"></script>
-  <script src="js/draw.js?v=2"></script>
   <script src="js/token-ui.js"></script>
   <script src="js/music.js?v=snd1"></script>
   <script>
