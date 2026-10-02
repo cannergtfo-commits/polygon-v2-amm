@@ -86,10 +86,14 @@
     const seq = ++pxSeq;
     const a = $("liqTokenA") && tokenByAddress($("liqTokenA").value);
     const b = $("liqTokenB") && tokenByAddress($("liqTokenB").value);
-    Promise.all([tokenUsd(a), tokenUsd(b)]).then(([pa, pb]) => {
+    const tin = $("tokenIn") && tokenByAddress($("tokenIn").value);
+    const tout = $("tokenOut") && tokenByAddress($("tokenOut").value);
+    Promise.all([tokenUsd(a), tokenUsd(b), tokenUsd(tin), tokenUsd(tout)]).then(([pa, pb, pin, pout]) => {
       if (seq !== pxSeq) return;
       if ($("liqPriceA")) $("liqPriceA").textContent = fmtPx(pa);
       if ($("liqPriceB")) $("liqPriceB").textContent = fmtPx(pb);
+      if ($("swapPriceIn")) $("swapPriceIn").textContent = fmtPx(pin);
+      if ($("swapPriceOut")) $("swapPriceOut").textContent = fmtPx(pout);
     }).catch(() => {});
   }
   function setLog(id, msg, kind) {
@@ -636,6 +640,7 @@
       $("amountIn").value = $("amountOut").value;
       quoteOut();
       refreshBalances();
+      paintLiqPrices();
       loadChart(chartToken($("tokenOut").value));
     });
     async function fillMax(selectId, inputId) {
@@ -670,8 +675,8 @@
       if (saved) { document.querySelectorAll(".slip-input").forEach((el) => { el.value = saved; }); syncSlip(saved); }
     } catch {}
     $("amountIn").addEventListener("input", quoteOut);
-    $("tokenIn").addEventListener("change", () => { quoteOut(); refreshBalances(); });
-    $("tokenOut").addEventListener("change", () => { quoteOut(); refreshBalances(); loadChart(chartToken($("tokenOut").value)); });
+    $("tokenIn").addEventListener("change", () => { quoteOut(); refreshBalances(); paintLiqPrices(); });
+    $("tokenOut").addEventListener("change", () => { quoteOut(); refreshBalances(); loadChart(chartToken($("tokenOut").value)); paintLiqPrices(); });
     $("liqAmtA").addEventListener("input", () => quoteLiq("liqAmtA"));
     $("liqAmtB").addEventListener("input", () => quoteLiq("liqAmtB"));
     const onLiqToken = () => {
