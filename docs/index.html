@@ -7,7 +7,7 @@
   <link rel="icon" href="favicon.ico" sizes="any" />
   <link rel="icon" type="image/png" sizes="64x64" href="favicon.png" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-  <link rel="stylesheet" href="css/style.css?v=m421" />
+  <link rel="stylesheet" href="css/style.css?v=usd1" />
   <style>
     .bal-row{display:inline-flex;align-items:center;gap:8px}
     .max{font-family:Syne,sans-serif;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#021018;background:linear-gradient(90deg,#3ee0ff,#7af);border:0;border-radius:999px;padding:4px 8px;cursor:pointer}
@@ -192,9 +192,9 @@
         </div>
       </div>
       <div class="m421-stats">
-        <article><b id="m421Bzb">—</b><small>BzB in basket</small></article>
-        <article><b id="m421Wbtc">—</b><small>WBTC in basket</small></article>
-        <article><b id="m421Weth">—</b><small>WETH in basket</small></article>
+        <article><b id="m421Bzb">—</b><em class="m421-usd" id="m421BzbUsd">—</em><small>BzB in basket</small></article>
+        <article><b id="m421Wbtc">—</b><em class="m421-usd" id="m421WbtcUsd">—</em><small>WBTC in basket</small></article>
+        <article><b id="m421Weth">—</b><em class="m421-usd" id="m421WethUsd">—</em><small>WETH in basket</small></article>
         <article><b id="m421Supply">—</b><small>Receipt supply</small></article>
       </div>
       <div class="panel">
@@ -213,9 +213,9 @@
         </div>
         <div id="m421-deposit">
           <div class="m421-grid">
-            <label>BzB<input id="m421AmtBzb" type="text" inputmode="decimal" placeholder="0.0" /></label>
-            <label>WBTC<input id="m421AmtWbtc" type="text" inputmode="decimal" placeholder="0.0" /></label>
-            <label>WETH<input id="m421AmtWeth" type="text" inputmode="decimal" placeholder="0.0" /></label>
+            <label>BzB<input id="m421AmtBzb" type="text" inputmode="decimal" placeholder="0.0" /><em class="m421-usd" id="m421InBzbUsd">$0.00</em></label>
+            <label>WBTC<input id="m421AmtWbtc" type="text" inputmode="decimal" placeholder="0.0" /><em class="m421-usd" id="m421InWbtcUsd">$0.00</em></label>
+            <label>WETH<input id="m421AmtWeth" type="text" inputmode="decimal" placeholder="0.0" /><em class="m421-usd" id="m421InWethUsd">$0.00</em></label>
           </div>
           <button class="primary full" id="m421Deposit" type="button">Deposit equal basket</button>
           <div class="m421-grid two">
@@ -266,7 +266,7 @@
     })();
   </script>
   <script src="js/app.js?v=zap2"></script>
-  <script src="js/m421.js?v=fill1"></script>
+  <script src="js/m421.js?v=usd1"></script>
   <script src="js/token-ui.js"></script>
   <script src="js/music.js?v=snd1"></script>
   <script>
