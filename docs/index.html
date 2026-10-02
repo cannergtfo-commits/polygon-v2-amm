@@ -32,7 +32,8 @@
     .wallet-drop button{width:100%;text-align:left;font-family:Syne,sans-serif;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text);background:transparent;border:0;border-radius:10px;padding:10px 12px;cursor:pointer}
     .wallet-drop button:hover{background:rgba(62,224,255,.12);color:var(--cyan)}
     video.floater{object-fit:cover;border-radius:22px;animation:fly 22s ease-in-out infinite alternate,jetglow 2.4s ease-in-out infinite}
-    @keyframes jetglow{0%,100%{filter:drop-shadow(0 0 8px rgba(62,224,255,.45)) drop-shadow(0 0 18px rgba(62,224,255,.2))}50%{filter:drop-shadow(0 0 16px rgba(62,224,255,.95)) drop-shadow(0 0 36px rgba(80,190,255,.55))}}
+    #m421Slippage{width:64px;margin:0;padding:4px 8px;background:rgba(0,0,0,.35);border:1px solid var(--stroke);border-radius:8px;color:var(--text);font-family:Sora,sans-serif;font-size:14px}
+    .m421-slip{margin-top:12px}
   </style>
 </head>
 <body>
@@ -206,6 +207,15 @@
           </div>
           <button class="connect" id="m421Account" type="button">Use wallet</button>
         </div>
+        <div class="slip-row m421-slip">
+          <span>Slippage</span>
+          <span class="slip-picks">
+            <button type="button" data-m421slip="1">1%</button>
+            <button type="button" data-m421slip="5" class="on">5%</button>
+            <button type="button" data-m421slip="10">10%</button>
+            <input id="m421Slippage" type="text" inputmode="decimal" value="5" />%
+          </span>
+        </div>
         <div class="tabs m421-tabs">
           <button class="active" id="m421tab-deposit" data-m421tab="deposit" type="button">Deposit</button>
           <button id="m421tab-withdraw" data-m421tab="withdraw" type="button">Withdraw</button>
@@ -266,7 +276,7 @@
     })();
   </script>
   <script src="js/app.js?v=zap2"></script>
-  <script src="js/m421.js?v=value1"></script>
+  <script src="js/m421.js?v=slip1"></script>
   <script src="js/token-ui.js"></script>
   <script src="js/music.js?v=snd1"></script>
   <script>
