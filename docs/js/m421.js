@@ -86,15 +86,27 @@
     if (n > 0 && n < 0.01) return "$" + n.toPrecision(2);
     return n.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 2 });
   }
-  function paintInputUsd() {
+  let paintSeq = 0;
+  async function bzbUsd(provider, amount) {
+    if (amount === 0n) return 0n;
+    const router = new ethers.Contract(M.quick, ["function getAmountsOut(uint256,address[]) view returns (uint256[])"], provider);
+    const out = await router.getAmountsOut(amount, [M.bzb, USDC]);
+    return out[1] * 100n;
+  }
+  async function paintInputUsd() {
     if (!px) return;
+    const seq = ++paintSeq;
+    const amounts = {};
     ["bzb", "wbtc", "weth"].forEach((kind) => {
-      const el = $("m421In" + kind[0].toUpperCase() + kind.slice(1) + "Usd");
-      if (!el) return;
-      let amount = 0n;
-      try { amount = ethers.parseUnits(String($(fields[kind].id).value || "0").trim() || "0", fields[kind].dec); } catch { amount = 0n; }
-      el.textContent = fmtUsd(usdOf(kind, amount, px));
+      try { amounts[kind] = ethers.parseUnits(String($(fields[kind].id).value || "0").trim() || "0", fields[kind].dec); }
+      catch { amounts[kind] = 0n; }
     });
+    let bzbValue = 0n;
+    try { bzbValue = await bzbUsd(read(), amounts.bzb); } catch { bzbValue = 0n; }
+    if (seq !== paintSeq) return;
+    $("m421InBzbUsd").textContent = fmtUsd(bzbValue);
+    $("m421InWbtcUsd").textContent = fmtUsd(usdOf("wbtc", amounts.wbtc, px));
+    $("m421InWethUsd").textContent = fmtUsd(usdOf("weth", amounts.weth, px));
   }
   async function loadDesk() {
     const provider = read();
@@ -113,7 +125,7 @@
     $("m421Supply").textContent = trim(ethers.formatUnits(supply, 18), 4) + " M421";
     try {
       px = await loadPrices(provider);
-      $("m421BzbUsd").textContent = fmtUsd(usdOf("bzb", rb, px));
+      $("m421BzbUsd").textContent = fmtUsd(await bzbUsd(provider, rb));
       $("m421WbtcUsd").textContent = fmtUsd(usdOf("wbtc", rt, px));
       $("m421WethUsd").textContent = fmtUsd(usdOf("weth", re, px));
       paintInputUsd();
@@ -395,11 +407,18 @@
       const usdPerBzb = spot[1] * 100n;
       if (usdPerBzb === 0n || btcPrice <= 0n || ethPrice <= 0n) throw new Error("Price unavailable.");
       let usd;
-      if (source === "bzb") usd = (amount * usdPerBzb) / one;
+      if (source === "bzb") usd = await bzbUsd(provider, amount);
       else if (source === "wbtc") usd = (amount * btcPrice) / 10n ** 8n;
       else usd = (amount * ethPrice) / one;
       if (usd === 0n) return;
-      if (source !== "bzb") out.bzb = (usd * one) / usdPerBzb;
+      if (source !== "bzb") {
+        const oneToken = await bzbUsd(provider, one);
+        if (oneToken === 0n) throw new Error("BzB price unavailable.");
+        let guess = (usd * one) / oneToken;
+        const sold = await bzbUsd(provider, guess);
+        if (sold > 0n && sold !== usd) guess = (guess * usd) / sold;
+        out.bzb = guess;
+      }
       if (source !== "wbtc") out.wbtc = (usd * 10n ** 8n) / btcPrice;
       if (source !== "weth") out.weth = (usd * one) / ethPrice;
     }
