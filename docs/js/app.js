@@ -33,6 +33,64 @@
     const b = $("liqTokenB") && tokenByAddress($("liqTokenB").value);
     if ($("liqLabelA")) $("liqLabelA").textContent = a && a.symbol ? a.symbol : "Token";
     if ($("liqLabelB")) $("liqLabelB").textContent = b && b.symbol ? b.symbol : "Token";
+    paintLiqPrices();
+  }
+  const QUICK = "0xa5e0829caced8ffdd4de3c43696c57f7d7a678ff";
+  const USDC_PRICE = "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359";
+  const USDCE_PRICE = "0x2791bca1f2de4661ed88a30c99a7a9449aa84174";
+  const WETH_PRICE = "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619";
+  const usdCache = new Map();
+  let usdProvider = null;
+  let pxSeq = 0;
+  function fmtPx(n) {
+    if (!Number.isFinite(n) || n <= 0) return "";
+    if (n >= 1) return n.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: n >= 100 ? 0 : 2 });
+    if (n >= 0.01) return "$" + n.toFixed(4);
+    return "$" + n.toPrecision(2);
+  }
+  async function tokenUsd(token) {
+    if (!token) return null;
+    if (token.symbol === "USDC" || token.symbol === "USDT") return 1;
+    const key = (token.isNative ? CFG.weth : token.address).toLowerCase();
+    const hit = usdCache.get(key);
+    if (hit && Date.now() - hit.at < 30000) return hit.usd;
+    if (!usdProvider) usdProvider = new ethers.JsonRpcProvider(CFG.rpcUrl, CFG.chainId, { staticNetwork: true });
+    const router = new ethers.Contract(QUICK, ["function getAmountsOut(uint256,address[]) view returns (uint256[])"], usdProvider);
+    const sell = token.isNative ? CFG.weth : token.address;
+    const unit = 10n ** BigInt(token.decimals || 18);
+    const paths = [
+      [sell, USDC_PRICE],
+      [sell, USDCE_PRICE],
+      [sell, CFG.weth, USDC_PRICE],
+      [sell, WETH_PRICE, USDC_PRICE],
+      [sell, CFG.weth, USDCE_PRICE]
+    ];
+    for (const path of paths) {
+      const clean = [];
+      path.forEach((addr) => {
+        if (!clean.length || clean[clean.length - 1].toLowerCase() !== String(addr).toLowerCase()) clean.push(addr);
+      });
+      if (clean.length < 2) continue;
+      try {
+        const out = await router.getAmountsOut(unit, clean);
+        const usd = Number(out[out.length - 1]) / 1e6;
+        if (usd > 0 && Number.isFinite(usd)) {
+          usdCache.set(key, { usd, at: Date.now() });
+          return usd;
+        }
+      } catch {}
+    }
+    return null;
+  }
+  function paintLiqPrices() {
+    const seq = ++pxSeq;
+    const a = $("liqTokenA") && tokenByAddress($("liqTokenA").value);
+    const b = $("liqTokenB") && tokenByAddress($("liqTokenB").value);
+    Promise.all([tokenUsd(a), tokenUsd(b)]).then(([pa, pb]) => {
+      if (seq !== pxSeq) return;
+      if ($("liqPriceA")) $("liqPriceA").textContent = fmtPx(pa);
+      if ($("liqPriceB")) $("liqPriceB").textContent = fmtPx(pb);
+    }).catch(() => {});
   }
   function setLog(id, msg, kind) {
     const el = $(id);
