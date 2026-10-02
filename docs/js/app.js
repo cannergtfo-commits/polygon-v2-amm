@@ -42,6 +42,7 @@
   }
   async function connect() {
     if (!window.ethereum) { setLog("swapLog", "No wallet found. Install MetaMask.", "err"); return; }
+    try { localStorage.removeItem("blazar_logged_out"); } catch {}
     state.provider = new ethers.BrowserProvider(window.ethereum);
     await state.provider.send("eth_requestAccounts", []);
     state.signer = await state.provider.getSigner();
@@ -71,6 +72,38 @@
     await refreshBalances();
     await refreshPairs();
     quoteOut();
+  }
+  function closeWalletMenu() {
+    const drop = $("walletDrop");
+    if (!drop) return;
+    drop.hidden = true;
+    if ($("connectBtn")) $("connectBtn").setAttribute("aria-expanded", "false");
+  }
+  function toggleWalletMenu() {
+    const drop = $("walletDrop");
+    if (!drop) return;
+    const open = drop.hidden;
+    drop.hidden = !open;
+    $("connectBtn").setAttribute("aria-expanded", open ? "true" : "false");
+  }
+  async function disconnect() {
+    closeWalletMenu();
+    try { localStorage.setItem("blazar_logged_out", "1"); } catch {}
+    try {
+      if (window.ethereum && window.ethereum.request) {
+        await window.ethereum.request({ method: "wallet_revokePermissions", params: [{ eth_accounts: {} }] });
+      }
+    } catch {}
+    state.account = null;
+    state.signer = null;
+    state.provider = null;
+    state.chainId = null;
+    state.bal = {};
+    $("connectBtn").textContent = "Connect";
+    $("networkChip").textContent = "Not connected";
+    ["balIn", "balOut", "balLiqA", "balLiqB"].forEach((id) => { if ($(id)) $(id).textContent = "Balance —"; });
+    if ($("balPol")) $("balPol").textContent = "POL —";
+    if ($("balWpol")) $("balWpol").textContent = "WPOL —";
   }
   const router = () => new ethers.Contract(CFG.router, ABIS.Router, state.signer || state.provider);
   const factory = () => new ethers.Contract(CFG.factory, ABIS.Factory, state.signer || state.provider);
@@ -479,7 +512,16 @@
         if (btn.dataset.tab === "wrap") refreshWrapBals();
       });
     });
-    $("connectBtn").addEventListener("click", connect);
+    $("connectBtn").addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      if (state.account) toggleWalletMenu();
+      else connect();
+    });
+    $("disconnectBtn").addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      disconnect();
+    });
+    document.addEventListener("click", () => closeWalletMenu());
     $("swapBtn").addEventListener("click", doSwap);
     $("flipBtn").addEventListener("click", () => {
       const a = $("tokenIn").value;
@@ -552,10 +594,15 @@
     })().catch((err) => setLog("wrapLog", err.shortMessage || err.message || String(err), "err")));
     loadChart(chartToken($("tokenOut").value));
     if (window.ethereum) {
-      window.ethereum.on("accountsChanged", () => connect());
+      window.ethereum.on("accountsChanged", (accounts) => {
+        if (!accounts || !accounts.length) disconnect();
+        else connect();
+      });
       window.ethereum.on("chainChanged", () => window.location.reload());
       window.ethereum.request({ method: "eth_accounts" }).then((accounts) => {
-        if (accounts && accounts.length) connect();
+        let loggedOut = false;
+        try { loggedOut = localStorage.getItem("blazar_logged_out") === "1"; } catch {}
+        if (accounts && accounts.length && !loggedOut) connect();
       }).catch(() => {});
     }
     refreshPairs();
