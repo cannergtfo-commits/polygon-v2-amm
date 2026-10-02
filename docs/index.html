@@ -96,7 +96,6 @@
         <button class="active" data-tab="swap" type="button">Swap</button>
         <button data-tab="add" type="button">Add liquidity</button>
         <button data-tab="positions" type="button">Your positions</button>
-        <button data-tab="wrap" type="button">Wrap</button>
       </div>
 
       <div class="trade-row">
@@ -133,14 +132,14 @@
         <div class="panel card pane" id="pane-add" data-card="add">
           <h3>Add liquidity</h3>
           <div class="leg">
-            <div class="leg-top"><span>Token A</span><span class="bal-row"><button class="max" id="maxA" type="button">Max</button><span id="balLiqA">Balance —</span></span></div>
+            <div class="leg-top"><span id="liqLabelA">Token</span><span class="bal-row"><button class="max" id="maxA" type="button">Max</button><span id="balLiqA">Balance —</span></span></div>
             <div class="leg-top">
               <input id="liqAmtA" type="text" inputmode="decimal" placeholder="0.0" />
               <select id="liqTokenA"></select>
             </div>
           </div>
           <div class="leg">
-            <div class="leg-top"><span>Token B</span><span class="bal-row"><button class="max" id="maxB" type="button">Max</button><span id="balLiqB">Balance —</span></span></div>
+            <div class="leg-top"><span id="liqLabelB">Token</span><span class="bal-row"><button class="max" id="maxB" type="button">Max</button><span id="balLiqB">Balance —</span></span></div>
             <div class="leg-top">
               <input id="liqAmtB" type="text" inputmode="decimal" placeholder="0.0" />
               <select id="liqTokenB"></select>
@@ -169,29 +168,6 @@
           <div class="log" id="posLog">Slippage sets the minimum tokens you accept back.</div>
           <div class="pools" id="poolList"></div>
         </div>
-
-        <div class="panel card pane" id="pane-wrap" data-card="wrap">
-          <h3>Wrap POL</h3>
-          <div class="leg">
-            <div class="leg-top">
-              <span>Amount</span>
-              <span class="bal-row">
-                <button class="max" id="maxPol" type="button">Max POL</button>
-                <button class="max" id="maxWpol" type="button">Max WPOL</button>
-              </span>
-            </div>
-            <input id="wrapAmt" type="text" inputmode="decimal" placeholder="0.0" />
-            <div class="leg-top" style="margin-top:10px">
-              <span id="balPol">POL —</span>
-              <span id="balWpol">WPOL —</span>
-            </div>
-          </div>
-          <div class="wrap-actions">
-            <button class="primary full" id="wrapBtn" type="button">Wrap to WPOL</button>
-            <button class="ghost full" id="unwrapBtn" type="button">Unwrap to POL</button>
-          </div>
-          <div class="log" id="wrapLog">1 POL becomes 1 WPOL. Max POL leaves 0.05 POL for gas.</div>
-        </div>
       </div>
 
       <section class="chart-wrap">
@@ -212,7 +188,7 @@
         <div>
           <p class="kicker">Basket · M421</p>
           <h2>Markarian 421</h2>
-          <p>Bitcoin, Ether, and a blazar bit walked into a jet and only one object came out. Markarian 421 is that receipt: equal parts digital gold, digital gas, and actual BlazarBits. It does not pulse in radio. It just lets you leave with your third.</p>
+          <p>Scientists can keep staring at the jet. You get the receipt: equal parts digital gold, digital gas, and actual BlazarBits.</p>
         </div>
       </div>
       <div class="m421-stats">
@@ -244,7 +220,7 @@
           <button class="primary full" id="m421Deposit" type="button">Deposit equal basket</button>
           <div class="m421-grid two">
             <label>Zap with
-              <select id="m421ZapToken"><option value="weth">WETH</option><option value="wbtc">WBTC</option><option value="bzb">BzB</option></select>
+              <select id="m421ZapToken"><option value="pol">POL</option><option value="weth">WETH</option><option value="wbtc">WBTC</option><option value="bzb">BzB</option></select>
             </label>
             <label>Amount<input id="m421ZapAmt" type="text" inputmode="decimal" placeholder="0.0" /></label>
           </div>
@@ -289,8 +265,8 @@
       }
     })();
   </script>
-  <script src="js/app.js?v=logout1"></script>
-  <script src="js/m421.js?v=m421"></script>
+  <script src="js/app.js?v=zap2"></script>
+  <script src="js/m421.js?v=zap2"></script>
   <script src="js/token-ui.js"></script>
   <script src="js/music.js?v=snd1"></script>
   <script>
