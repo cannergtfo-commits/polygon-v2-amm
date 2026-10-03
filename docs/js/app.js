@@ -486,7 +486,9 @@
       if (!pairAddr) throw new Error("No pair selected.");
       const pair = new ethers.Contract(pairAddr, ABIS.Pair, state.signer);
       const lpBal = await pair.balanceOf(state.account);
-      const pct = BigInt(Math.min(100, Math.max(1, Number($("removePct").value || "100"))));
+      const pctNum = Math.min(100, Math.max(0, Number($("removePct").value || "0")));
+      if (pctNum <= 0) throw new Error("Move the slider above 0%.");
+      const pct = BigInt(Math.round(pctNum));
       const liquidity = lpBal * pct / 100n;
       if (liquidity === 0n) throw new Error("No LP tokens.");
       const token0 = await pair.token0();
@@ -660,7 +662,12 @@
     $("maxIn").addEventListener("click", () => fillMax("tokenIn", "amountIn").catch((err) => setLog("swapLog", err.shortMessage || err.message || String(err), "err")));
     $("maxA").addEventListener("click", () => fillMax("liqTokenA", "liqAmtA").catch((err) => setLog("liqLog", err.shortMessage || err.message || String(err), "err")));
     $("maxB").addEventListener("click", () => fillMax("liqTokenB", "liqAmtB").catch((err) => setLog("liqLog", err.shortMessage || err.message || String(err), "err")));
-    $("maxRemove").addEventListener("click", () => { $("removePct").value = "100"; });
+    $("maxRemove").addEventListener("click", () => { $("removePct").value = "100"; paintRemovePct(); });
+    $("removePct").addEventListener("input", paintRemovePct);
+    function paintRemovePct() {
+      const n = Math.min(100, Math.max(0, Math.round(Number($("removePct").value || "0"))));
+      if ($("removePctLabel")) $("removePctLabel").textContent = n + "%";
+    }
     document.querySelectorAll("[data-slip]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const v = btn.dataset.slip;
