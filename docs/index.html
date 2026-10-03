@@ -37,6 +37,8 @@
     #pane-m421:not(.visible){display:none}
     .pane.m421{margin-top:0}
     .liq-px{margin-left:8px;color:var(--cyan);font-style:normal;font-size:13px;letter-spacing:0;text-transform:none}
+    .field input[type=range]{width:100%;height:28px;margin-top:8px;padding:0;background:transparent;border:0;border-radius:0;accent-color:#3ee0ff}
+    .remove-pct{font-family:Syne,sans-serif;color:var(--cyan);letter-spacing:.04em}
     .m421-out{display:grid;gap:6px;margin:10px 0 12px}
     .m421-out div{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--muted)}
     .m421-out b{color:var(--text);font-weight:600;text-align:right}
@@ -167,7 +169,8 @@
           <div class="field">
             <div class="field-top"><label>Remove LP</label><button class="max" id="maxRemove" type="button">Max</button></div>
             <select id="removePair"></select>
-            <input id="removePct" type="text" value="100" placeholder="% to remove" />
+            <div class="field-top"><span>Share of your LP</span><b class="remove-pct" id="removePctLabel">100%</b></div>
+            <input id="removePct" type="range" min="0" max="100" step="1" value="100" />
           </div>
           <div class="meta">
             <div class="slip-row"><span>Slippage</span><span class="slip-picks"><button type="button" data-slip="0.1">0.1%</button><button type="button" data-slip="0.5" class="on">0.5%</button><button type="button" data-slip="1">1%</button><input class="slip-input" id="slippageRemove" type="text" inputmode="decimal" value="0.50" />%</span></div>
@@ -289,7 +292,7 @@
       }
     })();
   </script>
-  <script src="js/app.js?v=flip1"></script>
+  <script src="js/app.js?v=slide1"></script>
   <script src="js/m421.js?v=sale1"></script>
   <script src="js/token-ui.js"></script>
   <script src="js/music.js?v=snd1"></script>
