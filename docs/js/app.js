@@ -622,6 +622,7 @@
         $("pane-" + btn.dataset.tab).classList.add("visible");
         if (btn.dataset.tab === "add") { paintLiqLabels(); refreshBalances(); }
         if (btn.dataset.tab === "m421" && window.m421Refresh) window.m421Refresh();
+        if (btn.dataset.tab === "draw" && window.drawRefresh) window.drawRefresh();
       });
     });
     $("connectBtn").addEventListener("click", (ev) => {
