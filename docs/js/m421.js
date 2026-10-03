@@ -125,14 +125,20 @@
     $("m421Supply").textContent = trim(ethers.formatUnits(supply, 18), 4) + " M421";
     try {
       px = await loadPrices(provider);
-      $("m421BzbUsd").textContent = fmtUsd(await bzbUsd(provider, rb));
-      $("m421WbtcUsd").textContent = fmtUsd(usdOf("wbtc", rt, px));
-      $("m421WethUsd").textContent = fmtUsd(usdOf("weth", re, px));
+      const bzbValue = await bzbUsd(provider, rb);
+      const wbtcValue = usdOf("wbtc", rt, px);
+      const wethValue = usdOf("weth", re, px);
+      $("m421BzbUsd").textContent = fmtUsd(bzbValue);
+      $("m421WbtcUsd").textContent = fmtUsd(wbtcValue);
+      $("m421WethUsd").textContent = fmtUsd(wethValue);
+      const basket = bzbValue + wbtcValue + wethValue;
+      $("m421Each").textContent = supply > 0n ? fmtUsd((basket * 10n ** 18n) / supply) : "—";
       paintInputUsd();
     } catch {
       $("m421BzbUsd").textContent = "—";
       $("m421WbtcUsd").textContent = "—";
       $("m421WethUsd").textContent = "—";
+      $("m421Each").textContent = "—";
     }
     const now = Math.floor(Date.now() / 1000);
     const day = now <= Number(start) ? 1 : Math.floor((now - Number(start)) / 86400) + 1;
@@ -244,39 +250,6 @@
       await loadDesk();
     } catch (err) { setLog(err.shortMessage || err.message, "err"); }
   });
-  $("m421ZapIn").addEventListener("click", async () => {
-    try {
-      await wallet();
-      const token = tokenByKey($("m421ZapToken").value);
-      const amount = ethers.parseUnits($("m421ZapAmt").value || "0", token.decimals);
-      if (amount === 0n) throw new Error("Enter a zap amount.");
-      let zapToken = token.address;
-      let zapAmount = amount;
-      if (token.native) {
-        setLog("Buying WETH with POL…");
-        const quick = new ethers.Contract(M.quick, [
-          "function getAmountsOut(uint256,address[]) view returns (uint256[])",
-          "function swapExactETHForTokens(uint256,address[],address,uint256) payable returns (uint256[])"
-        ], signer);
-        const weth = new ethers.Contract(M.weth, ERC20, signer);
-        const before = await weth.balanceOf(account);
-        const quoted = await quick.getAmountsOut(amount, [M.wpol, M.weth]);
-        const hopBps = Math.min(1000, m421Bps());
-        const minOut = (quoted[quoted.length - 1] * BigInt(10000 - hopBps)) / 10000n;
-        const swapTx = await quick.swapExactETHForTokens(minOut, [M.wpol, M.weth], account, Math.floor(Date.now() / 1000) + 1200, { value: amount });
-        await swapTx.wait();
-        zapAmount = (await weth.balanceOf(account)) - before;
-        if (zapAmount <= 0n) throw new Error("POL swap returned no WETH.");
-        zapToken = M.weth;
-      }
-      setLog("Swapping into the basket…");
-      await approve(zapToken, M.vault, zapAmount);
-      const tx = await new ethers.Contract(M.vault, VAULT, signer).zapIn(zapToken, zapAmount, 0, Math.min(1000, m421Bps()), m421Bps());
-      await tx.wait();
-      setLog("Zap deposited.", "ok");
-      await loadDesk();
-    } catch (err) { setLog(err.shortMessage || err.message, "err"); }
-  });
   $("m421Withdraw").addEventListener("click", async () => {
     try {
       await wallet();
@@ -295,18 +268,6 @@
       );
       await tx.wait();
       setLog("Your share of BzB, WBTC, and WETH is back.", "ok");
-      await loadDesk();
-    } catch (err) { setLog(err.shortMessage || err.message, "err"); }
-  });
-  $("m421ZapOut").addEventListener("click", async () => {
-    try {
-      await wallet();
-      const token = tokenByKey($("m421ZapOutToken").value);
-      const shares = ethers.parseUnits($("m421Shares").value || "0", 18);
-      if (shares === 0n) throw new Error("Enter an M421 amount.");
-      const tx = await new ethers.Contract(M.vault, VAULT, signer).zapOut(shares, token.address, 0, Math.min(1000, m421Bps()));
-      await tx.wait();
-      setLog("Withdrew into " + token.label + ".", "ok");
       await loadDesk();
     } catch (err) { setLog(err.shortMessage || err.message, "err"); }
   });
@@ -445,9 +406,7 @@
   function scheduleOut() {
     clearTimeout(outTimer);
     outTimer = setTimeout(() => {
-      quoteBasketOut().catch((err) => {
-        if ($("m421ZapOutQuote")) $("m421ZapOutQuote").textContent = err.shortMessage || err.message || "Quote failed.";
-      });
+      quoteBasketOut().catch((err) => setLog(err.shortMessage || err.message || "Quote failed.", "err"));
     }, 250);
   }
   async function quoteBasketOut() {
@@ -456,7 +415,6 @@
       $("m421OutBzb").textContent = "—";
       $("m421OutWbtc").textContent = "—";
       $("m421OutWeth").textContent = "—";
-      $("m421ZapOutQuote").textContent = "Enter M421 to see what the zap returns.";
       return;
     }
     const shares = ethers.parseUnits(raw, 18);
@@ -470,7 +428,6 @@
       $("m421OutBzb").textContent = "0";
       $("m421OutWbtc").textContent = "0";
       $("m421OutWeth").textContent = "0";
-      $("m421ZapOutQuote").textContent = "The basket is empty.";
       return;
     }
     const bzb = (rb * shares) / supply;
@@ -481,21 +438,8 @@
     $("m421OutBzb").textContent = fmt(bzb, 18);
     $("m421OutWbtc").textContent = fmt(wbtc, 8);
     $("m421OutWeth").textContent = fmt(weth, 18);
-    const token = tokenByKey($("m421ZapOutToken").value);
-    const router = new ethers.Contract(await vault.router(), ["function getAmountsOut(uint256,address[]) view returns (uint256[])"], provider);
-    let got = token.key === "bzb" ? bzb : token.key === "wbtc" ? wbtc : weth;
-    const legs = [["bzb", bzb, M.bzb], ["wbtc", wbtc, M.wbtc], ["weth", weth, M.weth]];
-    for (const [key, amt, addr] of legs) {
-      if (key === token.key || amt === 0n) continue;
-      const path = await vault.route(addr, token.address);
-      const amounts = await router.getAmountsOut(amt, path);
-      got += amounts[amounts.length - 1];
-    }
-    const swapBps = Math.min(1000, bps);
-    $("m421ZapOutQuote").textContent = "About " + showUnits(got, token.decimals) + " " + token.label + " · min " + showUnits(cut(got, swapBps), token.decimals);
   }
   $("m421Shares").addEventListener("input", scheduleOut);
-  $("m421ZapOutToken").addEventListener("change", scheduleOut);
 
   window.m421Refresh = () => loadDesk().catch((err) => setLog(err.shortMessage || err.message || "Desk unavailable", "err"));
   loadDesk().catch((err) => setLog(err.shortMessage || err.message || "Desk unavailable", "err"));
