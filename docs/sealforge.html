@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SealForge</title>
+  <link rel="icon" href="favicon.ico" sizes="any" />
+  <link rel="stylesheet" href="css/style.css?v=usd1" />
+  <style>
+    .seal-btn{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;height:64px;max-width:min(420px,34vw);padding:0;border:0;background:transparent;z-index:6;line-height:0}
+    .seal-btn img{height:64px;width:auto;max-width:100%;object-fit:contain;display:block;filter:drop-shadow(0 0 12px rgba(255,150,40,.4))}
+    .seal-btn:hover img{filter:drop-shadow(0 0 16px rgba(62,224,255,.55)) drop-shadow(0 0 12px rgba(255,150,40,.55))}
+    .seal-page{width:min(1100px,calc(100% - 36px));margin:36px auto 64px}
+    .seal-page img{width:100%;height:auto;display:block;border-radius:22px;box-shadow:0 20px 80px rgba(0,0,0,.45)}
+    .seal-page p{margin-top:18px;text-align:center}
+    .seal-page a{color:var(--cyan);font-family:Syne,sans-serif;letter-spacing:.12em;text-transform:uppercase;font-size:13px;text-decoration:none}
+    @media(max-width:900px){.seal-btn,.seal-btn img{height:36px;max-width:40vw}}
+  </style>
+</head>
+<body>
+  <div class="space" id="space"></div>
+  <div class="stars"></div>
+  <div class="stars2"></div>
+  <div class="vignette"></div>
+  <header>
+    <a class="brand" href="index.html" style="text-decoration:none;color:inherit">
+      <img data-img="coin" alt="BzB" />
+      <div>
+        <h1>BlazarSwap</h1>
+        <span>Polygon DEX</span>
+      </div>
+    </a>
+    <a class="seal-btn" href="sealforge.html" aria-label="SealForge"><img src="sealforge.png" alt="SealForge" /></a>
+    <a class="connect" href="index.html">Swap</a>
+  </header>
+  <main class="seal-page">
+    <img src="sealforge.png" alt="SealForge" />
+    <p><a href="index.html">Back to BlazarSwap</a></p>
+  </main>
+  <script src="js/images.js"></script>
+  <script>
+    (function () {
+      var imgs = window.BLAZAR_IMGS || {};
+      document.querySelectorAll("[data-img]").forEach(function (el) {
+        if (imgs[el.getAttribute("data-img")]) el.src = imgs[el.getAttribute("data-img")];
+      });
+      var space = document.getElementById("space");
+      if (space && imgs.blazar) {
+        space.style.backgroundImage = "linear-gradient(180deg, rgba(3,7,18,0.18), rgba(3,7,18,0.72)), url(" + imgs.blazar + ")";
+      }
+    })();
+  </script>
+</body>
+</html>
