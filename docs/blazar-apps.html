@@ -7,8 +7,9 @@
   <link rel="icon" href="favicon.ico" sizes="any" />
   <link rel="stylesheet" href="css/style.css?v=usd1" />
   <style>
-    .seal-btn{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;height:64px;max-width:min(420px,34vw);padding:0;border:0;background:transparent;z-index:6;line-height:0}
-    .seal-btn img{height:64px;width:auto;max-width:100%;object-fit:contain;display:block;filter:drop-shadow(0 0 12px rgba(255,150,40,.4))}
+    header{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;column-gap:16px}
+    .seal-btn{position:static;transform:none;justify-self:center;display:flex;align-items:center;justify-content:center;height:56px;width:min(360px,100%);max-width:100%;padding:0;border:0;background:transparent;line-height:0}
+    .seal-btn img{height:56px;width:100%;max-width:100%;object-fit:contain;object-position:center;display:block;filter:drop-shadow(0 0 12px rgba(255,150,40,.4))}
     .seal-btn:hover img{filter:drop-shadow(0 0 16px rgba(62,224,255,.55)) drop-shadow(0 0 12px rgba(255,150,40,.55))}
     .store{width:min(1120px,calc(100% - 32px));margin:28px auto 72px}
     .mast{position:relative;border:1px solid var(--stroke);border-radius:28px;overflow:hidden;background:#070b14;box-shadow:0 30px 80px rgba(0,0,0,.35)}
@@ -55,7 +56,8 @@
     .hash{margin-top:12px;font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--muted);word-break:break-all}
     .dl{display:flex;justify-content:center;margin-top:18px;text-decoration:none;font-family:Syne,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#021018;background:linear-gradient(90deg,#f0c36a,#3ee0ff);border-radius:999px;padding:14px 18px}
     @media(max-width:800px){
-      .seal-btn,.seal-btn img{height:36px;max-width:40vw}
+      header{column-gap:8px}
+      .seal-btn,.seal-btn img{height:40px;max-width:100%}
       .mast-copy,.bar,.sheet-top{display:block}
       .search{width:100%;margin-top:16px}
       .halls,.shelf{grid-template-columns:1fr}
