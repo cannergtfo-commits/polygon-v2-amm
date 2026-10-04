@@ -69,6 +69,10 @@
     .liq-px{margin-left:8px;color:var(--cyan);font-style:normal;font-size:13px;letter-spacing:0;text-transform:none}
     .field input[type=range]{width:100%;height:28px;margin-top:8px;padding:0;background:transparent;border:0;border-radius:0;accent-color:#3ee0ff}
     .remove-pct{font-family:Syne,sans-serif;color:var(--cyan);letter-spacing:.04em}
+    .seal-btn{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;height:64px;max-width:min(420px,34vw);padding:0;border:0;background:transparent;z-index:6;line-height:0}
+    .seal-btn img{height:64px;width:auto;max-width:100%;object-fit:contain;display:block;filter:drop-shadow(0 0 12px rgba(255,150,40,.4))}
+    .seal-btn:hover img{filter:drop-shadow(0 0 16px rgba(62,224,255,.55)) drop-shadow(0 0 12px rgba(255,150,40,.55))}
+    @media(max-width:900px){.seal-btn,.seal-btn img{height:36px;max-width:40vw}}
     .m421-out{display:grid;gap:6px;margin:10px 0 12px}
     .m421-out div{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--muted)}
     .m421-out b{color:var(--text);font-weight:600;text-align:right}
@@ -88,6 +92,7 @@
         <span>Polygon DEX</span>
       </div>
     </div>
+    <a class="seal-btn" href="sealforge.html" aria-label="SealForge"><img src="sealforge.png" alt="SealForge" /></a>
     <div class="wallet">
       <button class="ghost" id="muteBtn" type="button">Sound on</button>
       <div class="chip" id="networkChip">Not connected</div>
