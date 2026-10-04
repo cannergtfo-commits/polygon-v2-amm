@@ -26,7 +26,7 @@
   }
   function esc(s) {
     return String(s || "").replace(/[&<>"']/g, function (c) {
-      return { "&": "&", "<": "<", ">": ">", '"': """, "'": "&#39;" }[c];
+    return "&#" + c.charCodeAt(0) + ";";
     });
   }
   function card(app) {
