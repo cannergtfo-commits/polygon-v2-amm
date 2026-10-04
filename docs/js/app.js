@@ -171,6 +171,7 @@
     ["balIn", "balOut", "balLiqA", "balLiqB"].forEach((id) => { if ($(id)) $(id).textContent = "Balance —"; });
     if ($("balPol")) $("balPol").textContent = "POL —";
     if ($("balWpol")) $("balWpol").textContent = "WPOL —";
+    refreshPairs();
   }
   const router = () => new ethers.Contract(CFG.router, ABIS.Router, state.signer || state.provider);
   const factory = () => new ethers.Contract(CFG.factory, ABIS.Factory, state.signer || state.provider);
@@ -524,24 +525,36 @@
       const fac = new ethers.Contract(CFG.factory, ABIS.Factory, readProvider);
       const n = Number(await fac.allPairsLength());
       $("pairCount").textContent = String(n);
+      if (!state.account) {
+        list.innerHTML = "<div class='mono'>Connect a wallet to see your positions.</div>";
+        return;
+      }
+      let held = 0;
       for (let i = 0; i < n; i++) {
         const pairAddr = await fac.allPairs(i);
         const pair = new ethers.Contract(pairAddr, ABIS.Pair, readProvider);
+        const bal = await pair.balanceOf(state.account);
+        if (bal === 0n) continue;
+        held += 1;
         const [t0, t1, reserves, supply] = await Promise.all([pair.token0(), pair.token1(), pair.getReserves(), pair.totalSupply()]);
-        const s0 = tokenByAddress(t0).symbol;
-        const s1 = tokenByAddress(t1).symbol;
+        const a = tokenByAddress(t0);
+        const b = tokenByAddress(t1);
+        const mine0 = supply === 0n ? 0n : (bal * reserves[0]) / supply;
+        const mine1 = supply === 0n ? 0n : (bal * reserves[1]) / supply;
+        const share = supply === 0n ? "0.00" : (Number((bal * 10000n) / supply) / 100).toFixed(2);
         const row = document.createElement("div");
         row.className = "pool-row";
-        row.innerHTML = "<div><b>" + s0 + " / " + s1 + "</b><div class='mono'>" + short(pairAddr) + "</div></div>" +
-          "<div>" + Number(ethers.formatUnits(reserves[0], tokenByAddress(t0).decimals)).toPrecision(4) + " " + s0 + "</div>" +
-          "<div>" + Number(ethers.formatUnits(reserves[1], tokenByAddress(t1).decimals)).toPrecision(4) + " " + s1 + "</div>" +
-          "<div class='mono'>LP " + Number(ethers.formatUnits(supply, 18)).toPrecision(4) + "</div>";
+        row.innerHTML = "<div><b>" + a.symbol + " / " + b.symbol + "</b><div class='mono'>" + short(pairAddr) + "</div></div>" +
+          "<div>" + Number(ethers.formatUnits(mine0, a.decimals)).toPrecision(4) + " " + a.symbol + "</div>" +
+          "<div>" + Number(ethers.formatUnits(mine1, b.decimals)).toPrecision(4) + " " + b.symbol + "</div>" +
+          "<div class='mono'>" + share + "% of pool</div>";
         list.appendChild(row);
         const opt = document.createElement("option");
         opt.value = pairAddr;
-        opt.textContent = s0 + " / " + s1;
+        opt.textContent = a.symbol + " / " + b.symbol;
         sel.appendChild(opt);
       }
+      if (!held) list.innerHTML = "<div class='mono'>This wallet has no liquidity on BlazarSwap.</div>";
     } catch {
       $("pairCount").textContent = "—";
     }
@@ -621,6 +634,7 @@
         document.querySelectorAll(".stack > .pane").forEach((p) => p.classList.remove("visible"));
         $("pane-" + btn.dataset.tab).classList.add("visible");
         if (btn.dataset.tab === "add") { paintLiqLabels(); refreshBalances(); }
+        if (btn.dataset.tab === "positions") refreshPairs();
         if (btn.dataset.tab === "m421" && window.m421Refresh) window.m421Refresh();
         if (btn.dataset.tab === "draw" && window.drawRefresh) window.drawRefresh();
       });
