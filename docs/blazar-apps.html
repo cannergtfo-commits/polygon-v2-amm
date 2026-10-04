@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Blazar Apps</title>
+  <link rel="icon" href="favicon.ico" sizes="any" />
+  <link rel="stylesheet" href="css/style.css?v=usd1" />
+  <style>
+    .seal-btn{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;height:64px;max-width:min(420px,34vw);padding:0;border:0;background:transparent;z-index:6;line-height:0}
+    .seal-btn img{height:64px;width:auto;max-width:100%;object-fit:contain;display:block;filter:drop-shadow(0 0 12px rgba(255,150,40,.4))}
+    .seal-btn:hover img{filter:drop-shadow(0 0 16px rgba(62,224,255,.55)) drop-shadow(0 0 12px rgba(255,150,40,.55))}
+    .store{width:min(1120px,calc(100% - 32px));margin:28px auto 72px}
+    .mast{position:relative;border:1px solid var(--stroke);border-radius:28px;overflow:hidden;background:#070b14;box-shadow:0 30px 80px rgba(0,0,0,.35)}
+    .mast img{display:block;width:100%;height:min(280px,42vw);object-fit:cover;object-position:center}
+    .mast-copy{display:flex;justify-content:space-between;gap:24px;align-items:flex-end;padding:22px 26px 24px}
+    .kicker{font-family:Syne,sans-serif;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);font-size:12px}
+    .mast h2{font-family:Syne,sans-serif;font-size:clamp(32px,4vw,52px);letter-spacing:.04em;line-height:.95;margin:8px 0}
+    .mast p{max-width:46ch;color:var(--muted);font-size:15px;line-height:1.55}
+    .search{min-width:min(320px,100%);background:rgba(0,0,0,.35);border:1px solid var(--stroke);border-radius:16px;padding:14px 16px;color:var(--text);font:500 15px Sora,sans-serif;outline:none}
+    .search:focus{border-color:var(--cyan)}
+    .bar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin:22px 0 14px}
+    .bar b{font-family:Syne,sans-serif;letter-spacing:.14em;text-transform:uppercase;font-size:13px}
+    .bar span{color:var(--muted);font-size:13px}
+    .chips{display:flex;flex-wrap:wrap;gap:8px}
+    .chips button,.hall{font-family:Syne,sans-serif;letter-spacing:.08em;text-transform:uppercase;font-size:12px;color:var(--muted);background:rgba(6,12,28,.72);border:1px solid var(--stroke);border-radius:999px;padding:8px 14px;cursor:pointer}
+    .chips button.on,.hall.on{color:#021018;background:linear-gradient(90deg,#f0c36a,#3ee0ff);border-color:transparent}
+    .halls{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:8px 0 22px}
+    .hall{display:flex;align-items:center;gap:12px;text-align:left;border-radius:18px;padding:10px 12px;width:100%}
+    .hall img{width:54px;height:54px;border-radius:14px;object-fit:cover;box-shadow:0 0 0 1px rgba(255,255,255,.08)}
+    .shelf{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .app-card{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:14px;align-items:center;text-align:left;padding:14px;border-radius:20px;border:1px solid var(--stroke);background:rgba(6,12,28,.72);color:inherit;cursor:pointer}
+    .app-card img{width:72px;height:72px;border-radius:18px;object-fit:cover}
+    .app-copy{min-width:0;display:flex;flex-direction:column;gap:3px}
+    .app-copy b{font-family:Syne,sans-serif;font-size:16px;letter-spacing:.04em}
+    .app-copy small{color:var(--gold);font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+    .app-copy em{color:var(--muted);font-style:normal;font-size:13px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .apk-pill{font-family:Syne,sans-serif;font-size:11px;letter-spacing:.14em;color:#021018;background:linear-gradient(90deg,var(--cyan),#7af);border-radius:999px;padding:8px 10px}
+    .empty{margin-top:8px;padding:28px;border-radius:22px;border:1px dashed var(--stroke);background:rgba(6,12,28,.45);text-align:center}
+    .empty h3{font-family:Syne,sans-serif;letter-spacing:.08em;margin-bottom:8px}
+    .empty p{color:var(--muted);max-width:52ch;margin:0 auto;line-height:1.5}
+    .fine{margin-top:22px;color:var(--muted);font-size:12px;line-height:1.5;text-align:center}
+    dialog{width:min(560px,calc(100% - 24px));border:1px solid var(--stroke);border-radius:24px;background:rgba(7,11,20,.96);color:var(--text);padding:0;box-shadow:0 30px 80px rgba(0,0,0,.55)}
+    dialog::backdrop{background:rgba(0,0,0,.62)}
+    .sheet{padding:22px}
+    .sheet-top{display:grid;grid-template-columns:84px minmax(0,1fr) auto;gap:14px;align-items:center}
+    .sheet-top img{width:84px;height:84px;border-radius:20px;object-fit:cover}
+    .sheet-top h3{font-family:Syne,sans-serif;font-size:28px;letter-spacing:.03em}
+    .sheet-top p{color:var(--muted);font-size:13px;margin-top:4px}
+    .x{width:36px;height:36px;border-radius:50%;border:1px solid var(--stroke);background:transparent;color:var(--text);cursor:pointer}
+    .tags{display:flex;gap:8px;margin:16px 0}
+    .tags span{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);border:1px solid rgba(240,195,106,.35);border-radius:999px;padding:5px 8px}
+    .sheet .lead{font-size:15px;line-height:1.55}
+    .sheet .notes{color:var(--muted);font-size:13px;line-height:1.5;margin-top:10px}
+    .hash{margin-top:12px;font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--muted);word-break:break-all}
+    .dl{display:flex;justify-content:center;margin-top:18px;text-decoration:none;font-family:Syne,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#021018;background:linear-gradient(90deg,#f0c36a,#3ee0ff);border-radius:999px;padding:14px 18px}
+    @media(max-width:800px){
+      .seal-btn,.seal-btn img{height:36px;max-width:40vw}
+      .mast-copy,.bar,.sheet-top{display:block}
+      .search{width:100%;margin-top:16px}
+      .halls,.shelf{grid-template-columns:1fr}
+      .x{position:absolute;right:16px;top:16px}
+      .sheet{position:relative}
+    }
+  </style>
+</head>
+<body>
+  <div class="space" id="space"></div>
+  <div class="stars"></div>
+  <div class="stars2"></div>
+  <div class="vignette"></div>
+  <header>
+    <a class="brand" href="index.html" style="text-decoration:none;color:inherit">
+      <img data-img="coin" alt="BzB" />
+      <div>
+        <h1>BlazarSwap</h1>
+        <span>Polygon DEX</span>
+      </div>
+    </a>
+    <a class="seal-btn" href="blazar-apps.html" aria-label="Blazar Apps"><img src="sealforge.png" alt="Blazar Apps" /></a>
+    <a class="connect" href="index.html">Swap</a>
+  </header>
+  <main class="store">
+    <section class="mast">
+      <img src="sealforge.png" alt="" />
+      <div class="mast-copy">
+        <div>
+          <p class="kicker">Blazar</p>
+          <h2>Apps</h2>
+          <p>Official Android builds. Download the APK, then install it from this page only.</p>
+        </div>
+        <input class="search" id="storeSearch" type="search" placeholder="Search titles" aria-label="Search titles" />
+      </div>
+    </section>
+    <div class="halls" id="hallRow" aria-label="Halls"></div>
+    <div class="bar">
+      <div>
+        <b>Titles</b>
+        <span id="appCount">0 titles</span>
+      </div>
+      <div class="chips" id="kindRow">
+        <button type="button" class="on" data-kind="all">All</button>
+        <button type="button" data-kind="game">Games</button>
+        <button type="button" data-kind="tool">Tools</button>
+      </div>
+    </div>
+    <div class="shelf" id="appGrid"></div>
+    <div class="empty" id="emptyHall">
+      <h3>This hall is empty</h3>
+      <p>Published APKs show up here with a version, a size, and a download. Nothing is listed until the file is actually on the site.</p>
+    </div>
+    <p class="fine">Android asks before an install. If a title has a SHA-256, match it before you open the file.</p>
+  </main>
+  <dialog id="sheet">
+    <div class="sheet">
+      <div class="sheet-top">
+        <img id="sheetIcon" alt="" />
+        <div>
+          <h3 id="sheetName"></h3>
+          <p id="sheetMeta"></p>
+        </div>
+        <button class="x" id="sheetClose" type="button" aria-label="Close">×</button>
+      </div>
+      <div class="tags"><span id="sheetHall"></span><span id="sheetKind"></span></div>
+      <p class="lead" id="sheetSummary"></p>
+      <p class="notes" id="sheetNotes"></p>
+      <p class="hash" id="sheetHash" hidden></p>
+      <a class="dl" id="sheetDownload" href="#">Download APK</a>
+    </div>
+  </dialog>
+  <script src="js/images.js"></script>
+  <script>
+    (function () {
+      var imgs = window.BLAZAR_IMGS || {};
+      document.querySelectorAll("[data-img]").forEach(function (el) {
+        if (imgs[el.getAttribute("data-img")]) el.src = imgs[el.getAttribute("data-img")];
+      });
+      var space = document.getElementById("space");
+      if (space && imgs.blazar) space.style.backgroundImage = "linear-gradient(180deg, rgba(3,7,18,.2), rgba(3,7,18,.78)), url(" + imgs.blazar + ")";
+    })();
+  </script>
+  <script src="js/sealforge-catalog.js?v=store1"></script>
+  <script src="js/sealforge.js?v=store1"></script>
+</body>
+</html>
