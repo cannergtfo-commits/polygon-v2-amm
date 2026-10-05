@@ -1,5 +1,9 @@
 (function () {
-  var APPS = window.SEALFORGE_APPS || [];
+  var inApp = navigator.userAgent.indexOf("BlazarSwapApp") !== -1;
+  var APPS = (window.SEALFORGE_APPS || []).filter(function (app) {
+    if (!inApp) return true;
+    return app.file !== "BlazarForce.apk" && app.name !== "Blazar Force";
+  });
   var state = { q: "", kind: "all" };
   var grid = document.getElementById("appGrid");
   var empty = document.getElementById("emptyHall");
