@@ -1,11 +1,10 @@
 /* Add a title by dropping the .apk in docs/apks/ and appending an object here.
-   file is the apk name inside docs/apks/. Leave the list empty until a real build exists. */
+   file is the apk name inside docs/apks/. icon is that title's own art. */
 window.SEALFORGE_APPS = [
   {
     name: "Seal Forge",
-    hall: "crown",
     kind: "game",
-    icon: "sealforge/crown.jpg",
+    icon: "sealforge.png",
     file: "SealForge.apk",
     version: "1.0",
     size: "80 MB",
