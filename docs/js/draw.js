@@ -264,12 +264,13 @@
   }
 
   async function wallet() {
-    if (!window.ethereum) throw new Error("No wallet found. Install one, then use Connect at the top.");
+    const injected = window.BLAZAR_ETH;
+    if (!injected) throw new Error("Choose MetaMask or Phantom at the top of the page.");
     try {
-      await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x89" }] });
+      await injected.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x89" }] });
     } catch (err) {
       if (err && err.code === 4902) {
-        await window.ethereum.request({
+        await injected.request({
           method: "wallet_addEthereumChain",
           params: [{
             chainId: "0x89",
@@ -283,7 +284,7 @@
         throw err;
       }
     }
-    const provider = new ethers.BrowserProvider(window.ethereum);
+    const provider = new ethers.BrowserProvider(injected);
     const net = await provider.getNetwork();
     if (Number(net.chainId) !== 137) throw new Error("Switch the wallet to Polygon.");
     await provider.send("eth_requestAccounts", []);
@@ -611,9 +612,10 @@
   }
 
   async function quietAccount() {
-    if (!window.ethereum) return;
+    const injected = window.BLAZAR_ETH;
+    if (!injected) return;
     try {
-      const accounts = await window.ethereum.request({ method: "eth_accounts" });
+      const accounts = await injected.request({ method: "eth_accounts" });
       if (accounts && accounts[0]) {
         account = ethers.getAddress(accounts[0]);
         if ($("drawAccount")) $("drawAccount").textContent = short(account);
