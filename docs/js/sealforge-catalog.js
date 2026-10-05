@@ -4,7 +4,7 @@ window.SEALFORGE_APPS = [
   {
     name: "Blazar Force",
     kind: "tool",
-    icon: "blazarforce-store.png",
+    icon: "bzb-icon.png",
     file: "BlazarForce.apk",
     version: "1.6",
     size: "189 KB",
@@ -16,7 +16,7 @@ window.SEALFORGE_APPS = [
   {
     name: "Seal Forge",
     kind: "game",
-    icon: "sealforge.png",
+    icon: "sealforge-logo.png",
     file: "SealForge.apk",
     version: "1.0",
     size: "80 MB",
