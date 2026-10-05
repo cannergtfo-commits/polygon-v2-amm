@@ -3,7 +3,7 @@
   const ABIS = window.BLAZAR_ABIS;
   const ZERO = "0x0000000000000000000000000000000000000000";
   const $ = (id) => document.getElementById(id);
-  const state = { provider: null, signer: null, account: null, chainId: null, bal: {} };
+  const state = { provider: null, signer: null, account: null, chainId: null, bal: {}, injected: null, walletKind: null };
   const configured = () => CFG.router && CFG.router !== ZERO && CFG.factory !== ZERO && CFG.baseToken !== ZERO;
   function tokenByAddress(addr) {
     if (!addr) return null;
@@ -107,10 +107,77 @@
     if (!v || Number(v) === 0) return 0n;
     return ethers.parseUnits(v, decimals);
   }
-  async function connect() {
-    if (!window.ethereum) { setLog("swapLog", "No wallet found. Install MetaMask.", "err"); return; }
-    try { localStorage.removeItem("blazar_logged_out"); } catch {}
-    state.provider = new ethers.BrowserProvider(window.ethereum);
+  function announcedWallets() {
+    const list = window.__blazarWallets || (window.__blazarWallets = []);
+    if (!window.__blazarWalletListen) {
+      window.__blazarWalletListen = true;
+      window.addEventListener("eip6963:announceProvider", (event) => {
+        const detail = event && event.detail;
+        if (!detail || !detail.provider) return;
+        if (!list.some((item) => item.provider === detail.provider)) list.push(detail);
+      });
+      window.dispatchEvent(new Event("eip6963:requestProvider"));
+    }
+    return list;
+  }
+  function pickInjected(kind) {
+    const wantPhantom = kind === "phantom";
+    const announced = announcedWallets();
+    for (let i = 0; i < announced.length; i++) {
+      const info = announced[i].info || {};
+      const rdns = String(info.rdns || "");
+      const name = String(info.name || "").toLowerCase();
+      if (wantPhantom && (rdns === "app.phantom" || name.indexOf("phantom") !== -1)) return announced[i].provider;
+      if (!wantPhantom && (rdns === "io.metamask" || name === "metamask")) return announced[i].provider;
+    }
+    if (wantPhantom && window.phantom && window.phantom.ethereum) return window.phantom.ethereum;
+    const eth = window.ethereum;
+    const list = eth && Array.isArray(eth.providers) ? eth.providers.slice() : (eth ? [eth] : []);
+    if (window.phantom && window.phantom.ethereum && list.indexOf(window.phantom.ethereum) === -1) list.push(window.phantom.ethereum);
+    if (wantPhantom) return list.find((p) => p && p.isPhantom) || null;
+    return list.find((p) => p && p.isMetaMask && !p.isPhantom) || null;
+  }
+  function paintWalletMenu() {
+    const logged = !!state.account;
+    if ($("useMetaMask")) $("useMetaMask").hidden = logged;
+    if ($("usePhantom")) $("usePhantom").hidden = logged;
+    if ($("disconnectBtn")) $("disconnectBtn").hidden = !logged;
+  }
+  function onAccounts(accounts) {
+    if (!accounts || !accounts.length) disconnect();
+    else connect(state.walletKind);
+  }
+  function onChain() { window.location.reload(); }
+  function bindInjected(injected) {
+    if (state.injected === injected && state.bound) return;
+    if (state.injected && state.injected.removeListener) {
+      try { state.injected.removeListener("accountsChanged", onAccounts); } catch (e) {}
+      try { state.injected.removeListener("chainChanged", onChain); } catch (e) {}
+    }
+    state.injected = injected;
+    state.bound = true;
+    window.BLAZAR_ETH = injected;
+    if (injected.on) {
+      injected.on("accountsChanged", onAccounts);
+      injected.on("chainChanged", onChain);
+    }
+  }
+  async function connect(kind) {
+    if (!kind) {
+      paintWalletMenu();
+      const drop = $("walletDrop");
+      if (drop && drop.hidden) toggleWalletMenu();
+      return false;
+    }
+    const injected = pickInjected(kind);
+    if (!injected) {
+      setLog("swapLog", kind === "phantom" ? "Phantom is not installed." : "MetaMask is not installed.", "err");
+      return false;
+    }
+    try { localStorage.setItem("blazar_wallet", kind); localStorage.removeItem("blazar_logged_out"); } catch (e) {}
+    state.walletKind = kind;
+    bindInjected(injected);
+    state.provider = new ethers.BrowserProvider(injected);
     await state.provider.send("eth_requestAccounts", []);
     state.signer = await state.provider.getSigner();
     state.account = await state.signer.getAddress();
@@ -119,14 +186,15 @@
     $("connectBtn").textContent = short(state.account);
     $("networkChip").textContent = state.chainId === CFG.chainId ? CFG.chainName : "CHAIN " + state.chainId;
     if (state.chainId !== CFG.chainId) {
+      const hex = "0x" + CFG.chainId.toString(16);
       try {
-        await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x" + CFG.chainId.toString(16) }] });
+        await injected.request({ method: "wallet_switchEthereumChain", params: [{ chainId: hex }] });
       } catch (err) {
-        if (err.code === 4902) {
-          await window.ethereum.request({
+        if (err && err.code === 4902) {
+          await injected.request({
             method: "wallet_addEthereumChain",
             params: [{
-              chainId: "0x" + CFG.chainId.toString(16),
+              chainId: hex,
               chainName: CFG.chainName,
               nativeCurrency: CFG.nativeCurrency,
               rpcUrls: [CFG.rpcUrl],
@@ -136,9 +204,11 @@
         }
       }
     }
+    closeWalletMenu();
     await refreshBalances();
     await refreshPairs();
     quoteOut();
+    return true;
   }
   function closeWalletMenu() {
     const drop = $("walletDrop");
@@ -157,10 +227,11 @@
     closeWalletMenu();
     try { localStorage.setItem("blazar_logged_out", "1"); } catch {}
     try {
-      if (window.ethereum && window.ethereum.request) {
-        await window.ethereum.request({ method: "wallet_revokePermissions", params: [{ eth_accounts: {} }] });
+      if (state.injected && state.injected.request) {
+        await state.injected.request({ method: "wallet_revokePermissions", params: [{ eth_accounts: {} }] });
       }
     } catch {}
+    window.BLAZAR_ETH = null;
     state.account = null;
     state.signer = null;
     state.provider = null;
@@ -310,7 +381,7 @@
   }
   async function doSwap() {
     try {
-      if (!state.signer) await connect();
+      if (!state.signer && !(await connect(state.walletKind))) return;
       if (!configured()) throw new Error("Set factory and router in js/config.js.");
       const tin = tokenByAddress($("tokenIn").value);
       const tout = tokenByAddress($("tokenOut").value);
@@ -430,7 +501,7 @@
 
   async function addLiquidity() {
     try {
-      if (!state.signer) await connect();
+      if (!state.signer && !(await connect(state.walletKind))) return;
       if (!configured()) throw new Error("Set factory and router in js/config.js.");
       const a = tokenByAddress($("liqTokenA").value);
       const b = tokenByAddress($("liqTokenB").value);
@@ -468,7 +539,7 @@
   }
   async function createPair() {
     try {
-      if (!state.signer) await connect();
+      if (!state.signer && !(await connect(state.walletKind))) return;
       setLog("liqLog", "Creating pair…");
       const a = tokenByAddress($("liqTokenA").value);
       const b = tokenByAddress($("liqTokenB").value);
@@ -482,7 +553,7 @@
   }
   async function removeLiquidity() {
     try {
-      if (!state.signer) await connect();
+      if (!state.signer && !(await connect(state.walletKind))) return;
       const pairAddr = $("removePair").value;
       if (!pairAddr) throw new Error("No pair selected.");
       const pair = new ethers.Contract(pairAddr, ABIS.Pair, state.signer);
@@ -611,7 +682,7 @@
   }
   async function wrapPol(unwrap) {
     try {
-      if (!state.signer) await connect();
+      if (!state.signer && !(await connect(state.walletKind))) return;
       const amt = parseAmt($("wrapAmt").value, 18);
       if (amt === 0n) throw new Error("Enter an amount.");
       const c = new ethers.Contract(CFG.weth, ["function deposit() payable", "function withdraw(uint256)"], state.signer);
@@ -641,8 +712,16 @@
     });
     $("connectBtn").addEventListener("click", (ev) => {
       ev.stopPropagation();
-      if (state.account) toggleWalletMenu();
-      else connect();
+      paintWalletMenu();
+      toggleWalletMenu();
+    });
+    ["useMetaMask", "usePhantom"].forEach((id) => {
+      const btn = $(id);
+      if (!btn) return;
+      btn.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        connect(btn.getAttribute("data-wallet")).catch((err) => setLog("swapLog", err.shortMessage || err.message || String(err), "err"));
+      });
     });
     $("disconnectBtn").addEventListener("click", (ev) => {
       ev.stopPropagation();
@@ -663,7 +742,7 @@
       loadChart(chartToken($("tokenOut").value));
     });
     async function fillMax(selectId, inputId) {
-      if (!state.account) await connect();
+      if (!state.account && !(await connect(state.walletKind))) return;
       await refreshBalances();
       const token = tokenByAddress($(selectId).value);
       const bal = state.bal[selectId];
@@ -715,16 +794,17 @@
     $("createPairBtn").addEventListener("click", createPair);
     $("removeLiqBtn").addEventListener("click", removeLiquidity);
     loadChart(chartToken($("tokenOut").value));
-    if (window.ethereum) {
-      window.ethereum.on("accountsChanged", (accounts) => {
-        if (!accounts || !accounts.length) disconnect();
-        else connect();
-      });
-      window.ethereum.on("chainChanged", () => window.location.reload());
-      window.ethereum.request({ method: "eth_accounts" }).then((accounts) => {
+    paintWalletMenu();
+    let savedKind = "metamask";
+    try { savedKind = localStorage.getItem("blazar_wallet") || "metamask"; } catch (e) {}
+    const injected = pickInjected(savedKind);
+    if (injected) {
+      bindInjected(injected);
+      state.walletKind = savedKind;
+      injected.request({ method: "eth_accounts" }).then((accounts) => {
         let loggedOut = false;
-        try { loggedOut = localStorage.getItem("blazar_logged_out") === "1"; } catch {}
-        if (accounts && accounts.length && !loggedOut) connect();
+        try { loggedOut = localStorage.getItem("blazar_logged_out") === "1"; } catch (e) {}
+        if (accounts && accounts.length && !loggedOut) connect(savedKind);
       }).catch(() => {});
     }
     refreshPairs();
