@@ -99,7 +99,9 @@
       <div class="wallet-menu" id="walletMenu">
         <button class="connect" id="connectBtn" type="button" aria-haspopup="true" aria-expanded="false">Connect</button>
         <div class="wallet-drop" id="walletDrop" hidden>
-          <button type="button" id="disconnectBtn">Log out</button>
+          <button type="button" id="useMetaMask" data-wallet="metamask">MetaMask</button>
+          <button type="button" id="usePhantom" data-wallet="phantom">Phantom</button>
+          <button type="button" id="disconnectBtn" hidden>Log out</button>
         </div>
       </div>
     </div>
@@ -364,9 +366,9 @@
       }
     })();
   </script>
-  <script src="js/app.js?v=pos1"></script>
-  <script src="js/m421.js?v=back1"></script>
-  <script src="js/draw.js?v=3"></script>
+  <script src="js/app.js?v=wallet1"></script>
+  <script src="js/m421.js?v=wallet1"></script>
+  <script src="js/draw.js?v=wallet1"></script>
   <script src="js/token-ui.js"></script>
   <script src="js/music.js?v=snd1"></script>
   <script>
