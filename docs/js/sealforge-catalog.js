@@ -18,11 +18,11 @@ window.SEALFORGE_APPS = [
     kind: "game",
     icon: "sealforge-logo.png",
     file: "SealForge.apk",
-    version: "1.0",
-    size: "80 MB",
+    version: "1.2",
+    size: "79 MB",
     updated: "October 5, 2026",
     summary: "Dark-fantasy card game. Build a deck, find a match, and keep your rank on this phone.",
-    notes: "Install the APK, then open Seal Forge. The game wallet stays on the device. Ranked matches and the level 2 pack use the same live tables as the site.",
-    sha256: "c611e393f76513a067b05032685032d7e49571c1d75716c7b53c3c813689e7b7"
+    notes: "Find a match sits you with another player. Host puts your table in the open list so someone can tap it. The game wallet stays on the device.",
+    sha256: "88b113855746c4c5451136bdeaec302f24fbd2a6f5db97be89b589e3947eddef"
   }
 ];
