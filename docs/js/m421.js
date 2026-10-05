@@ -153,11 +153,12 @@
     }
   }
   async function wallet() {
-    if (!window.ethereum) throw new Error("No wallet found. Connect one at the top of the page.");
-    const provider = new ethers.BrowserProvider(window.ethereum);
+    const injected = window.BLAZAR_ETH;
+    if (!injected) throw new Error("Choose MetaMask or Phantom at the top of the page.");
+    const provider = new ethers.BrowserProvider(injected);
     const net = await provider.getNetwork();
     if (Number(net.chainId) !== M.chainId) {
-      await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x89" }] });
+      await injected.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x89" }] });
     }
     await provider.send("eth_requestAccounts", []);
     signer = await provider.getSigner();
