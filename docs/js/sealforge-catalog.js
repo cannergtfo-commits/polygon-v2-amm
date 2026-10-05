@@ -18,11 +18,11 @@ window.SEALFORGE_APPS = [
     kind: "game",
     icon: "sealforge-logo.png",
     file: "SealForge.apk",
-    version: "1.2",
+    version: "1.3",
     size: "79 MB",
     updated: "October 5, 2026",
     summary: "Dark-fantasy card game. Build a deck, find a match, and keep your rank on this phone.",
-    notes: "Find a match sits you with another player. Host puts your table in the open list so someone can tap it. The game wallet stays on the device.",
-    sha256: "88b113855746c4c5451136bdeaec302f24fbd2a6f5db97be89b589e3947eddef"
+    notes: "Leaving a match is a loss and closes it. The player who stays gets the win, and the next Find a match is a new queue. Host still lists an open table. The game wallet stays on the device.",
+    sha256: "ecbd8f649c4b6c68ed5378a6bd46070130cf5dfb783f1f500ff36b1cd22efdc4"
   }
 ];
