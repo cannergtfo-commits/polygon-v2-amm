@@ -4,14 +4,14 @@ window.SEALFORGE_APPS = [
   {
     name: "Blazar Force",
     kind: "tool",
-    icon: "blazarforce-icon.png",
+    icon: "blazarforce-store.png",
     file: "BlazarForce.apk",
-    version: "1.5",
+    version: "1.6",
     size: "189 KB",
     updated: "October 5, 2026",
     summary: "BlazarSwap on your phone. Swap, add liquidity, and stake from an encrypted on-device Polygon wallet.",
-    notes: "Official Blazar Force build. The key stays encrypted in the phone keystore. Fund the copied address with POL for gas. Install over an older BlazarSwap app to keep the same wallet.",
-    sha256: "ffc0ec46707aa7f4771b411f5218eff8be9486a1d7f3faef3ac1b5fd47bf2da2"
+    notes: "Official Blazar Force build. The key stays encrypted in the phone keystore. Fund the copied address with POL for gas. Install over an older BlazarSwap app to keep the same wallet. Later builds replace apks/BlazarForce.apk and bump apks/blazarforce.json; the app offers that download.",
+    sha256: "a26b6467202fe2b59d76dca2221df730b832a994952e70b08d2fdd429393e794"
   },
   {
     name: "Seal Forge",

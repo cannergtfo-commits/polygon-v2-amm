@@ -1,0 +1,8 @@
+{
+  "name": "Blazar Force",
+  "version": "1.6",
+  "versionCode": 7,
+  "file": "apks/BlazarForce.apk",
+  "sha256": "a26b6467202fe2b59d76dca2221df730b832a994952e70b08d2fdd429393e794",
+  "notes": "Install this over the current app. The wallet stays on the phone."
+}
