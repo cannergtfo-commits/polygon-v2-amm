@@ -143,17 +143,65 @@
     if ($("usePhantom")) $("usePhantom").hidden = logged;
     if ($("disconnectBtn")) $("disconnectBtn").hidden = !logged;
   }
-  function onAccounts(accounts) {
-    if (!accounts || !accounts.length) disconnect();
-    else connect(state.walletKind);
+  let connectLock = false;
+  let connectTask = null;
+  let dropTimer = null;
+  function loggedOut() {
+    try { return localStorage.getItem("blazar_logged_out") === "1"; } catch (e) { return false; }
   }
-  function onChain() { window.location.reload(); }
+  function unbind(injected) {
+    if (!injected) return;
+    ["removeListener", "off"].forEach((method) => {
+      if (typeof injected[method] !== "function") return;
+      try { injected[method]("accountsChanged", onAccounts); } catch (e) {}
+      try { injected[method]("chainChanged", onChain); } catch (e) {}
+    });
+  }
+  async function adoptAccount(addr) {
+    if (!state.injected || !addr) return;
+    state.provider = new ethers.BrowserProvider(state.injected);
+    state.signer = await state.provider.getSigner();
+    state.account = await state.signer.getAddress();
+    $("connectBtn").textContent = short(state.account);
+    await refreshBalances();
+    await refreshPairs();
+    quoteOut();
+  }
+  function onAccounts(accounts) {
+    if (connectLock || state.leaving || loggedOut()) return;
+    const list = accounts || [];
+    if (!list.length) {
+      clearTimeout(dropTimer);
+      dropTimer = setTimeout(() => {
+        if (connectLock || state.leaving || loggedOut() || !state.injected) return;
+        state.injected.request({ method: "eth_accounts" }).then((live) => {
+          if (connectLock || state.leaving || loggedOut()) return;
+          if (live && live.length) {
+            if (!state.account || state.account.toLowerCase() !== String(live[0]).toLowerCase()) adoptAccount(live[0]).catch(() => {});
+            return;
+          }
+          clearSession();
+          refreshPairs();
+        }).catch(() => {});
+      }, 500);
+      return;
+    }
+    clearTimeout(dropTimer);
+    if (state.account && state.account.toLowerCase() === String(list[0]).toLowerCase()) return;
+    adoptAccount(list[0]).catch(() => {});
+  }
+  function onChain(hex) {
+    if (connectLock || state.leaving) return;
+    const id = typeof hex === "string" ? parseInt(hex, 16) : Number(hex);
+    if (!Number.isFinite(id) || id === CFG.chainId) return;
+    clearTimeout(dropTimer);
+    dropTimer = setTimeout(() => {
+      if (!connectLock && !state.leaving) window.location.reload();
+    }, 400);
+  }
   function bindInjected(injected) {
     if (state.injected === injected && state.bound) return;
-    if (state.injected && state.injected.removeListener) {
-      try { state.injected.removeListener("accountsChanged", onAccounts); } catch (e) {}
-      try { state.injected.removeListener("chainChanged", onChain); } catch (e) {}
-    }
+    unbind(state.injected);
     state.injected = injected;
     state.bound = true;
     window.BLAZAR_ETH = injected;
@@ -162,6 +210,20 @@
       injected.on("chainChanged", onChain);
     }
   }
+  function clearSession() {
+    window.BLAZAR_ETH = null;
+    state.account = null;
+    state.signer = null;
+    state.provider = null;
+    state.chainId = null;
+    state.bal = {};
+    if ($("connectBtn")) $("connectBtn").textContent = "Connect";
+    if ($("networkChip")) $("networkChip").textContent = "Not connected";
+    ["balIn", "balOut", "balLiqA", "balLiqB"].forEach((id) => { if ($(id)) $(id).textContent = "Balance —"; });
+    if ($("balPol")) $("balPol").textContent = "POL —";
+    if ($("balWpol")) $("balWpol").textContent = "WPOL —";
+    paintWalletMenu();
+  }
   async function connect(kind) {
     if (!kind) {
       paintWalletMenu();
@@ -169,6 +231,11 @@
       if (drop && drop.hidden) toggleWalletMenu();
       return false;
     }
+    if (connectTask) return connectTask;
+    connectTask = doConnect(kind).finally(() => { connectTask = null; });
+    return connectTask;
+  }
+  async function doConnect(kind) {
     const injected = pickInjected(kind);
     if (!injected) {
       setLog("swapLog", kind === "phantom" ? "Phantom is not installed." : "MetaMask is not installed.", "err");
@@ -176,39 +243,52 @@
     }
     try { localStorage.setItem("blazar_wallet", kind); localStorage.removeItem("blazar_logged_out"); } catch (e) {}
     state.walletKind = kind;
-    bindInjected(injected);
-    state.provider = new ethers.BrowserProvider(injected);
-    await state.provider.send("eth_requestAccounts", []);
-    state.signer = await state.provider.getSigner();
-    state.account = await state.signer.getAddress();
-    const net = await state.provider.getNetwork();
-    state.chainId = Number(net.chainId);
-    $("connectBtn").textContent = short(state.account);
-    $("networkChip").textContent = state.chainId === CFG.chainId ? CFG.chainName : "CHAIN " + state.chainId;
-    if (state.chainId !== CFG.chainId) {
-      const hex = "0x" + CFG.chainId.toString(16);
-      try {
-        await injected.request({ method: "wallet_switchEthereumChain", params: [{ chainId: hex }] });
-      } catch (err) {
-        if (err && err.code === 4902) {
-          await injected.request({
-            method: "wallet_addEthereumChain",
-            params: [{
-              chainId: hex,
-              chainName: CFG.chainName,
-              nativeCurrency: CFG.nativeCurrency,
-              rpcUrls: [CFG.rpcUrl],
-              blockExplorerUrls: [CFG.explorer]
-            }]
-          });
+    connectLock = true;
+    clearTimeout(dropTimer);
+    try {
+      bindInjected(injected);
+      state.provider = new ethers.BrowserProvider(injected);
+      let accounts = [];
+      try { accounts = await injected.request({ method: "eth_accounts" }); } catch (e) {}
+      if (!accounts || !accounts.length) accounts = await injected.request({ method: "eth_requestAccounts" });
+      if (!accounts || !accounts.length) return false;
+      state.signer = await state.provider.getSigner();
+      state.account = await state.signer.getAddress();
+      const hexId = await injected.request({ method: "eth_chainId" });
+      state.chainId = parseInt(hexId, 16);
+      $("connectBtn").textContent = short(state.account);
+      $("networkChip").textContent = state.chainId === CFG.chainId ? CFG.chainName : "CHAIN " + state.chainId;
+      if (state.chainId !== CFG.chainId) {
+        const hex = "0x" + CFG.chainId.toString(16);
+        try {
+          await injected.request({ method: "wallet_switchEthereumChain", params: [{ chainId: hex }] });
+          state.chainId = CFG.chainId;
+          $("networkChip").textContent = CFG.chainName;
+        } catch (err) {
+          if (err && err.code === 4902) {
+            await injected.request({
+              method: "wallet_addEthereumChain",
+              params: [{
+                chainId: hex,
+                chainName: CFG.chainName,
+                nativeCurrency: CFG.nativeCurrency,
+                rpcUrls: [CFG.rpcUrl],
+                blockExplorerUrls: [CFG.explorer]
+              }]
+            });
+            state.chainId = CFG.chainId;
+            $("networkChip").textContent = CFG.chainName;
+          }
         }
       }
+      closeWalletMenu();
+      await refreshBalances();
+      await refreshPairs();
+      quoteOut();
+      return true;
+    } finally {
+      setTimeout(() => { connectLock = false; }, 700);
     }
-    closeWalletMenu();
-    await refreshBalances();
-    await refreshPairs();
-    quoteOut();
-    return true;
   }
   function closeWalletMenu() {
     const drop = $("walletDrop");
@@ -224,25 +304,19 @@
     $("connectBtn").setAttribute("aria-expanded", open ? "true" : "false");
   }
   async function disconnect() {
+    if (state.leaving) return;
+    state.leaving = true;
+    clearTimeout(dropTimer);
     closeWalletMenu();
-    try { localStorage.setItem("blazar_logged_out", "1"); } catch {}
-    try {
-      if (state.injected && state.injected.request) {
-        await state.injected.request({ method: "wallet_revokePermissions", params: [{ eth_accounts: {} }] });
-      }
-    } catch {}
-    window.BLAZAR_ETH = null;
-    state.account = null;
-    state.signer = null;
-    state.provider = null;
-    state.chainId = null;
-    state.bal = {};
-    $("connectBtn").textContent = "Connect";
-    $("networkChip").textContent = "Not connected";
-    ["balIn", "balOut", "balLiqA", "balLiqB"].forEach((id) => { if ($(id)) $(id).textContent = "Balance —"; });
-    if ($("balPol")) $("balPol").textContent = "POL —";
-    if ($("balWpol")) $("balWpol").textContent = "WPOL —";
+    try { localStorage.setItem("blazar_logged_out", "1"); } catch (e) {}
+    const injected = state.injected;
+    const phantom = state.walletKind === "phantom" || (injected && injected.isPhantom);
+    clearSession();
+    if (!phantom && injected && injected.request) {
+      try { await injected.request({ method: "wallet_revokePermissions", params: [{ eth_accounts: {} }] }); } catch (e) {}
+    }
     refreshPairs();
+    setTimeout(() => { state.leaving = false; }, 700);
   }
   const router = () => new ethers.Contract(CFG.router, ABIS.Router, state.signer || state.provider);
   const factory = () => new ethers.Contract(CFG.factory, ABIS.Factory, state.signer || state.provider);
