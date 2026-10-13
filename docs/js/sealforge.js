@@ -41,10 +41,12 @@
     var body = document.createElement("div");
     body.className = "app-body";
     var meta = [kindLabel(app.kind), app.version ? "v" + app.version : "", app.size || ""].filter(Boolean).join(" · ");
+    var actions = '<div class="app-actions"><a class="connect" href="apks/' + esc(app.file) + '" download="' + esc(fileName(app)) + '">Download APK</a>';
+    if (app.play) actions += '<a class="ghost" href="' + esc(app.play) + '">Play in browser</a>';
+    actions += '<button class="ghost" type="button">Details</button></div>';
     body.innerHTML =
       '<div class="app-copy"><b>' + esc(app.name) + "</b><small>" + esc(meta) + "</small><em>" + esc(app.summary) + "</em></div>" +
-      '<div class="app-actions"><a class="connect" href="apks/' + esc(app.file) + '" download="' + esc(fileName(app)) + '">Download APK</a>' +
-      '<button class="ghost" type="button">Details</button></div>';
+      actions;
     body.querySelector("button").addEventListener("click", function () { openSheet(app); });
     wrap.appendChild(art);
     wrap.appendChild(body);
@@ -72,6 +74,14 @@
     var dl = document.getElementById("sheetDownload");
     dl.href = "apks/" + app.file;
     dl.setAttribute("download", fileName(app));
+    var play = document.getElementById("sheetPlay");
+    if (app.play) {
+      play.hidden = false;
+      play.href = app.play;
+    } else {
+      play.hidden = true;
+      play.removeAttribute("href");
+    }
     sheet.showModal();
   }
   document.getElementById("sheetClose").addEventListener("click", function () { sheet.close(); });

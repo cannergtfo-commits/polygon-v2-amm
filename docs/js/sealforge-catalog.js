@@ -16,8 +16,9 @@ window.SEALFORGE_APPS = [
   {
     name: "Seal Forge",
     kind: "game",
-    icon: "sealforge-logo.png",
+    icon: "sealforge-logo.png?v=icon2",
     file: "SealForge.apk",
+    play: "https://play.blazarforce.net",
     version: "1.3",
     size: "79 MB",
     updated: "October 5, 2026",
