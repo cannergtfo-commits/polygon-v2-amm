@@ -36,14 +36,14 @@ window.SEALFORGE_APPS = [
     name: "Blazar Bastion",
     kind: "game",
     icon: "bastion-icon.png",
-    file: "BlazarBastion-0.2.4.apk",
-    href: "https://github.com/cannergtfo-commits/polygon-v2-amm/releases/download/blazar-apps/BlazarBastion-0.2.4.apk",
+    file: "BlazarBastion-0.2.5.apk",
+    href: "https://github.com/cannergtfo-commits/polygon-v2-amm/releases/download/blazar-apps/BlazarBastion-0.2.5.apk",
     match: "BlazarBastion",
-    version: "0.2.4",
+    version: "0.2.5",
     size: "99 MB",
     updated: "October 14, 2026",
     summary: "Space-elf tower defense. One hundred frontiers, five towers, and a Polygon vault on the phone.",
-    notes: "The title menu sits at the top of the phone screen. No scrolling. Install over an older Blazar Bastion to keep the same save.",
-    sha256: "7849deb44eda62a94c48b2bd4231e4c4ecc2ce43d5501f2e98c9e390574436c6"
+    notes: "The title menu sits on top of the artwork. Install over an older Blazar Bastion to keep the same save.",
+    sha256: "2ec876404d1ed006753b6d292d597d3490b91c9d230e561d3dc2c13d2d572113"
   }
 ];
