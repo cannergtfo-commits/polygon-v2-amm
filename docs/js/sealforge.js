@@ -27,8 +27,20 @@
       return "&#" + c.charCodeAt(0) + ";";
     });
   }
-  function fileName(app) {
-    return (app.name || "app").replace(/\s+/g, "-") + ".apk";
+  function hrefFor(app) {
+    return app.href || ("apks/" + app.file);
+  }
+  function pulls(app) {
+    if (typeof app.downloads !== "number") return "";
+    var n = app.downloads.toLocaleString();
+    return app.downloads === 1 ? "1 download" : n + " downloads";
+  }
+  function metaLine(app, withDate) {
+    var bits = [kindLabel(app.kind), app.version ? "v" + app.version : "", app.size || ""];
+    if (withDate && app.updated) bits.push(app.updated);
+    var got = pulls(app);
+    if (got) bits.push(got);
+    return bits.filter(Boolean).join(" · ");
   }
   function card(app) {
     var wrap = document.createElement("article");
@@ -40,12 +52,11 @@
     art.addEventListener("click", function () { openSheet(app); });
     var body = document.createElement("div");
     body.className = "app-body";
-    var meta = [kindLabel(app.kind), app.version ? "v" + app.version : "", app.size || ""].filter(Boolean).join(" · ");
-    var actions = '<div class="app-actions"><a class="connect" href="apks/' + esc(app.file) + '" download="' + esc(fileName(app)) + '">Download APK</a>';
+    var actions = '<div class="app-actions"><a class="connect" href="' + esc(hrefFor(app)) + '">Download APK</a>';
     if (app.play) actions += '<a class="ghost" href="' + esc(app.play) + '">Play in browser</a>';
     actions += '<button class="ghost" type="button">Details</button></div>';
     body.innerHTML =
-      '<div class="app-copy"><b>' + esc(app.name) + "</b><small>" + esc(meta) + "</small><em>" + esc(app.summary) + "</em></div>" +
+      '<div class="app-copy"><b>' + esc(app.name) + "</b><small>" + esc(metaLine(app, false)) + "</small><em>" + esc(app.summary) + "</em></div>" +
       actions;
     body.querySelector("button").addEventListener("click", function () { openSheet(app); });
     wrap.appendChild(art);
@@ -62,7 +73,7 @@
   function openSheet(app) {
     document.getElementById("sheetArt").src = app.icon || "";
     document.getElementById("sheetName").textContent = app.name;
-    document.getElementById("sheetMeta").textContent = [app.version ? "v" + app.version : "", app.size || "", app.updated || ""].filter(Boolean).join(" · ");
+    document.getElementById("sheetMeta").textContent = metaLine(app, true);
     document.getElementById("sheetSummary").textContent = app.summary || "";
     document.getElementById("sheetNotes").textContent = app.notes || "";
     document.getElementById("sheetKind").textContent = kindLabel(app.kind);
@@ -72,8 +83,8 @@
       hash.textContent = "SHA-256  " + app.sha256;
     } else hash.hidden = true;
     var dl = document.getElementById("sheetDownload");
-    dl.href = "apks/" + app.file;
-    dl.setAttribute("download", fileName(app));
+    dl.href = hrefFor(app);
+    dl.removeAttribute("download");
     var play = document.getElementById("sheetPlay");
     if (app.play) {
       play.hidden = false;
@@ -94,5 +105,37 @@
     document.querySelectorAll("[data-kind]").forEach(function (el) { el.classList.toggle("on", el === btn); });
     render();
   });
+  function loadCounts() {
+    fetch("https://api.github.com/repos/cannergtfo-commits/polygon-v2-amm/releases?per_page=100", {
+      headers: { Accept: "application/vnd.github+json" }
+    })
+      .then(function (res) { return res.ok ? res.json() : []; })
+      .then(function (rels) {
+        if (!Array.isArray(rels)) return;
+        APPS.forEach(function (app) {
+          if (!app.match) return;
+          var total = 0;
+          var seen = false;
+          rels.forEach(function (rel) {
+            (rel.assets || []).forEach(function (asset) {
+              if (String(asset.name || "").indexOf(app.match) === 0) {
+                total += asset.download_count || 0;
+                seen = true;
+              }
+            });
+          });
+          if (seen) app.downloads = total;
+        });
+        render();
+        if (sheet.open) {
+          var name = document.getElementById("sheetName").textContent;
+          var open = null;
+          for (var i = 0; i < APPS.length; i++) if (APPS[i].name === name) open = APPS[i];
+          if (open) document.getElementById("sheetMeta").textContent = metaLine(open, true);
+        }
+      })
+      .catch(function () {});
+  }
   render();
+  loadCounts();
 })();
