@@ -36,14 +36,14 @@ window.SEALFORGE_APPS = [
     name: "Blazar Bastion",
     kind: "game",
     icon: "bastion-icon.png",
-    file: "BlazarBastion-0.2.2.apk",
-    href: "https://github.com/cannergtfo-commits/polygon-v2-amm/releases/download/blazar-apps/BlazarBastion-0.2.2.apk",
+    file: "BlazarBastion-0.2.3.apk",
+    href: "https://github.com/cannergtfo-commits/polygon-v2-amm/releases/download/blazar-apps/BlazarBastion-0.2.3.apk",
     match: "BlazarBastion",
-    version: "0.2.2",
+    version: "0.2.3",
     size: "99 MB",
     updated: "October 14, 2026",
     summary: "Space-elf tower defense. One hundred frontiers, five towers, and a Polygon vault on the phone.",
     notes: "Centered phone menu. Tap a pad to raise a tower. Drag Vaela when she is on the field. The vault can create a wallet or import a private key. Install over an older Blazar Bastion to keep the same save.",
-    sha256: "4eb4cef5cc09e575b4c93ee6ba7c3af5aace95d807461240429402f7348b5055"
+    sha256: "98c86a47b8303647ccc89533306d13e1152194701b6b738180eac83cd89c7ed4"
   }
 ];
