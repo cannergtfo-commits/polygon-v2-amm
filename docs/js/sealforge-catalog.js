@@ -50,15 +50,15 @@ window.SEALFORGE_APPS = [
     name: "Emberline",
     kind: "game",
     icon: "emberline-icon.png",
-    file: "Emberline-1.0.apk",
-    href: "https://github.com/cannergtfo-commits/polygon-v2-amm/releases/download/blazar-apps/Emberline-1.0.apk",
+    file: "Emberline-1.0.1.apk",
+    href: "https://github.com/cannergtfo-commits/polygon-v2-amm/releases/download/blazar-apps/Emberline-1.0.1.apk",
     match: "Emberline",
-    version: "1.0",
+    version: "1.0.1",
     size: "46 MB",
     updated: "October 20, 2026",
     summary: "Fun hot-seat multiplayer. Pass one phone or tablet around the table.",
-    notes: "Two to four players, five banners, no accounts and no online lobby. Android asks before the install.",
-    sha256: "cdb76230696a23b2a165ef5b019d9222d529b978409592d0bb6aecfa452f4b37"
+    notes: "Two to four players, five banners, no accounts and no online lobby. Install over 1.0 if that build opened to Not Found. Android asks before the install.",
+    sha256: "850a34092a6015aa3cee1da91332261287950d6df928158fe18622f19a121ea6"
   },
   {
     name: "Lyra Starfall",
