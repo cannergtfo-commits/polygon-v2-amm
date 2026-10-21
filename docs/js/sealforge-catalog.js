@@ -59,5 +59,20 @@ window.SEALFORGE_APPS = [
     summary: "Fun hot-seat multiplayer. Pass one phone or tablet around the table.",
     notes: "Two to four players, five banners, no accounts and no online lobby. Android asks before the install.",
     sha256: "cdb76230696a23b2a165ef5b019d9222d529b978409592d0bb6aecfa452f4b37"
+  },
+  {
+    name: "Lyra Starfall",
+    kind: "game",
+    icon: "lyra-icon.png",
+    file: "LyraStarfall-1.0.apk",
+    href: "https://github.com/cannergtfo-commits/polygon-v2-amm/releases/download/blazar-apps/LyraStarfall-1.0.apk",
+    match: "LyraStarfall",
+    play: "https://blazarforce.net/lyra/",
+    version: "1.0",
+    size: "75 MB",
+    updated: "October 20, 2026",
+    summary: "Space-elf side scroller. Punch, kick, and shoot from the forest through the city to a dragon.",
+    notes: "Install from this shelf. Android asks before the install. The browser game is the same hunt, on this site.",
+    sha256: "765959936caeb7b27d8ba2825c26235da6fe0639042a3fbb0a42847292b70c26"
   }
 ];
