@@ -45,5 +45,19 @@ window.SEALFORGE_APPS = [
     summary: "Space-elf tower defense. One hundred frontiers, five towers, and a Polygon vault on the phone.",
     notes: "The title menu is centered on top of the artwork. Install over an older Blazar Bastion to keep the same save.",
     sha256: "21fc0c643f255a3b74f42d88e212419265f5a5b57fc4fc2f9c7381f7348aa876"
+  },
+  {
+    name: "Emberline",
+    kind: "game",
+    icon: "emberline-icon.png",
+    file: "Emberline-1.0.apk",
+    href: "https://github.com/cannergtfo-commits/polygon-v2-amm/releases/download/blazar-apps/Emberline-1.0.apk",
+    match: "Emberline",
+    version: "1.0",
+    size: "46 MB",
+    updated: "October 20, 2026",
+    summary: "Fun hot-seat multiplayer. Pass one phone or tablet around the table.",
+    notes: "Two to four players, five banners, no accounts and no online lobby. Android asks before the install.",
+    sha256: "cdb76230696a23b2a165ef5b019d9222d529b978409592d0bb6aecfa452f4b37"
   }
 ];
