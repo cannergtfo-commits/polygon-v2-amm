@@ -121,26 +121,29 @@
     return list;
   }
   function pickInjected(kind) {
-    const wantPhantom = kind === "phantom";
     const announced = announcedWallets();
     for (let i = 0; i < announced.length; i++) {
       const info = announced[i].info || {};
       const rdns = String(info.rdns || "");
       const name = String(info.name || "").toLowerCase();
-      if (wantPhantom && (rdns === "app.phantom" || name.indexOf("phantom") !== -1)) return announced[i].provider;
-      if (!wantPhantom && (rdns === "io.metamask" || name === "metamask")) return announced[i].provider;
+      if (kind === "phantom" && (rdns === "app.phantom" || name.indexOf("phantom") !== -1)) return announced[i].provider;
+      if (kind === "rabby" && (rdns === "io.rabby" || name.indexOf("rabby") !== -1)) return announced[i].provider;
+      if (kind === "metamask" && (rdns === "io.metamask" || name === "metamask")) return announced[i].provider;
     }
-    if (wantPhantom && window.phantom && window.phantom.ethereum) return window.phantom.ethereum;
+    if (kind === "phantom" && window.phantom && window.phantom.ethereum) return window.phantom.ethereum;
     const eth = window.ethereum;
     const list = eth && Array.isArray(eth.providers) ? eth.providers.slice() : (eth ? [eth] : []);
     if (window.phantom && window.phantom.ethereum && list.indexOf(window.phantom.ethereum) === -1) list.push(window.phantom.ethereum);
-    if (wantPhantom) return list.find((p) => p && p.isPhantom) || null;
-    return list.find((p) => p && p.isMetaMask && !p.isPhantom) || null;
+    if (window.rabby && window.rabby.request && list.indexOf(window.rabby) === -1) list.push(window.rabby);
+    if (kind === "phantom") return list.find((p) => p && p.isPhantom) || null;
+    if (kind === "rabby") return list.find((p) => p && p.isRabby) || null;
+    return list.find((p) => p && p.isMetaMask && !p.isPhantom && !p.isRabby) || null;
   }
   function paintWalletMenu() {
     const logged = !!state.account;
     if ($("useMetaMask")) $("useMetaMask").hidden = logged;
     if ($("usePhantom")) $("usePhantom").hidden = logged;
+    if ($("useRabby")) $("useRabby").hidden = logged;
     if ($("disconnectBtn")) $("disconnectBtn").hidden = !logged;
   }
   let connectLock = false;
@@ -238,7 +241,8 @@
   async function doConnect(kind) {
     const injected = pickInjected(kind);
     if (!injected) {
-      setLog("swapLog", kind === "phantom" ? "Phantom is not installed." : "MetaMask is not installed.", "err");
+      const missing = kind === "phantom" ? "Phantom" : kind === "rabby" ? "Rabby" : "MetaMask";
+      setLog("swapLog", missing + " is not installed.", "err");
       return false;
     }
     try { localStorage.setItem("blazar_wallet", kind); localStorage.removeItem("blazar_logged_out"); } catch (e) {}
@@ -789,7 +793,7 @@
       paintWalletMenu();
       toggleWalletMenu();
     });
-    ["useMetaMask", "usePhantom"].forEach((id) => {
+    ["useMetaMask", "usePhantom", "useRabby"].forEach((id) => {
       const btn = $(id);
       if (!btn) return;
       btn.addEventListener("click", (ev) => {
