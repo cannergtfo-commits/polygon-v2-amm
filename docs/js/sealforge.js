@@ -52,8 +52,9 @@
     art.addEventListener("click", function () { openSheet(app); });
     var body = document.createElement("div");
     body.className = "app-body";
-    var actions = '<div class="app-actions"><a class="connect" href="' + esc(hrefFor(app)) + '">Download APK</a>';
-    if (app.play) actions += '<a class="ghost" href="' + esc(app.play) + '">Play in browser</a>';
+    var actions = '<div class="app-actions">';
+    if (app.play) actions += '<a class="connect" href="' + esc(app.play) + '">Play in browser</a>';
+    if (app.href || app.file) actions += '<a class="' + (app.play ? 'ghost' : 'connect') + '" href="' + esc(hrefFor(app)) + '">Download APK</a>';
     actions += '<button class="ghost" type="button">Details</button></div>';
     body.innerHTML =
       '<div class="app-copy"><b>' + esc(app.name) + "</b><small>" + esc(metaLine(app, false)) + "</small><em>" + esc(app.summary) + "</em></div>" +
@@ -83,8 +84,14 @@
       hash.textContent = "SHA-256  " + app.sha256;
     } else hash.hidden = true;
     var dl = document.getElementById("sheetDownload");
-    dl.href = hrefFor(app);
-    dl.removeAttribute("download");
+    if (app.href || app.file) {
+      dl.hidden = false;
+      dl.href = hrefFor(app);
+      dl.removeAttribute("download");
+    } else {
+      dl.hidden = true;
+      dl.removeAttribute("href");
+    }
     var play = document.getElementById("sheetPlay");
     if (app.play) {
       play.hidden = false;
