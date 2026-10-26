@@ -50,15 +50,15 @@ window.SEALFORGE_APPS = [
     name: "Emberline",
     kind: "game",
     icon: "emberline-icon.png",
-    file: "Emberline-1.0.3.apk",
-    href: "https://github.com/cannergtfo-commits/polygon-v2-amm/releases/download/blazar-apps/Emberline-1.0.3.apk",
+    file: "Emberline-1.0.4.apk",
+    href: "https://github.com/cannergtfo-commits/polygon-v2-amm/releases/download/blazar-apps/Emberline-1.0.4.apk",
     match: "Emberline",
-    version: "1.0.3",
-    size: "46 MB",
-    updated: "October 21, 2026",
+    version: "1.0.4",
+    size: "52 MB",
+    updated: "October 25, 2026",
     summary: "Fun hot-seat multiplayer. Pass one phone or tablet around the table.",
-    notes: "Units breathe while they wait and step through a longer march when they move. Install over the previous build. Android asks before the install.",
-    sha256: "0e4a01da0f6ff015f8778560a66e40ace5f86435a89c78027a1359ffa53b58f6"
+    notes: "Signe has a new look and an idle sword flourish. Hana Court joins with Mizuki Aoi and a full anime army. Install over 1.0.3. Android asks before the install.",
+    sha256: "616ba5b2cad54697648170ff8fb961a386d357143275da5b3eedf9f011be58b0"
   },
   {
     name: "Lyra Starfall",
