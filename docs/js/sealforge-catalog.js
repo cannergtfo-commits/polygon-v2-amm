@@ -1,7 +1,8 @@
 /* Add a title by uploading its .apk to the blazar-apps GitHub release
    and appending an object here.
    href must be the release-asset URL so GitHub records the download.
-   match is the filename prefix. Counts for every asset with that prefix are added together. */
+   match is the filename prefix. Counts for every asset with that prefix are added together.
+   Browser-only titles may omit href/file/match/sha256/size and set play. */
 window.SEALFORGE_APPS = [
   {
     name: "Blazar Force",
@@ -74,5 +75,15 @@ window.SEALFORGE_APPS = [
     summary: "Space-elf side scroller. Punch, kick, and shoot from the forest through the city to a dragon.",
     notes: "Install from this shelf. Android asks before the install. The browser game is the same hunt, on this site.",
     sha256: "765959936caeb7b27d8ba2825c26235da6fe0639042a3fbb0a42847292b70c26"
+  },
+  {
+    name: "Mythbind",
+    kind: "game",
+    icon: "mythbind-icon.png",
+    play: "https://blazarforce.net/mythbind/",
+    version: "0.1",
+    updated: "October 26, 2026",
+    summary: "Browser Pokémon-like creature RPG on Polygon. Catch beasts, battle, and trade with BzB.",
+    notes: "Play in the browser. Market and Inscribe use Polygon mainnet. The Game Wallet stays on the device."
   }
 ];
