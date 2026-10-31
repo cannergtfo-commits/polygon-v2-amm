@@ -166,6 +166,7 @@
     state.signer = await state.provider.getSigner();
     state.account = await state.signer.getAddress();
     $("connectBtn").textContent = short(state.account);
+    paintM421Tab();
     await refreshBalances();
     await refreshPairs();
     quoteOut();
@@ -226,6 +227,22 @@
     if ($("balPol")) $("balPol").textContent = "POL —";
     if ($("balWpol")) $("balWpol").textContent = "WPOL —";
     paintWalletMenu();
+    paintM421Tab();
+  }
+  const M421_HOLDERS = [
+    "0x6f47aa396215ab22647ddb3e86b4663dfe11db14",
+    "0x26eeca8912dd62da9d2c6d813b5e7f88e61a12b9"
+  ];
+  function paintM421Tab() {
+    const btn = document.querySelector('.desk > .tabs [data-tab="m421"]');
+    if (!btn) return;
+    const ok = !!(state.account && M421_HOLDERS.indexOf(state.account.toLowerCase()) !== -1);
+    btn.hidden = !ok;
+    const pane = $("pane-m421");
+    if (!ok && pane && pane.classList.contains("visible")) {
+      const swap = document.querySelector('.desk > .tabs [data-tab="swap"]');
+      if (swap) swap.click();
+    }
   }
   async function connect(kind) {
     if (!kind) {
@@ -261,6 +278,7 @@
       const hexId = await injected.request({ method: "eth_chainId" });
       state.chainId = parseInt(hexId, 16);
       $("connectBtn").textContent = short(state.account);
+      paintM421Tab();
       $("networkChip").textContent = state.chainId === CFG.chainId ? CFG.chainName : "CHAIN " + state.chainId;
       if (state.chainId !== CFG.chainId) {
         const hex = "0x" + CFG.chainId.toString(16);
@@ -776,8 +794,10 @@
   }
   function wireUi() {
     fillSelects();
+    paintM421Tab();
     document.querySelectorAll(".desk > .tabs [data-tab]").forEach((btn) => {
       btn.addEventListener("click", () => {
+        if (btn.dataset.tab === "m421" && btn.hidden) return;
         document.querySelectorAll(".desk > .tabs [data-tab]").forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
         document.querySelectorAll(".stack > .pane").forEach((p) => p.classList.remove("visible"));
