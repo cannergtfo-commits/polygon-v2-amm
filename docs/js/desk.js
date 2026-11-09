@@ -42,7 +42,7 @@ import {
   wrapperOnSpend,
 } from "./desk-core.mjs?v=desk11";
 import { POLYGON_TOKENS } from "./polygon-tokens.mjs?v=desk11";
-import { POLYPUMP_LIST_URL, mergeTokenList } from "./token-lists.mjs?v=desk12";
+import { POLYPUMP_LIST_URL, mergeTokenList } from "./token-lists.mjs?v=desk13";
 
 const $ = (id) => document.getElementById(id);
 const ethers = window.ethers;
@@ -807,7 +807,13 @@ function dressTokenSelect(select) {
       const name = document.createElement("b");
       name.textContent = token.symbol;
       const sub = document.createElement("small");
-      sub.textContent = token.source ? `${token.name} · ${token.source}` : token.name;
+      sub.textContent = token.source
+        ? `${token.name} · ${token.source}${token.unverified ? " · unverified" : ""}${token.quoteAsset ? ` · ${token.quoteAsset} pair` : ""}`
+        : token.name;
+      if (token.unverified) {
+        row.title = `Unverified launchpad token. Anyone can launch any name; check the address ${token.address}.`;
+        sub.style.color = "#f0b429";
+      }
       text.append(name, sub);
       row.append(icon, text);
       row.addEventListener("click", () => {
@@ -850,7 +856,7 @@ async function loadRemoteLists() {
       for (const token of added) {
         const option = document.createElement("option");
         option.value = token.address;
-        option.textContent = token.symbol;
+        option.textContent = token.unverified ? `${token.symbol} (unverified)` : token.symbol;
         select.appendChild(option);
       }
     }

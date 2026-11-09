@@ -9,7 +9,7 @@ Public repo: https://github.com/cannergtfo-commits/polygon-v2-amm
 | Piece | Status |
 | --- | --- |
 | Homepage | Live in `docs/`. Tabs are Swap, Stake BZB, and Leaderboard. The header still links to [blazar-apps.html](https://blazarforce.net/blazar-apps.html) |
-| Token list | `docs/js/polygon-tokens.mjs` (pinned Blazar assets + Uniswap default list). At load the picker also merges graduated PolyPump tokens from `https://launch.blazarforce.net/tokenlist.json` (`docs/js/token-lists.mjs`, test: `node docs/js/token-lists.test.mjs`). Built-in entries are never overridden |
+| Token list | `docs/js/polygon-tokens.mjs` (pinned Blazar assets + Uniswap default list). At load the picker also merges graduated PolyPump tokens from `https://launch.blazarforce.net/tokenlist.json` (`docs/js/token-lists.mjs`, test: `node docs/js/token-lists.test.mjs`). Built-in entries are never overridden; PolyPump entries are labelled "unverified" (POL or BZB pair shown), and reserved or duplicate symbols (USDC, WPOL, BZB, ...) are dropped |
 | Swap | Browser quotes allowlisted V2 factories plus Uniswap v3 and QuickSwap v3, then the user signs the fee router. Blazar factory legs pay no extra wrapper fee. External principal pays 0.05% once |
 | Fee router `0x014AC678c96dd5dFAEc78BfffD8E00EEbf117E9b` | Deployed and used by the homepage swap. The Next.js registry still keeps this address at zero, so that app's unsigned builder stays closed |
 | Oracle `0x7d022EB5b18a79b585601326d87964C87F948892` | Deployed |
