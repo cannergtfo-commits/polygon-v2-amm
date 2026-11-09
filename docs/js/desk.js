@@ -40,8 +40,8 @@ import {
   wrapDirection,
   wrapTx,
   wrapperOnSpend,
-} from "./desk-core.mjs?v=desk11";
-import { POLYGON_TOKENS } from "./polygon-tokens.mjs?v=desk11";
+} from "./desk-core.mjs?v=desk12";
+import { POLYGON_TOKENS } from "./polygon-tokens.mjs?v=desk12";
 
 const $ = (id) => document.getElementById(id);
 const ethers = window.ethers;
@@ -849,6 +849,16 @@ function fillSelect(id, prefer) {
   dressTokenSelect(select);
 }
 
+function approxApr(daily, supply) {
+  if (daily <= 0n || supply <= 0n) return "—";
+  const day = Number((daily * 1_000_000n) / supply) / 1_000_000;
+  const apr = day * 365 * 100;
+  if (!Number.isFinite(apr) || apr <= 0) return "—";
+  if (apr >= 1000) return `${Math.round(apr).toLocaleString()}%`;
+  if (apr >= 10) return `${apr.toFixed(1)}%`;
+  return `${apr.toFixed(2)}%`;
+}
+
 async function loadStake() {
   try {
     const rpc = await provider();
@@ -858,16 +868,15 @@ async function loadStake() {
     const code = await rpc.getCode(STAKING);
     if (!code || code === "0x") throw new Error("Staking contract has no code");
     const account = state.account || ethers.ZeroAddress;
-    const [staked, earned, rate, daily, duration, finish, paused, wallet, float] = await Promise.all([
+    const [staked, earned, daily, duration, finish, paused, wallet, supply] = await Promise.all([
       state.account ? stake.balanceOf(account) : 0n,
       state.account ? stake.earned(account) : 0n,
-      stake.rewardRate(),
       stake.dailyRate(),
       stake.rewardsDuration(),
       stake.periodFinish(),
       stake.paused(),
       state.account ? balanceOf(tokenByAddress(BZB), state.account) : null,
-      balanceOf(tokenByAddress(BZB), STAKING),
+      stake.totalSupply(),
     ]);
     state.stakePaused = paused;
     $("stakeWallet").textContent = wallet === null ? "Connect" : formatUnits(wallet, 18, 4);
@@ -875,11 +884,12 @@ async function loadStake() {
     $("stakeEarned").textContent = state.account ? formatUnits(earned, 18, 6) : "Connect";
     const now = Math.floor(Date.now() / 1000);
     const live = BigInt(finish) > BigInt(now);
-    $("stakeRate").textContent = live ? `${formatUnits(daily, 18, 4)} BZB/day` : "No active stream";
+    $("stakeRate").textContent = live ? approxApr(daily, supply) : "—";
+    $("stakeRateLabel").textContent = live ? `${formatUnits(daily, 18, 4)} BZB/day` : "No active stream";
     const left = live ? Number(BigInt(finish) - BigInt(now)) : 0;
     $("stakePeriod").textContent = live ? `${Math.ceil(left / 3600)}h left · ${Number(duration) / 86400}d duration` : "Not streaming";
-    $("stakeFloat").textContent = formatUnits(float, 18, 4);
-    setStatus("stakeStatus", paused ? "Staking is paused. Withdraw and claim stay open." : "No lock and no stake fee.");
+    $("stakeFloat").textContent = formatUnits(supply, 18, 4);
+    setStatus("stakeStatus", paused ? "Staking is paused. Withdraw and claim stay open." : "Staked BZB excludes the reward pot. APR is BZB earned per BZB staked if this daily rate ran a year.");
     log("stakeLog", "");
   } catch (err) {
     setStatus("stakeStatus", "Could not read the staking contract.");
