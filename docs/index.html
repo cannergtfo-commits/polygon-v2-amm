@@ -16,6 +16,7 @@
     .wallet-drop button:hover{background:rgba(62,224,255,.12);color:var(--cyan)}
     .seal-btn{position:static;left:auto;top:auto;transform:none;display:flex;align-items:center;height:40px;max-width:180px;padding:0;border:0;background:transparent;z-index:6;line-height:0}
     .seal-btn img{height:40px;width:auto;max-width:100%;object-fit:contain;display:block}
+    .head-links{display:flex;align-items:center;gap:8px}
     .desk{width:100%;margin:0}
     .desk-live .tabs{display:flex}
     .trade-row{display:grid;grid-template-columns:minmax(340px,520px) minmax(0,1fr);gap:18px;align-items:stretch}
@@ -65,7 +66,8 @@
     .pos-slide b{min-width:42px;text-align:right}
     @media(max-width:900px){
       header{display:flex;flex-wrap:wrap}
-      .seal-btn,.seal-btn img{height:36px;max-width:148px}
+      .head-links{gap:6px}
+      .seal-btn,.seal-btn img{height:32px;max-width:112px}
       .trade-row,.stats-grid,.actions{grid-template-columns:1fr}
       .chart-frame,.chart-frame iframe{min-height:360px;height:360px}
       .desk-live .tabs{display:grid;grid-template-columns:1fr 1fr 1fr;border-radius:18px}
@@ -87,7 +89,10 @@
         <span>Polygon</span>
       </div>
     </div>
-    <a class="seal-btn" href="blazar-apps.html" aria-label="Blazar Apps"><img src="apps-btn.png" alt="Blazar Apps" /></a>
+    <div class="head-links">
+      <a class="seal-btn" href="https://launch.blazarforce.net/#/" aria-label="Launch a token"><img src="launch-btn.jpg" alt="Launch" /></a>
+      <a class="seal-btn" href="blazar-apps.html" aria-label="Blazar Apps"><img src="apps-btn.png" alt="Blazar Apps" /></a>
+    </div>
     <div class="wallet">
       <button class="ghost" id="muteBtn" type="button">Sound on</button>
       <div class="chip" id="networkChip">Not connected</div>
