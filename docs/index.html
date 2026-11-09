@@ -21,6 +21,7 @@
     .trade-row{display:grid;grid-template-columns:minmax(340px,520px) minmax(0,1fr);gap:18px;align-items:stretch}
     .chart-wrap{margin:0;min-width:0}
     .chart-frame{min-height:520px}
+    .chart-frame iframe{width:100%;height:520px;border:0;display:block;background:#030712}
     .chart-meta,.chart-note,.fine p,.status{color:var(--muted);font-size:13px;line-height:1.45}
     .chart-note{margin-top:8px}
     .pane[hidden],.trade-row[hidden]{display:none!important}
@@ -48,7 +49,7 @@
       header{display:flex;flex-wrap:wrap}
       .seal-btn,.seal-btn img{height:36px;max-width:148px}
       .trade-row,.stats-grid,.actions{grid-template-columns:1fr}
-      .chart-frame{min-height:360px}
+      .chart-frame,.chart-frame iframe{min-height:360px;height:360px}
       .desk-live .tabs{display:grid;grid-template-columns:1fr 1fr 1fr;border-radius:18px}
       .desk-live .tabs button{font-size:11px;padding:10px 4px}
     }
@@ -129,13 +130,13 @@
         <section class="chart-wrap panel" id="chart-card">
           <div class="chart-top">
             <h3>BZB pool</h3>
-            <a id="chartLink" href="https://www.geckoterminal.com/polygon_pos/tokens/0x462d8d82c2b2d2ddabf7f8a93928de09d47a5807" target="_blank" rel="noopener">GeckoTerminal</a>
+            <a id="chartLink" href="https://www.geckoterminal.com/polygon_pos/pools/0x6ccd623a2002f5198f7acd94011af1be0a193307" target="_blank" rel="noopener">GeckoTerminal</a>
           </div>
           <p class="chart-meta"><span id="chartLiq">Liquidity —</span> · <span id="chartAge">Age —</span></p>
           <div class="chart-frame">
-            <iframe id="geckoChart" title="BZB pool chart" loading="lazy" allow="clipboard-write" allowfullscreen src="https://www.geckoterminal.com/polygon_pos/pools/0x31eca8f077becd2ccc11b8a0bad5515d21250d14?embed=1&amp;info=0&amp;swaps=0&amp;light_chart=0&amp;chart_type=price&amp;resolution=15m&amp;bg_color=030712"></iframe>
+            <iframe id="geckoChart" title="BZB pool chart" loading="lazy" allow="clipboard-write" allowfullscreen src="https://www.geckoterminal.com/polygon_pos/pools/0x6ccd623a2002f5198f7acd94011af1be0a193307?embed=1&amp;info=0&amp;swaps=0&amp;light_chart=0&amp;chart_type=price&amp;resolution=15m&amp;bg_color=030712"></iframe>
           </div>
-          <p class="chart-note">One pool, for display. Swaps search the allowlisted venues on their own.</p>
+          <p class="chart-note">BzB / WPOL on QuickSwap, the pool GeckoTerminal actually lists. The Blazar pair is not on GeckoTerminal. Swaps still search every allowlisted venue.</p>
         </section>
       </div>
 
@@ -205,6 +206,6 @@
     })();
   </script>
   <script src="js/music.js?v=snd1"></script>
-  <script type="module" src="js/desk.js?v=desk3"></script>
+  <script type="module" src="js/desk.js?v=desk4"></script>
 </body>
 </html>

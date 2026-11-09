@@ -1113,7 +1113,7 @@ function disconnect() {
   setTimeout(() => { state.leaving = false; }, 400);
 }
 
-const CHART_POOL = "0x31eca8f077becd2ccc11b8a0bad5515d21250d14";
+const CHART_POOL = "0x6ccd623a2002f5198f7acd94011af1be0a193307";
 
 async function loadChart() {
   $("chartLink").href = `https://www.geckoterminal.com/polygon_pos/pools/${CHART_POOL}`;
