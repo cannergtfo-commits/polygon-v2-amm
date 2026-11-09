@@ -45,6 +45,18 @@
     .row-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
     select,input.amt{width:100%}
     .leg select{width:auto;max-width:46%}
+    .tok-pick{position:relative;flex:none}
+    .tok-native{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+    .tok-btn{display:inline-flex;align-items:center;gap:8px;min-width:108px;background:rgba(0,0,0,.35);border:1px solid var(--stroke);color:var(--text);border-radius:12px;padding:6px 10px;cursor:pointer;font-family:Sora,sans-serif;font-size:14px}
+    .tok-btn img,.tok-row img{width:22px;height:22px;border-radius:50%;object-fit:cover;background:#111;flex:none}
+    .tok-btn img[hidden],.tok-row img[hidden]{display:none}
+    .tok-menu{position:absolute;right:0;top:calc(100% + 6px);width:min(280px,70vw);max-height:340px;overflow:auto;background:rgba(6,12,28,.98);border:1px solid var(--stroke);border-radius:14px;z-index:40;padding:8px;box-shadow:0 18px 40px rgba(0,0,0,.5)}
+    .tok-search{width:100%;margin:0 0 8px;padding:8px 10px;font-size:14px;font-weight:500;background:rgba(0,0,0,.35);border:1px solid var(--stroke);border-radius:10px;color:var(--text)}
+    .tok-row{display:flex;gap:8px;width:100%;align-items:center;background:transparent;border:0;color:var(--text);padding:7px 6px;border-radius:10px;cursor:pointer;text-align:left}
+    .tok-row span{display:flex;flex-direction:column;min-width:0}
+    .tok-row b{font-size:13px;font-weight:600}
+    .tok-row small{color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .tok-row:hover{background:rgba(62,224,255,.12)}
     @media(max-width:900px){
       header{display:flex;flex-wrap:wrap}
       .seal-btn,.seal-btn img{height:36px;max-width:148px}
@@ -207,6 +219,6 @@
     })();
   </script>
   <script src="js/music.js?v=snd1"></script>
-  <script type="module" src="js/desk.js?v=desk10"></script>
+  <script type="module" src="js/desk.js?v=desk11"></script>
 </body>
 </html>

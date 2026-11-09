@@ -8,7 +8,6 @@ import {
   REWARDS,
   STAKING,
   SWAP_TOPIC,
-  TOKENS,
   WPOL,
   allV2,
   approvalPlan,
@@ -41,7 +40,8 @@ import {
   wrapDirection,
   wrapTx,
   wrapperOnSpend,
-} from "./desk-core.mjs?v=desk10";
+} from "./desk-core.mjs?v=desk11";
+import { POLYGON_TOKENS } from "./polygon-tokens.mjs?v=desk11";
 
 const $ = (id) => document.getElementById(id);
 const ethers = window.ethers;
@@ -146,7 +146,7 @@ function short(addr) {
 }
 
 function tokenByAddress(address) {
-  return TOKENS.find((token) => token.address.toLowerCase() === String(address).toLowerCase()) || null;
+  return POLYGON_TOKENS.find((token) => token.address.toLowerCase() === String(address).toLowerCase()) || null;
 }
 
 function selected(id) {
@@ -252,7 +252,10 @@ async function readAllowlist() {
 }
 
 function deskTokens() {
-  return TOKENS.map((token) => poolToken(token.address)).filter((address, index, list) => list.findIndex((item) => item.toLowerCase() === address.toLowerCase()) === index);
+  const picked = ["tokenIn", "tokenOut"].map((id) => selected(id)?.address).filter(Boolean);
+  return [...HUBS, WPOL, BZB, ...picked]
+    .map((address) => poolToken(address))
+    .filter((address, index, list) => list.findIndex((item) => item.toLowerCase() === address.toLowerCase()) === index);
 }
 
 async function loadPairs(venues) {
@@ -740,16 +743,110 @@ async function doSwap() {
   }
 }
 
+function syncTokenButton(select) {
+  const token = tokenByAddress(select.value);
+  const button = select.parentElement?.querySelector(".tok-btn");
+  if (!button || !token) return;
+  const img = button.querySelector("img");
+  img.src = token.logo || "";
+  img.alt = "";
+  img.hidden = !token.logo;
+  button.querySelector("b").textContent = token.symbol;
+}
+
+function dressTokenSelect(select) {
+  if (select.dataset.dressed === "1") {
+    syncTokenButton(select);
+    return;
+  }
+  select.dataset.dressed = "1";
+  const wrap = document.createElement("div");
+  wrap.className = "tok-pick";
+  select.parentNode.insertBefore(wrap, select);
+  wrap.appendChild(select);
+  select.classList.add("tok-native");
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "tok-btn";
+  button.setAttribute("aria-haspopup", "listbox");
+  const img = document.createElement("img");
+  img.alt = "";
+  const label = document.createElement("b");
+  const caret = document.createElement("span");
+  caret.textContent = "▾";
+  button.append(img, label, caret);
+  const menu = document.createElement("div");
+  menu.className = "tok-menu";
+  menu.hidden = true;
+  const search = document.createElement("input");
+  search.type = "search";
+  search.className = "tok-search";
+  search.placeholder = "Search Polygon tokens";
+  search.setAttribute("aria-label", "Search tokens");
+  const list = document.createElement("div");
+  list.className = "tok-list";
+  menu.append(search, list);
+  wrap.insertBefore(button, select);
+  wrap.appendChild(menu);
+  const render = () => {
+    const query = search.value.trim().toLowerCase();
+    list.replaceChildren();
+    for (const token of POLYGON_TOKENS) {
+      const hay = `${token.symbol} ${token.name} ${token.address}`.toLowerCase();
+      if (query && !hay.includes(query)) continue;
+      const row = document.createElement("button");
+      row.type = "button";
+      row.className = "tok-row";
+      const icon = document.createElement("img");
+      icon.alt = "";
+      icon.src = token.logo || "";
+      icon.hidden = !token.logo;
+      icon.addEventListener("error", () => { icon.hidden = true; });
+      const text = document.createElement("span");
+      const name = document.createElement("b");
+      name.textContent = token.symbol;
+      const sub = document.createElement("small");
+      sub.textContent = token.name;
+      text.append(name, sub);
+      row.append(icon, text);
+      row.addEventListener("click", () => {
+        select.value = token.address;
+        menu.hidden = true;
+        syncTokenButton(select);
+        select.dispatchEvent(new Event("change"));
+      });
+      list.appendChild(row);
+    }
+  };
+  button.addEventListener("click", () => {
+    menu.hidden = !menu.hidden;
+    if (!menu.hidden) {
+      search.value = "";
+      render();
+      search.focus();
+    }
+  });
+  search.addEventListener("input", render);
+  search.addEventListener("click", (event) => event.stopPropagation());
+  select.addEventListener("change", () => syncTokenButton(select));
+  document.addEventListener("click", (event) => {
+    if (!wrap.contains(event.target)) menu.hidden = true;
+  });
+  img.addEventListener("error", () => { img.hidden = true; });
+  syncTokenButton(select);
+}
+
 function fillSelect(id, prefer) {
   const select = $(id);
   select.replaceChildren();
-  for (const token of TOKENS) {
+  for (const token of POLYGON_TOKENS) {
     const option = document.createElement("option");
     option.value = token.address;
     option.textContent = token.symbol;
     select.appendChild(option);
   }
-  select.value = prefer;
+  if (prefer) select.value = prefer;
+  dressTokenSelect(select);
 }
 
 async function loadStake() {
@@ -1271,6 +1368,8 @@ function boot() {
     const sell = $("tokenIn").value;
     $("tokenIn").value = $("tokenOut").value;
     $("tokenOut").value = sell;
+    syncTokenButton($("tokenIn"));
+    syncTokenButton($("tokenOut"));
     scheduleQuote();
     paintBalances();
   });
