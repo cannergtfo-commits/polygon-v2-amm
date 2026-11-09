@@ -184,27 +184,26 @@
 
       <div class="panel card pane" id="pane-liq" hidden>
         <h3>Liquidity</h3>
-        <p class="status" id="liqStatus">Add or remove liquidity on the Blazar factory. POL is wrapped to WPOL first.</p>
+        <p class="status" id="liqStatus">POL / BZB on the Blazar factory. POL wraps to WPOL in the deposit.</p>
+        <div id="posList"></div>
+        <p class="status" id="posStatus"></p>
         <div class="leg">
-          <div class="leg-top"><span>Token A</span><button class="max" id="maxLiqA" type="button">Max</button></div>
+          <div class="leg-top"><span id="liqNameA">POL</span><button class="max" id="maxLiqA" type="button">Max</button></div>
           <div class="leg-top">
             <input id="liqAmtA" class="amt" type="text" inputmode="decimal" placeholder="0.0" autocomplete="off" />
-            <select id="liqA" aria-label="First liquidity token"></select>
+            <select id="liqA" aria-label="POL"></select>
           </div>
         </div>
         <div class="leg">
-          <div class="leg-top"><span>Token B</span><button class="max" id="maxLiqB" type="button">Max</button></div>
+          <div class="leg-top"><span id="liqNameB">BZB</span><button class="max" id="maxLiqB" type="button">Max</button></div>
           <div class="leg-top">
             <input id="liqAmtB" class="amt" type="text" inputmode="decimal" placeholder="0.0" autocomplete="off" />
-            <select id="liqB" aria-label="Second liquidity token"></select>
+            <select id="liqB" aria-label="BZB"></select>
           </div>
         </div>
         <div class="slip-row"><span>Slippage</span><span class="slip-picks"><input class="slip-input" id="liqSlippage" type="text" inputmode="decimal" value="0.50" />%</span></div>
         <button class="primary full" id="addLiqBtn" type="button">Add liquidity</button>
         <div class="log" id="liqLog" role="status"></div>
-        <h3>Your positions</h3>
-        <p class="status" id="posStatus">Positions are read from the connected wallet on the Blazar factory.</p>
-        <div id="posList"></div>
       </div>
 
       <div class="panel card pane" id="pane-board" hidden>
@@ -251,6 +250,6 @@
     })();
   </script>
   <script src="js/music.js?v=snd1"></script>
-  <script type="module" src="js/desk.js?v=desk13"></script>
+  <script type="module" src="js/desk.js?v=desk14"></script>
 </body>
 </html>

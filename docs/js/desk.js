@@ -40,8 +40,8 @@ import {
   wrapDirection,
   wrapTx,
   wrapperOnSpend,
-} from "./desk-core.mjs?v=desk13";
-import { POLYGON_TOKENS } from "./polygon-tokens.mjs?v=desk13";
+} from "./desk-core.mjs?v=desk14";
+import { POLYGON_TOKENS } from "./polygon-tokens.mjs?v=desk14";
 
 const $ = (id) => document.getElementById(id);
 const ethers = window.ethers;
@@ -1313,11 +1313,46 @@ async function pairReserves(tokenA, tokenB) {
   };
 }
 
+function paintLiqNames() {
+  const a = tokenByAddress($("liqA").value);
+  const b = tokenByAddress($("liqB").value);
+  if (a) {
+    $("liqNameA").textContent = a.symbol;
+    $("liqA").setAttribute("aria-label", a.symbol);
+  }
+  if (b) {
+    $("liqNameB").textContent = b.symbol;
+    $("liqB").setAttribute("aria-label", b.symbol);
+  }
+}
+
+async function paintPoolHint() {
+  paintLiqNames();
+  const a = tokenByAddress($("liqA").value);
+  const b = tokenByAddress($("liqB").value);
+  if (!a || !b) return;
+  if (poolAsset(a).toLowerCase() === poolAsset(b).toLowerCase()) {
+    setStatus("liqStatus", "POL and WPOL are the same pool token.");
+    return;
+  }
+  try {
+    const reserves = await pairReserves(a, b);
+    if (!reserves || reserves.reserveA === 0n || reserves.reserveB === 0n) {
+      setStatus("liqStatus", `${a.symbol} / ${b.symbol} has no Blazar pool yet. The first deposit sets the price.`);
+      return;
+    }
+    setStatus("liqStatus", `${a.symbol} / ${b.symbol} is live. Enter one amount and the other fills 50/50.`);
+  } catch {
+    setStatus("liqStatus", "Could not read that Blazar pool.");
+  }
+}
+
 async function quoteLiquidity(source) {
   if (liqQuoteLock) return;
   const a = tokenByAddress($("liqA").value);
   const b = tokenByAddress($("liqB").value);
   if (!a || !b) return;
+  paintLiqNames();
   if (poolAsset(a).toLowerCase() === poolAsset(b).toLowerCase()) {
     setStatus("liqStatus", "POL and WPOL are the same pool token. Pick another pair.");
     return;
@@ -1410,16 +1445,16 @@ async function loadPositions() {
   if (!box) return;
   box.replaceChildren();
   if (!state.account) {
-    setStatus("posStatus", "Connect a wallet to see your Blazar positions.");
+    setStatus("posStatus", "");
     return;
   }
-  setStatus("posStatus", "Reading the Blazar factory…");
+  setStatus("posStatus", "");
   try {
     const rpc = await provider();
     const lengthRaw = await rpc.call({ to: CFG.factory, data: liqFactoryIface.encodeFunctionData("allPairsLength", []) });
     const count = Number(liqFactoryIface.decodeFunctionResult("allPairsLength", lengthRaw)[0]);
     if (!count) {
-      setStatus("posStatus", "The Blazar factory has no pools yet.");
+      setStatus("posStatus", "No Blazar pools yet.");
       return;
     }
     const pairRows = await multicall(Array.from({ length: count }, (_, i) => ({
@@ -1438,7 +1473,7 @@ async function loadPositions() {
       if (balance > 0n) held.push({ pair: pairs[index], balance });
     });
     if (!held.length) {
-      setStatus("posStatus", "This wallet has no liquidity on the Blazar factory.");
+      setStatus("posStatus", "No liquidity in this wallet yet.");
       return;
     }
     const detail = await multicall(held.flatMap((item) => [
@@ -1498,7 +1533,7 @@ async function loadPositions() {
       box.appendChild(card);
       paintOut();
     }
-    setStatus("posStatus", `${held.length} position${held.length === 1 ? "" : "s"} on the Blazar factory.`);
+    setStatus("posStatus", "");
   } catch (err) {
     setStatus("posStatus", "Could not read positions.");
     log("liqLog", err.shortMessage || err.message || "Position read failed", "err");
@@ -1551,7 +1586,10 @@ function showTab(name) {
   $("pane-liq").hidden = name !== "liq";
   $("pane-stake").hidden = name !== "stake";
   $("pane-board").hidden = name !== "board";
-  if (name === "liq") loadPositions();
+  if (name === "liq") {
+    paintPoolHint();
+    loadPositions();
+  }
   if (name === "stake") loadStake();
   if (name === "board" && !state.board) loadBoard();
 }
@@ -1665,8 +1703,9 @@ function boot() {
   }
   fillSelect("tokenIn", NATIVE);
   fillSelect("tokenOut", BZB);
-  fillSelect("liqA", WPOL);
+  fillSelect("liqA", NATIVE);
   fillSelect("liqB", BZB);
+  paintLiqNames();
   $("routeDetail").textContent = `${coverage.searched} ${coverage.discovery} ${coverage.notCovered}`;
   document.querySelectorAll(".desk-live .tabs button").forEach((button) => {
     button.addEventListener("click", () => showTab(button.dataset.tab));
@@ -1716,8 +1755,8 @@ function boot() {
   };
   $("liqAmtA").addEventListener("input", () => scheduleLiq("liqAmtA"));
   $("liqAmtB").addEventListener("input", () => scheduleLiq("liqAmtB"));
-  $("liqA").addEventListener("change", () => scheduleLiq("liqAmtA"));
-  $("liqB").addEventListener("change", () => scheduleLiq("liqAmtB"));
+  $("liqA").addEventListener("change", () => { paintPoolHint(); scheduleLiq("liqAmtA"); });
+  $("liqB").addEventListener("change", () => { paintPoolHint(); scheduleLiq("liqAmtB"); });
   $("addLiqBtn").addEventListener("click", () => { addLiquidity(); });
   for (const [button, field, select] of [["maxLiqA", "liqAmtA", "liqA"], ["maxLiqB", "liqAmtB", "liqB"]]) {
     $(button).addEventListener("click", async () => {
