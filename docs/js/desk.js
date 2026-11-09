@@ -42,7 +42,7 @@ import {
   wrapperOnSpend,
 } from "./desk-core.mjs?v=desk11";
 import { POLYGON_TOKENS } from "./polygon-tokens.mjs?v=desk11";
-import { POLYPUMP_LIST_URL, mergeTokenList } from "./token-lists.mjs?v=desk13";
+import { POLYPUMP_LIST_URL, mergeTokenList } from "./token-lists.mjs?v=desk14";
 
 const $ = (id) => document.getElementById(id);
 const ethers = window.ethers;
@@ -808,10 +808,10 @@ function dressTokenSelect(select) {
       name.textContent = token.symbol;
       const sub = document.createElement("small");
       sub.textContent = token.source
-        ? `${token.name} · ${token.source}${token.unverified ? " · unverified" : ""}${token.quoteAsset ? ` · ${token.quoteAsset} pair` : ""}`
+        ? `${token.name} · ${token.source}${token.unverified ? " · unverified" : ""}${token.quoteAsset ? ` · ${token.quoteAsset} pair` : ""}${token.thinPool ? " · graduated (BZB), thin pool" : ""}`
         : token.name;
       if (token.unverified) {
-        row.title = `Unverified launchpad token. Anyone can launch any name; check the address ${token.address}.`;
+        row.title = `Unverified launchpad token. Anyone can launch any name; check the address ${token.address}.${token.thinPool ? " Graduated into a small TOKEN/BZB pool (about 10k BZB): expect large price impact." : ""}`;
         sub.style.color = "#f0b429";
       }
       text.append(name, sub);
