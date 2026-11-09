@@ -4,6 +4,7 @@
   const ZERO = "0x0000000000000000000000000000000000000000";
   const $ = (id) => document.getElementById(id);
   const state = { provider: null, signer: null, account: null, chainId: null, bal: {}, injected: null, walletKind: null };
+  window.blazarWallet = () => ({ signer: state.signer, account: state.account, provider: state.provider });
   const configured = () => CFG.router && CFG.router !== ZERO && CFG.factory !== ZERO && CFG.baseToken !== ZERO;
   function tokenByAddress(addr) {
     if (!addr) return null;
@@ -167,6 +168,7 @@
     state.account = await state.signer.getAddress();
     $("connectBtn").textContent = short(state.account);
     paintM421Tab();
+    window.dispatchEvent(new Event("blazar-wallet"));
     await refreshBalances();
     await refreshPairs();
     quoteOut();
@@ -228,6 +230,7 @@
     if ($("balWpol")) $("balWpol").textContent = "WPOL —";
     paintWalletMenu();
     paintM421Tab();
+    window.dispatchEvent(new Event("blazar-wallet"));
   }
   const M421_HOLDERS = [
     "0x6f47aa396215ab22647ddb3e86b4663dfe11db14",
@@ -370,8 +373,8 @@
     try { localStorage.setItem("blazar_slip", v); } catch {}
   }
   async function ensureAllowance(token, owner, spender, amount, logId) {
-    if (!spender || spender.toLowerCase() !== CFG.router.toLowerCase()) {
-      throw new Error("Approve blocked: spender is not the BlazarSwap router.");
+    if (!spender || [CFG.router, CFG.feeRouter].every((addr) => !addr || addr.toLowerCase() !== spender.toLowerCase())) {
+      throw new Error("Approve blocked: spender is not a Blazar contract.");
     }
     if (!amount || amount <= 0n) throw new Error("Approve blocked: bad amount.");
     const c = erc20(token);
@@ -496,21 +499,29 @@
         return;
       }
       const path = [routeAddress(tin), routeAddress(tout)];
-      const amounts = await router().getAmountsOut(amountIn, path);
-      const minOut = applySlip(amounts[amounts.length - 1]);
-      const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
+      const quoted = (await router().getAmountsOut(amountIn, path)).at(-1);
+      let minOut = applySlip(quoted);
+      if (minOut === 0n) minOut = 1n;
+      const block = await state.provider.getBlock("latest");
+      const deadline = Number(block.timestamp) + 120;
+      const native = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+      const noPatch = (1n << 256n) - 1n;
+      const hop = [1, CFG.factory, routeAddress(tin), routeAddress(tout), 10000, false, minOut, noPatch, noPatch, "0x"];
+      const fee = new ethers.Contract(CFG.feeRouter, [
+        "function swap(address tokenIn,address tokenOut,uint256 amountIn,uint256 minAmountOut,address recipient,uint256 deadline,bool unwrapNative,(uint8 kind,address target,address spendToken,address v2TokenOut,uint16 bps,bool useBalance,uint256 minBuy,uint256 amountOffset,uint256 minOffset,bytes data)[] calls,address[] sweep) payable returns (uint256)"
+      ], state.signer);
       let tx;
       if (tin.isNative) {
         setLog("swapLog", "Wrapping POL and swapping…");
-        tx = await router().swapExactETHForTokens(minOut, path, state.account, deadline, { value: amountIn });
+        tx = await fee.swap(native, tout.address, amountIn, minOut, state.account, deadline, false, [hop], [], { value: amountIn });
       } else if (tout.isNative) {
-        await ensureAllowance(tin.address, state.account, CFG.router, amountIn, "swapLog");
+        await ensureAllowance(tin.address, state.account, CFG.feeRouter, amountIn, "swapLog");
         setLog("swapLog", "Swapping and unwrapping to POL…");
-        tx = await router().swapExactTokensForETH(amountIn, minOut, path, state.account, deadline);
+        tx = await fee.swap(tin.address, native, amountIn, minOut, state.account, deadline, true, [hop], []);
       } else {
-        await ensureAllowance(tin.address, state.account, CFG.router, amountIn, "swapLog");
+        await ensureAllowance(tin.address, state.account, CFG.feeRouter, amountIn, "swapLog");
         setLog("swapLog", "Sending swap…");
-        tx = await router().swapExactTokensForTokens(amountIn, minOut, path, state.account, deadline);
+        tx = await fee.swap(tin.address, tout.address, amountIn, minOut, state.account, deadline, false, [hop], []);
       }
       setLog("swapLog", "Pending " + tx.hash);
       await tx.wait();
@@ -806,6 +817,8 @@
         if (btn.dataset.tab === "positions") refreshPairs();
         if (btn.dataset.tab === "m421" && window.m421Refresh) window.m421Refresh();
         if (btn.dataset.tab === "draw" && window.drawRefresh) window.drawRefresh();
+        if (btn.dataset.tab === "stake" && window.blazarStakeRefresh) window.blazarStakeRefresh();
+        if (btn.dataset.tab === "rewards" && window.blazarRewardRefresh) window.blazarRewardRefresh();
       });
     });
     $("connectBtn").addEventListener("click", (ev) => {
