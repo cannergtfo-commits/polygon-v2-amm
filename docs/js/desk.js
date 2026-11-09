@@ -40,8 +40,8 @@ import {
   wrapDirection,
   wrapTx,
   wrapperOnSpend,
-} from "./desk-core.mjs?v=desk12";
-import { POLYGON_TOKENS } from "./polygon-tokens.mjs?v=desk12";
+} from "./desk-core.mjs?v=desk13";
+import { POLYGON_TOKENS } from "./polygon-tokens.mjs?v=desk13";
 
 const $ = (id) => document.getElementById(id);
 const ethers = window.ethers;
@@ -1237,16 +1237,321 @@ async function claimPosted() {
   }
 }
 
+const liqRouterIface = new ethers.Interface([
+  "function addLiquidity(address,address,uint256,uint256,uint256,uint256,address,uint256) returns (uint256,uint256,uint256)",
+  "function removeLiquidity(address,address,uint256,uint256,uint256,address,uint256) returns (uint256,uint256)",
+]);
+const liqFactoryIface = new ethers.Interface([
+  "function allPairsLength() view returns (uint256)",
+  "function allPairs(uint256) view returns (address)",
+  "function getPair(address,address) view returns (address)",
+]);
+const liqPairIface = new ethers.Interface([
+  "function token0() view returns (address)",
+  "function token1() view returns (address)",
+  "function getReserves() view returns (uint112,uint112,uint32)",
+  "function totalSupply() view returns (uint256)",
+  "function balanceOf(address) view returns (uint256)",
+  "function symbol() view returns (string)",
+  "function decimals() view returns (uint8)",
+]);
+const metaCache = new Map();
+let liqQuoteLock = false;
+
+function liqSlipBps() {
+  const n = Number(String($("liqSlippage").value || "0.5").replace("%", "").trim());
+  if (!Number.isFinite(n) || n < 0) return 50;
+  return Math.min(5000, Math.round(n * 100));
+}
+
+function withSlip(amount) {
+  const bps = BigInt(liqSlipBps());
+  return amount - (amount * bps) / 10_000n;
+}
+
+function poolAsset(token) {
+  return isNative(token.address) ? WPOL : token.address;
+}
+
+async function tokenMeta(address) {
+  const key = address.toLowerCase();
+  if (metaCache.has(key)) return metaCache.get(key);
+  const known = tokenByAddress(address);
+  if (known) {
+    metaCache.set(key, known);
+    return known;
+  }
+  const rpc = await provider();
+  let symbol = short(address);
+  let decimals = 18;
+  try {
+    const raw = await rpc.call({ to: address, data: liqPairIface.encodeFunctionData("symbol", []) });
+    symbol = liqPairIface.decodeFunctionResult("symbol", raw)[0] || symbol;
+  } catch { /* unknown token */ }
+  try {
+    const raw = await rpc.call({ to: address, data: liqPairIface.encodeFunctionData("decimals", []) });
+    decimals = Number(liqPairIface.decodeFunctionResult("decimals", raw)[0]);
+  } catch { /* default 18 */ }
+  const token = { symbol, name: symbol, address, decimals, logo: "" };
+  metaCache.set(key, token);
+  return token;
+}
+
+async function pairReserves(tokenA, tokenB) {
+  const rpc = await provider();
+  const data = liqFactoryIface.encodeFunctionData("getPair", [poolAsset(tokenA), poolAsset(tokenB)]);
+  const pair = liqFactoryIface.decodeFunctionResult("getPair", await rpc.call({ to: CFG.factory, data }))[0];
+  if (!pair || pair === ethers.ZeroAddress) return null;
+  const raw = await rpc.call({ to: pair, data: liqPairIface.encodeFunctionData("getReserves", []) });
+  const reserves = liqPairIface.decodeFunctionResult("getReserves", raw);
+  const token0 = liqPairIface.decodeFunctionResult("token0", await rpc.call({ to: pair, data: liqPairIface.encodeFunctionData("token0", []) }))[0];
+  const aIs0 = poolAsset(tokenA).toLowerCase() === token0.toLowerCase();
+  return {
+    pair,
+    reserveA: aIs0 ? BigInt(reserves[0]) : BigInt(reserves[1]),
+    reserveB: aIs0 ? BigInt(reserves[1]) : BigInt(reserves[0]),
+  };
+}
+
+async function quoteLiquidity(source) {
+  if (liqQuoteLock) return;
+  const a = tokenByAddress($("liqA").value);
+  const b = tokenByAddress($("liqB").value);
+  if (!a || !b) return;
+  if (poolAsset(a).toLowerCase() === poolAsset(b).toLowerCase()) {
+    setStatus("liqStatus", "POL and WPOL are the same pool token. Pick another pair.");
+    return;
+  }
+  const fromA = source !== "liqAmtB";
+  const raw = $(fromA ? "liqAmtA" : "liqAmtB").value.trim();
+  if (!raw) return;
+  let amount;
+  try {
+    amount = parseUnits(raw, (fromA ? a : b).decimals);
+  } catch {
+    return;
+  }
+  if (amount <= 0n) return;
+  try {
+    const reserves = await pairReserves(a, b);
+    if (!reserves || reserves.reserveA === 0n || reserves.reserveB === 0n) {
+      setStatus("liqStatus", "No Blazar pool yet. Enter both amounts. The first deposit sets the price.");
+      return;
+    }
+    const quoted = fromA
+      ? (amount * reserves.reserveB) / reserves.reserveA
+      : (amount * reserves.reserveA) / reserves.reserveB;
+    liqQuoteLock = true;
+    $(fromA ? "liqAmtB" : "liqAmtA").value = formatUnits(quoted, (fromA ? b : a).decimals, (fromA ? b : a).decimals);
+    liqQuoteLock = false;
+    setStatus("liqStatus", "Pool exists. The other amount is the 50/50 deposit.");
+  } catch (err) {
+    liqQuoteLock = false;
+    setStatus("liqStatus", err.shortMessage || "Could not read the Blazar pool.");
+  }
+}
+
+async function addLiquidity() {
+  if (!state.account) {
+    $("connectBtn").click();
+    return;
+  }
+  if (state.busy) return;
+  state.busy = true;
+  $("addLiqBtn").disabled = true;
+  try {
+    await assertChain();
+    const a = tokenByAddress($("liqA").value);
+    const b = tokenByAddress($("liqB").value);
+    if (!a || !b) throw new Error("Choose two tokens");
+    if (poolAsset(a).toLowerCase() === poolAsset(b).toLowerCase()) throw new Error("POL and WPOL are the same pool token.");
+    const amtA = parseUnits($("liqAmtA").value.trim(), a.decimals);
+    const amtB = parseUnits($("liqAmtB").value.trim(), b.decimals);
+    if (amtA <= 0n || amtB <= 0n) throw new Error("Enter both amounts");
+    if (isNative(a.address)) {
+      log("liqLog", "Wrapping POL…");
+      const tx = wrapTx(a.address, WPOL, amtA);
+      await simulate(tx);
+      await send(tx, "liqLog");
+    }
+    if (isNative(b.address)) {
+      log("liqLog", "Wrapping POL…");
+      const tx = wrapTx(b.address, WPOL, amtB);
+      await simulate(tx);
+      await send(tx, "liqLog");
+    }
+    const tokenA = poolAsset(a);
+    const tokenB = poolAsset(b);
+    await ensureAllowance({ address: tokenA }, CFG.router, amtA, "liqLog");
+    await ensureAllowance({ address: tokenB }, CFG.router, amtB, "liqLog");
+    const deadline = Math.floor(Date.now() / 1000) + 20 * 60;
+    const data = liqRouterIface.encodeFunctionData("addLiquidity", [
+      tokenA, tokenB, amtA, amtB, withSlip(amtA), withSlip(amtB), state.account, deadline,
+    ]);
+    const tx = { to: CFG.router, data, value: 0n };
+    try {
+      await simulate(tx);
+    } catch (err) {
+      throw new Error(err.shortMessage || "Simulation failed. Nothing was sent.");
+    }
+    const receipt = await send(tx, "liqLog");
+    log("liqLog", `Liquidity added in block ${receipt.blockNumber}.`, "ok");
+    await loadPositions();
+  } catch (err) {
+    log("liqLog", err.shortMessage || err.message || "Add liquidity failed", "err");
+  } finally {
+    state.busy = false;
+    $("addLiqBtn").disabled = false;
+  }
+}
+
+async function loadPositions() {
+  const box = $("posList");
+  if (!box) return;
+  box.replaceChildren();
+  if (!state.account) {
+    setStatus("posStatus", "Connect a wallet to see your Blazar positions.");
+    return;
+  }
+  setStatus("posStatus", "Reading the Blazar factory…");
+  try {
+    const rpc = await provider();
+    const lengthRaw = await rpc.call({ to: CFG.factory, data: liqFactoryIface.encodeFunctionData("allPairsLength", []) });
+    const count = Number(liqFactoryIface.decodeFunctionResult("allPairsLength", lengthRaw)[0]);
+    if (!count) {
+      setStatus("posStatus", "The Blazar factory has no pools yet.");
+      return;
+    }
+    const pairRows = await multicall(Array.from({ length: count }, (_, i) => ({
+      to: CFG.factory,
+      data: liqFactoryIface.encodeFunctionData("allPairs", [i]),
+    })));
+    const pairs = pairRows.map((row) => (row.success ? liqFactoryIface.decodeFunctionResult("allPairs", row.data)[0] : null)).filter(Boolean);
+    const balances = await multicall(pairs.map((pair) => ({
+      to: pair,
+      data: liqPairIface.encodeFunctionData("balanceOf", [state.account]),
+    })));
+    const held = [];
+    balances.forEach((row, index) => {
+      if (!row.success) return;
+      const balance = BigInt(liqPairIface.decodeFunctionResult("balanceOf", row.data)[0]);
+      if (balance > 0n) held.push({ pair: pairs[index], balance });
+    });
+    if (!held.length) {
+      setStatus("posStatus", "This wallet has no liquidity on the Blazar factory.");
+      return;
+    }
+    const detail = await multicall(held.flatMap((item) => [
+      { to: item.pair, data: liqPairIface.encodeFunctionData("token0", []) },
+      { to: item.pair, data: liqPairIface.encodeFunctionData("token1", []) },
+      { to: item.pair, data: liqPairIface.encodeFunctionData("getReserves", []) },
+      { to: item.pair, data: liqPairIface.encodeFunctionData("totalSupply", []) },
+    ]));
+    for (let i = 0; i < held.length; i++) {
+      const token0Row = detail[i * 4];
+      const token1Row = detail[i * 4 + 1];
+      const reserveRow = detail[i * 4 + 2];
+      const supplyRow = detail[i * 4 + 3];
+      if (!token0Row?.success || !token1Row?.success || !reserveRow?.success || !supplyRow?.success) continue;
+      const token0 = liqPairIface.decodeFunctionResult("token0", token0Row.data)[0];
+      const token1 = liqPairIface.decodeFunctionResult("token1", token1Row.data)[0];
+      const reserves = liqPairIface.decodeFunctionResult("getReserves", reserveRow.data);
+      const supply = BigInt(liqPairIface.decodeFunctionResult("totalSupply", supplyRow.data)[0]);
+      const [meta0, meta1] = await Promise.all([tokenMeta(token0), tokenMeta(token1)]);
+      const card = document.createElement("article");
+      card.className = "pos-card";
+      const title = document.createElement("h4");
+      title.textContent = `${meta0.symbol} / ${meta1.symbol}`;
+      const meta = document.createElement("p");
+      meta.className = "pos-meta";
+      const out = document.createElement("p");
+      out.className = "pos-meta";
+      const slide = document.createElement("div");
+      slide.className = "pos-slide";
+      const range = document.createElement("input");
+      range.type = "range";
+      range.min = "0";
+      range.max = "100";
+      range.value = "100";
+      const pct = document.createElement("b");
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "ghost";
+      button.textContent = "Remove";
+      const share = supply === 0n ? 0 : Number((held[i].balance * 10_000n) / supply) / 100;
+      meta.textContent = `${formatUnits(held[i].balance, 18, 6)} LP · ${share.toFixed(2)}% of the pool`;
+      const paintOut = () => {
+        const take = held[i].balance * BigInt(range.value) / 100n;
+        const amount0 = supply === 0n ? 0n : take * BigInt(reserves[0]) / supply;
+        const amount1 = supply === 0n ? 0n : take * BigInt(reserves[1]) / supply;
+        pct.textContent = `${range.value}%`;
+        out.textContent = `Removes about ${formatUnits(amount0, meta0.decimals, 6)} ${meta0.symbol} and ${formatUnits(amount1, meta1.decimals, 6)} ${meta1.symbol}.`;
+      };
+      range.addEventListener("input", paintOut);
+      button.addEventListener("click", () => {
+        removePosition(held[i].pair, held[i].balance, token0, token1, BigInt(reserves[0]), BigInt(reserves[1]), supply, Number(range.value)).catch((err) => {
+          log("liqLog", err.message || "Remove failed", "err");
+        });
+      });
+      slide.append(range, pct);
+      card.append(title, meta, slide, out, button);
+      box.appendChild(card);
+      paintOut();
+    }
+    setStatus("posStatus", `${held.length} position${held.length === 1 ? "" : "s"} on the Blazar factory.`);
+  } catch (err) {
+    setStatus("posStatus", "Could not read positions.");
+    log("liqLog", err.shortMessage || err.message || "Position read failed", "err");
+  }
+}
+
+async function removePosition(pair, balance, token0, token1, reserve0, reserve1, supply, pct) {
+  if (!state.account) {
+    $("connectBtn").click();
+    return;
+  }
+  if (state.busy) return;
+  if (pct <= 0) throw new Error("Move the slider above 0%.");
+  state.busy = true;
+  try {
+    await assertChain();
+    const liquidity = balance * BigInt(Math.round(pct)) / 100n;
+    if (liquidity <= 0n) throw new Error("That share rounds to zero.");
+    await ensureAllowance({ address: pair }, CFG.router, liquidity, "liqLog");
+    const amount0 = supply === 0n ? 0n : liquidity * reserve0 / supply;
+    const amount1 = supply === 0n ? 0n : liquidity * reserve1 / supply;
+    const deadline = Math.floor(Date.now() / 1000) + 20 * 60;
+    const data = liqRouterIface.encodeFunctionData("removeLiquidity", [
+      token0, token1, liquidity, withSlip(amount0), withSlip(amount1), state.account, deadline,
+    ]);
+    const tx = { to: CFG.router, data, value: 0n };
+    try {
+      await simulate(tx);
+    } catch (err) {
+      throw new Error(err.shortMessage || "Simulation failed. Nothing was sent.");
+    }
+    const receipt = await send(tx, "liqLog");
+    log("liqLog", `Liquidity removed in block ${receipt.blockNumber}.`, "ok");
+    await loadPositions();
+  } catch (err) {
+    log("liqLog", err.shortMessage || err.message || "Remove failed", "err");
+  } finally {
+    state.busy = false;
+  }
+}
+
 function showTab(name) {
-  for (const tab of ["swap", "stake", "board"]) {
+  for (const tab of ["swap", "liq", "stake", "board"]) {
     const button = $(`tab-${tab}`);
     const on = tab === name;
     button.classList.toggle("active", on);
     button.setAttribute("aria-selected", on ? "true" : "false");
   }
   $("swap-layout").hidden = name !== "swap";
+  $("pane-liq").hidden = name !== "liq";
   $("pane-stake").hidden = name !== "stake";
   $("pane-board").hidden = name !== "board";
+  if (name === "liq") loadPositions();
   if (name === "stake") loadStake();
   if (name === "board" && !state.board) loadBoard();
 }
@@ -1318,6 +1623,7 @@ async function connect(kind) {
   $("walletDrop").hidden = true;
   await paintBalances();
   await loadStake();
+  await loadPositions();
 }
 
 function disconnect() {
@@ -1328,6 +1634,7 @@ function disconnect() {
   paintWallet();
   paintBalances();
   loadStake();
+  loadPositions();
   $("walletDrop").hidden = true;
   setTimeout(() => { state.leaving = false; }, 400);
 }
@@ -1358,6 +1665,8 @@ function boot() {
   }
   fillSelect("tokenIn", NATIVE);
   fillSelect("tokenOut", BZB);
+  fillSelect("liqA", WPOL);
+  fillSelect("liqB", BZB);
   $("routeDetail").textContent = `${coverage.searched} ${coverage.discovery} ${coverage.notCovered}`;
   document.querySelectorAll(".desk-live .tabs button").forEach((button) => {
     button.addEventListener("click", () => showTab(button.dataset.tab));
@@ -1400,6 +1709,26 @@ function boot() {
     const amount = await balanceOf(tokenByAddress(BZB), state.account);
     $("stakeAmount").value = formatUnits(amount, 18, 6);
   });
+  let liqTimer = 0;
+  const scheduleLiq = (source) => {
+    clearTimeout(liqTimer);
+    liqTimer = setTimeout(() => { quoteLiquidity(source).catch(() => {}); }, 200);
+  };
+  $("liqAmtA").addEventListener("input", () => scheduleLiq("liqAmtA"));
+  $("liqAmtB").addEventListener("input", () => scheduleLiq("liqAmtB"));
+  $("liqA").addEventListener("change", () => scheduleLiq("liqAmtA"));
+  $("liqB").addEventListener("change", () => scheduleLiq("liqAmtB"));
+  $("addLiqBtn").addEventListener("click", () => { addLiquidity(); });
+  for (const [button, field, select] of [["maxLiqA", "liqAmtA", "liqA"], ["maxLiqB", "liqAmtB", "liqB"]]) {
+    $(button).addEventListener("click", async () => {
+      if (!state.account) return;
+      const token = tokenByAddress($(select).value);
+      let amount = await balanceOf(token, state.account);
+      if (isNative(token.address) && amount > POL_RESERVE) amount -= POL_RESERVE;
+      $(field).value = formatUnits(amount, token.decimals, token.decimals);
+      scheduleLiq(field);
+    });
+  }
   $("boardRetry").addEventListener("click", () => { state.board = null; loadBoard(); });
   $("boardDay").addEventListener("change", () => {
     if (state.fillingDays) return;

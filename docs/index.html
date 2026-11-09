@@ -57,6 +57,12 @@
     .tok-row b{font-size:13px;font-weight:600}
     .tok-row small{color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .tok-row:hover{background:rgba(62,224,255,.12)}
+    .pos-card{border:1px solid var(--stroke);border-radius:16px;padding:12px;margin-top:10px;background:rgba(0,0,0,.22)}
+    .pos-card h4{font-family:Sora,sans-serif;font-size:15px;font-weight:600;margin:0 0 6px}
+    .pos-meta{color:var(--muted);font-size:13px;line-height:1.4}
+    .pos-slide{display:flex;align-items:center;gap:10px;margin:10px 0}
+    .pos-slide input[type=range]{flex:1;accent-color:#3ee0ff}
+    .pos-slide b{min-width:42px;text-align:right}
     @media(max-width:900px){
       header{display:flex;flex-wrap:wrap}
       .seal-btn,.seal-btn img{height:36px;max-width:148px}
@@ -102,6 +108,7 @@
     <section class="desk desk-live">
       <div class="tabs" role="tablist">
         <button class="active" id="tab-swap" data-tab="swap" type="button">Swap</button>
+        <button id="tab-liq" data-tab="liq" type="button">Liquidity</button>
         <button id="tab-stake" data-tab="stake" type="button">Stake BZB</button>
         <button id="tab-board" data-tab="board" type="button">Leaderboard</button>
       </div>
@@ -175,6 +182,31 @@
         <div class="log" id="stakeLog" role="status"></div>
       </div>
 
+      <div class="panel card pane" id="pane-liq" hidden>
+        <h3>Liquidity</h3>
+        <p class="status" id="liqStatus">Add or remove liquidity on the Blazar factory. POL is wrapped to WPOL first.</p>
+        <div class="leg">
+          <div class="leg-top"><span>Token A</span><button class="max" id="maxLiqA" type="button">Max</button></div>
+          <div class="leg-top">
+            <input id="liqAmtA" class="amt" type="text" inputmode="decimal" placeholder="0.0" autocomplete="off" />
+            <select id="liqA" aria-label="First liquidity token"></select>
+          </div>
+        </div>
+        <div class="leg">
+          <div class="leg-top"><span>Token B</span><button class="max" id="maxLiqB" type="button">Max</button></div>
+          <div class="leg-top">
+            <input id="liqAmtB" class="amt" type="text" inputmode="decimal" placeholder="0.0" autocomplete="off" />
+            <select id="liqB" aria-label="Second liquidity token"></select>
+          </div>
+        </div>
+        <div class="slip-row"><span>Slippage</span><span class="slip-picks"><input class="slip-input" id="liqSlippage" type="text" inputmode="decimal" value="0.50" />%</span></div>
+        <button class="primary full" id="addLiqBtn" type="button">Add liquidity</button>
+        <div class="log" id="liqLog" role="status"></div>
+        <h3>Your positions</h3>
+        <p class="status" id="posStatus">Positions are read from the connected wallet on the Blazar factory.</p>
+        <div id="posList"></div>
+      </div>
+
       <div class="panel card pane" id="pane-board" hidden>
         <h3>Leaderboard</h3>
         <p class="status" id="boardStatus">Loading BZB buys and sells from the fee router.</p>
@@ -219,6 +251,6 @@
     })();
   </script>
   <script src="js/music.js?v=snd1"></script>
-  <script type="module" src="js/desk.js?v=desk12"></script>
+  <script type="module" src="js/desk.js?v=desk13"></script>
 </body>
 </html>
