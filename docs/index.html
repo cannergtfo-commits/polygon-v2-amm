@@ -183,7 +183,7 @@
         <p class="status" id="boardCoverage"></p>
         <details class="fine">
           <summary>Scoring rules</summary>
-          <p>Points use the previous block's Chainlink price for WPOL, WETH, WBTC, USDC, and USDT. A missing, stale, or non-positive feed scores zero. Spot prices are not used. Native POL is priced as WPOL. The scored amount is what the router kept after refunds. Trades under $25 are dropped. A wallet's reverse trade within 10 minutes is netted. Each wallet is capped at $50,000 of scored volume a day. That does not stop a sybil from using many wallets. The visible board is 50. Only the top 25 can be paid, at 15%, 10%, 5%, then a descending share of the remaining 70%, and empty ranks are not redistributed. The schedule is an estimate. It is not a payment. Posted and claimable BZB come from the rewards contract. That contract is unfunded until someone posts a day, and this page does not post winners or move rewards.</p>
+          <p>Points use the previous block's Chainlink price for WPOL, WETH, WBTC, USDC, and USDT. A buy is scored on the tokens you paid. A sell of BZB, or any swap whose input has no feed, is scored on the tokens you received when those are one of the priced assets. If neither side has a feed, the score is zero. Spot prices are not used. Native POL is priced as WPOL. The scored amount is what the router kept after refunds. Trades under $25 are dropped. A wallet's reverse trade within 10 minutes is netted. Each wallet is capped at $50,000 of scored volume a day. That does not stop a sybil from using many wallets. The visible board is 50. Only the top 25 can be paid, at 15%, 10%, 5%, then a descending share of the remaining 70%, and empty ranks are not redistributed. The schedule is an estimate. It is not a payment. Posted and claimable BZB come from the rewards contract. That contract is unfunded until someone posts a day, and this page does not post winners or move rewards.</p>
         </details>
         <div class="log" id="boardLog" role="status"></div>
       </div>
@@ -206,6 +206,6 @@
     })();
   </script>
   <script src="js/music.js?v=snd1"></script>
-  <script type="module" src="js/desk.js?v=desk4"></script>
+  <script type="module" src="js/desk.js?v=desk5"></script>
 </body>
 </html>

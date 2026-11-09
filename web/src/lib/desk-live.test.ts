@@ -353,7 +353,10 @@ const now = 1_700_000_000;
 const price = { answer: 50_000_000n, updatedAt: now - 10, blockTime: now, roundId: 5n, answeredInRound: 5n };
 const scored = scoreTrade({ tokenIn: NATIVE, tokenOut: BZB, consumed: 10n ** 18n, time: now, trader: USER, ...price });
 assert.ok(scored > 0n);
+const sold = scoreTrade({ tokenIn: BZB, tokenOut: WPOL, consumed: 10n ** 18n, amountOut: 2n * 10n ** 18n, time: now, trader: USER, ...price });
+assert.equal(sold, scored * 2n);
 assert.equal(scoreTrade({ tokenIn: BZB, tokenOut: WPOL, consumed: 10n ** 18n, time: now, trader: USER, ...price }), 0n);
+assert.equal(scoreTrade({ tokenIn: BZB, tokenOut: "0xb837f0e111596348A27e424e43938eb01753cf34", consumed: 10n ** 18n, amountOut: 10n ** 18n, time: now, trader: USER, ...price }), 0n);
 assert.equal(scoreTrade({ tokenIn: WPOL, tokenOut: BZB, consumed: 0n, time: now, trader: USER, ...price }), 0n);
 assert.equal(trustedUsdE8({ amount: 10n ** 18n, answer: 1n, updatedAt: 1n, blockTime: 100_000, maxAge: 86_400 }), 0n);
 

@@ -677,11 +677,11 @@ export function trustedUsdE8({ amount, answer, updatedAt, blockTime, maxAge = FE
 }
 
 export function scoreTrade(trade) {
-  const amount = trade.consumed ?? trade.amountIn ?? 0n;
-  if (amount <= 0n) return 0n;
-  const asset = canonicalAsset(trade.tokenIn);
-  const feed = FEEDS[asset];
-  if (!feed) return 0n;
+  const inputFeed = FEEDS[canonicalAsset(trade.tokenIn)];
+  const outputFeed = FEEDS[canonicalAsset(trade.tokenOut)];
+  const feed = inputFeed || outputFeed;
+  const amount = inputFeed ? (trade.consumed ?? trade.amountIn ?? 0n) : (trade.amountOut ?? 0n);
+  if (!feed || amount <= 0n) return 0n;
   return trustedUsdE8({
     amount,
     answer: trade.answer,

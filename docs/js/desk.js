@@ -40,7 +40,7 @@ import {
   swapPlan,
   v3Tiers,
   wrapperOnSpend,
-} from "./desk-core.mjs";
+} from "./desk-core.mjs?v=desk5";
 
 const $ = (id) => document.getElementById(id);
 const ethers = window.ethers;
@@ -882,12 +882,14 @@ async function loadBoard() {
       }
       const tokenIn = parsed.args.tokenIn === ethers.ZeroAddress ? NATIVE : parsed.args.tokenIn;
       const tokenOut = parsed.args.tokenOut === ethers.ZeroAddress ? NATIVE : parsed.args.tokenOut;
-      const feedRow = await priceAt(tokenIn, row.blockNumber, stamp);
+      const priced = feedFor(tokenIn) ? tokenIn : feedFor(tokenOut) ? tokenOut : null;
+      const feedRow = priced ? await priceAt(priced, row.blockNumber, stamp) : null;
       const score = feedRow
         ? scoreTrade({
           tokenIn,
           tokenOut,
           consumed: parsed.args.amountIn,
+          amountOut: parsed.args.amountOut,
           trader: parsed.args.trader,
           time: stamp,
           answer: feedRow[1],
