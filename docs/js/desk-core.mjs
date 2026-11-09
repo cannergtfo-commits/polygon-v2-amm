@@ -122,6 +122,20 @@ export function sameAsset(a, b, wpol = WPOL) {
   return canonicalAsset(a, wpol) === canonicalAsset(b, wpol);
 }
 
+export function wrapDirection(tokenIn, tokenOut, wpol = WPOL) {
+  if (isNative(tokenIn) && lower(tokenOut) === lower(wpol)) return "wrap";
+  if (lower(tokenIn) === lower(wpol) && isNative(tokenOut)) return "unwrap";
+  return null;
+}
+
+export function wrapTx(tokenIn, tokenOut, amount, wpol = WPOL) {
+  const direction = wrapDirection(tokenIn, tokenOut, wpol);
+  if (!direction) return null;
+  if (amount <= 0n) throw new Error("Enter an amount");
+  if (direction === "wrap") return { direction, to: wpol, data: "0xd0e30db0", value: amount };
+  return { direction, to: wpol, data: `0x2e1a7d4d${amount.toString(16).padStart(64, "0")}`, value: 0n };
+}
+
 export function quoteV2(amountIn, reserveIn, reserveOut, feeBps) {
   const fee = BigInt(feeBps);
   if (amountIn <= 0n || reserveIn <= 0n || reserveOut <= 0n || fee >= BPS) return 0n;

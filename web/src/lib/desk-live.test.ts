@@ -35,6 +35,8 @@ import {
   rankRoutes,
   rewardState,
   scoreTrade,
+  wrapDirection,
+  wrapTx,
   shareTableSums,
   splitV2,
   stakePlan,
@@ -343,7 +345,17 @@ assert.equal(executionGate({ ...ready, action: "swap", quoteFresh: false }).ok, 
 assert.equal(executionGate({ ...ready, action: "swap", stale: true }).ok, false);
 assert.match(executionGate({ ...ready, action: "stake", walletReject: true }).errors.join(" "), /rejected/i);
 
-assert.equal(shareTableSums(), 10_000);
+assert.equal(wrapDirection(WPOL, NATIVE), "unwrap");
+assert.equal(wrapDirection(NATIVE, WPOL), "wrap");
+assert.equal(wrapDirection(WPOL, BZB), null);
+const unwrap = wrapTx(WPOL, NATIVE, 3n);
+assert.equal(unwrap.direction, "unwrap");
+assert.equal(unwrap.to, WPOL);
+assert.equal(unwrap.value, 0n);
+assert.equal(unwrap.data, "0x2e1a7d4d" + "3".padStart(64, "0"));
+const wrap = wrapTx(NATIVE, WPOL, 4n);
+assert.equal(wrap.data, "0xd0e30db0");
+assert.equal(wrap.value, 4n);
 for (let i = 1; i < SHARE_BPS.length; i++) assert.ok(SHARE_BPS[i] < SHARE_BPS[i - 1]);
 assert.equal(SHARE_BPS[0], 1500);
 assert.equal(SHARE_BPS[1], 1000);

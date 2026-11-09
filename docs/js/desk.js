@@ -39,8 +39,10 @@ import {
   scoreTrade,
   swapPlan,
   v3Tiers,
+  wrapDirection,
+  wrapTx,
   wrapperOnSpend,
-} from "./desk-core.mjs?v=desk5";
+} from "./desk-core.mjs?v=desk6";
 
 const $ = (id) => document.getElementById(id);
 const ethers = window.ethers;
@@ -354,12 +356,29 @@ async function concentrated(targets, tokenIn, tokenOut, gross, unpaid, feeBps, u
 }
 
 async function buildQuote(amountIn) {
-  const allow = state.allow || await readAllowlist();
-  const venues = enabledVenues(allow);
-  if (!venues.v2.length && !venues.targets.length) throw new Error("The fee router allowlist is empty");
   const sell = selected("tokenIn");
   const buy = selected("tokenOut");
   if (!sell || !buy) throw new Error("Choose tokens");
+  const direction = wrapDirection(sell.address, buy.address);
+  if (direction) {
+    return {
+      at: Date.now(),
+      blockTime: Math.floor(Date.now() / 1000),
+      sell,
+      buy,
+      amountIn,
+      amountOut: amountIn,
+      best: null,
+      wrap: direction,
+      gasPrice: 0n,
+      gasPriced: false,
+      venues: { v2: [], targets: [] },
+      feeBps: 0,
+    };
+  }
+  const allow = state.allow || await readAllowlist();
+  const venues = enabledVenues(allow);
+  if (!venues.v2.length && !venues.targets.length) throw new Error("The fee router allowlist is empty");
   if (sameAsset(sell.address, buy.address)) throw new Error("Choose two different tokens. POL and WPOL wrap to the same asset.");
   const sellPool = poolToken(sell.address);
   const buyPool = poolToken(buy.address);
@@ -426,6 +445,18 @@ function clearQuote(message) {
 }
 
 function paintQuote(quote) {
+  if (quote?.wrap) {
+    const unwrapping = quote.wrap === "unwrap";
+    $("amountOut").value = formatUnits(quote.amountOut, quote.buy.decimals, 6);
+    $("routeLabel").textContent = unwrapping ? "Unwrap WPOL" : "Wrap POL";
+    $("minOutLabel").textContent = formatUnits(quote.amountOut, quote.buy.decimals, 6);
+    $("feeLabel").textContent = "None. 1:1";
+    $("gasLabel").textContent = "WPOL contract";
+    $("routeDetail").textContent = unwrapping
+      ? "WPOL unwraps to POL 1:1. No pool and no fee."
+      : "POL wraps to WPOL 1:1. No pool and no fee.";
+    return;
+  }
   if (!quote?.best) {
     clearQuote("No allowlisted route");
     $("routeDetail").textContent = `${coverage.searched} ${coverage.discovery} ${coverage.notCovered}`;
@@ -472,7 +503,11 @@ async function refreshQuote() {
     if (gen !== state.quoteGen) return;
     state.quote = quote;
     paintQuote(quote);
-    setStatus("swapStatus", quote.best ? "Quote is live for 20 seconds. Swap asks the wallet only after a simulation." : "No route on the allowlisted venues.");
+    setStatus("swapStatus", quote.wrap
+      ? "1:1. Swap sends the wrap or unwrap directly."
+      : quote.best
+        ? "Quote is live for 20 seconds. Swap asks the wallet only after a simulation."
+        : "No route on the allowlisted venues.");
     log("swapLog", "");
   } catch (err) {
     if (gen !== state.quoteGen) return;
@@ -573,6 +608,27 @@ async function doSwap() {
   $("swapBtn").disabled = true;
   try {
     await assertChain();
+    const sellNow = selected("tokenIn");
+    const buyNow = selected("tokenOut");
+    const wrapping = wrapDirection(sellNow?.address, buyNow?.address);
+    if (wrapping) {
+      const amount = parseUnits($("amountIn").value.trim(), sellNow.decimals);
+      const tx = wrapTx(sellNow.address, buyNow.address, amount);
+      const rpc = await provider();
+      const code = await rpc.getCode(WPOL);
+      if (!code || code === "0x") throw new Error("WPOL contract has no code.");
+      try {
+        await simulate(tx);
+      } catch (err) {
+        throw new Error(err.shortMessage || "Simulation failed. Nothing was sent.");
+      }
+      const receipt = await send(tx, "swapLog");
+      log("swapLog", `${wrapping === "unwrap" ? "Unwrapped" : "Wrapped"} in block ${receipt.blockNumber}.`, "ok");
+      state.quote = null;
+      await paintBalances();
+      scheduleQuote();
+      return;
+    }
     let quote = state.quote;
     if (!quote?.best || !quoteFresh(quote.at, Date.now())) {
       await refreshQuote();
