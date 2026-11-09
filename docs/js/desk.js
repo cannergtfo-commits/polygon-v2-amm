@@ -40,9 +40,9 @@ import {
   wrapDirection,
   wrapTx,
   wrapperOnSpend,
-} from "./desk-core.mjs?v=desk17";
-import { POLYGON_TOKENS } from "./polygon-tokens.mjs?v=desk17";
-import { POLYPUMP_LIST_URL, mergeTokenList } from "./token-lists.mjs?v=desk17";
+} from "./desk-core.mjs?v=desk18";
+import { POLYGON_TOKENS } from "./polygon-tokens.mjs?v=desk18";
+import { POLYPUMP_LIST_URL, mergeTokenList } from "./token-lists.mjs?v=desk18";
 
 const $ = (id) => document.getElementById(id);
 const ethers = window.ethers;
@@ -68,6 +68,14 @@ const state = {
   stakePaused: false,
   board: null,
   claimDay: null,
+  holdings: {
+    account: null,
+    bal: new Map(),
+    usdE8: new Map(),
+    at: 0,
+    gen: 0,
+    loading: false,
+  },
 };
 
 const factoryIface = new ethers.Interface(["function getPair(address,address) view returns (address)"]);
@@ -128,6 +136,7 @@ const feedIface = new ethers.Interface([
 ]);
 const multiIface = new ethers.Interface([
   "function aggregate3((address target,bool allowFailure,bytes callData)[] calls) payable returns ((bool success,bytes returnData)[])",
+  "function getEthBalance(address) view returns (uint256)",
 ]);
 const swapEvent = new ethers.Interface([
   "event AggregatedSwap(address indexed trader,address indexed tokenIn,address indexed tokenOut,address recipient,uint256 amountIn,uint256 feeAmount,uint256 amountOut,uint256 usdE8,bool usdTrusted,uint16 feeBps,bytes32 routeId)",
@@ -557,6 +566,292 @@ async function paintBalances() {
   }
 }
 
+const pickerRefreshers = new Set();
+function notifyPickers() {
+  for (const refresh of pickerRefreshers) {
+    try { refresh(); } catch { /* picker unmounted */ }
+  }
+}
+
+function clearHoldings() {
+  state.holdings.account = null;
+  state.holdings.bal = new Map();
+  state.holdings.usdE8 = new Map();
+  state.holdings.at = 0;
+  notifyPickers();
+}
+
+/** Compact token amount for the picker (1.23K, 0.0042). */
+function compactBal(amount, decimals) {
+  if (amount === null || amount === undefined) return "";
+  const raw = BigInt(amount);
+  if (raw === 0n) return "0";
+  const neg = raw < 0n;
+  const abs = neg ? -raw : raw;
+  const scale = 10n ** BigInt(decimals);
+  const whole = abs / scale;
+  const frac = abs % scale;
+  let human;
+  if (whole >= 1_000_000_000_000n) {
+    const n = Number(whole) / 1e12;
+    human = `${n >= 100 ? n.toFixed(0) : n >= 10 ? n.toFixed(1) : n.toFixed(2)}T`;
+  } else if (whole >= 1_000_000_000n) {
+    const n = Number(whole) / 1e9;
+    human = `${n >= 100 ? n.toFixed(0) : n >= 10 ? n.toFixed(1) : n.toFixed(2)}B`;
+  } else if (whole >= 1_000_000n) {
+    const n = Number(whole) / 1e6;
+    human = `${n >= 100 ? n.toFixed(0) : n >= 10 ? n.toFixed(1) : n.toFixed(2)}M`;
+  } else if (whole >= 1_000n) {
+    const n = Number(whole) / 1e3;
+    human = `${n >= 100 ? n.toFixed(0) : n >= 10 ? n.toFixed(1) : n.toFixed(2)}K`;
+  } else if (whole >= 1n) {
+    const n = Number(whole) + Number(frac * 10000n / scale) / 10000;
+    human = (n >= 100 ? n.toFixed(2) : n >= 10 ? n.toFixed(3) : n.toFixed(4)).replace(/\.?0+$/, "");
+  } else {
+    let s = formatUnits(abs, decimals, 8);
+    if (s.includes(".")) {
+      const [a, b = ""] = s.split(".");
+      let cut = b.replace(/0+$/, "");
+      if (cut.length > 4) cut = cut.slice(0, 4);
+      s = cut ? `${a}.${cut}` : a;
+    }
+    // Dust below four decimals still counts as held; show a compact marker.
+    if (s === "0" || /^0\.0*$/.test(s)) human = "<0.0001";
+    else human = s;
+  }
+  return (neg ? "-" : "") + human;
+}
+
+function tokenKey(address) {
+  return String(address || "").toLowerCase();
+}
+
+function holdingOf(token) {
+  const key = tokenKey(isNative(token.address) ? NATIVE : token.address);
+  const bal = state.holdings.bal.get(key);
+  if (bal === undefined) return { bal: null, usdE8: null, known: false };
+  const has = state.holdings.usdE8.has(key);
+  return { bal, usdE8: has ? state.holdings.usdE8.get(key) : null, known: has };
+}
+
+function sortedPickerTokens() {
+  if (!state.account || state.holdings.account !== state.account) return POLYGON_TOKENS.slice();
+  const ranked = POLYGON_TOKENS.map((token, index) => {
+    const hold = holdingOf(token);
+    const bal = hold.bal || 0n;
+    let tier = 2;
+    let value = 0n;
+    if (bal > 0n) {
+      if (hold.known && hold.usdE8 > 0n) {
+        tier = 0;
+        value = hold.usdE8;
+      } else {
+        tier = 1; // held, unknown or zero value — still above zero-balance
+      }
+    }
+    return { token, index, tier, value };
+  });
+  ranked.sort((a, b) => {
+    if (a.tier !== b.tier) return a.tier - b.tier;
+    if (a.tier === 0 && a.value !== b.value) return a.value > b.value ? -1 : 1;
+    return a.index - b.index;
+  });
+  return ranked.map((row) => row.token);
+}
+
+async function multicallChunked(calls, size = 80) {
+  const out = [];
+  for (let i = 0; i < calls.length; i += size) {
+    const rows = await multicall(calls.slice(i, i + size));
+    out.push(...rows);
+  }
+  return out;
+}
+
+function usdE8FromAnswer(amount, tokenDecimals, answer, priceDecimals = 8) {
+  if (amount <= 0n || answer <= 0n) return 0n;
+  const scale = BigInt(priceDecimals) + BigInt(tokenDecimals);
+  if (scale >= 8n) return (answer * amount) / 10n ** (scale - 8n);
+  return answer * amount * 10n ** (8n - scale);
+}
+
+function quoteViaReserves(amount, token, token0, reserve0, reserve1) {
+  if (amount <= 0n || reserve0 <= 0n || reserve1 <= 0n) return 0n;
+  const is0 = tokenKey(token) === tokenKey(token0);
+  const reserveIn = is0 ? reserve0 : reserve1;
+  const reserveOut = is0 ? reserve1 : reserve0;
+  if (reserveIn <= 0n) return 0n;
+  return (amount * reserveOut) / reserveIn;
+}
+
+/**
+ * Load wallet balances for every picker token (Multicall3 + getEthBalance) and
+ * approximate USD value via Chainlink feeds or V2 reserves vs WPOL/USDC.
+ * Never blocks the menu: callers fire-and-forget; open menus re-render on notify.
+ */
+async function refreshHoldings({ force = false } = {}) {
+  const account = state.account;
+  if (!account) {
+    clearHoldings();
+    return;
+  }
+  if (state.holdings.loading && !force) return;
+  const fresh = state.holdings.account === account && Date.now() - state.holdings.at < 30_000;
+  if (!force && fresh) return;
+  const gen = ++state.holdings.gen;
+  state.holdings.loading = true;
+  try {
+    const tokens = POLYGON_TOKENS.slice();
+    const balCalls = tokens.map((token) => {
+      if (isNative(token.address)) {
+        return { to: MULTICALL, data: multiIface.encodeFunctionData("getEthBalance", [account]) };
+      }
+      return { to: poolToken(token.address), data: erc20Iface.encodeFunctionData("balanceOf", [account]) };
+    });
+    const balRows = await multicallChunked(balCalls);
+    if (gen !== state.holdings.gen || state.account !== account) return;
+    const bal = new Map();
+    tokens.forEach((token, i) => {
+      const row = balRows[i];
+      let amount = 0n;
+      if (row?.success && row.data && row.data !== "0x") {
+        try {
+          amount = isNative(token.address)
+            ? BigInt(multiIface.decodeFunctionResult("getEthBalance", row.data)[0])
+            : BigInt(erc20Iface.decodeFunctionResult("balanceOf", row.data)[0]);
+        } catch { amount = 0n; }
+      }
+      bal.set(tokenKey(isNative(token.address) ? NATIVE : token.address), amount);
+    });
+
+    // Unit prices in USD e8 for 1 whole token (10^decimals raw).
+    const unitUsd = new Map();
+    const feedTokens = [
+      { key: tokenKey(WPOL), address: WPOL, decimals: 18 },
+      { key: tokenKey("0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619"), address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619", decimals: 18 },
+      { key: tokenKey("0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6"), address: "0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6", decimals: 8 },
+      { key: tokenKey("0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359"), address: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359", decimals: 6 },
+      { key: tokenKey("0xc2132D05D31c914a87C6611C10748AEb04B58e8F"), address: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", decimals: 6 },
+    ];
+    const feedCalls = feedTokens.map((item) => {
+      const feed = feedFor(item.address);
+      return { to: feed.aggregator, data: feedIface.encodeFunctionData("latestRoundData", []) };
+    });
+    const feedRows = await multicall(feedCalls);
+    if (gen !== state.holdings.gen || state.account !== account) return;
+    feedTokens.forEach((item, i) => {
+      const feed = feedFor(item.address);
+      const row = feedRows[i];
+      if (!row?.success || !row.data || row.data === "0x") return;
+      try {
+        const decoded = feedIface.decodeFunctionResult("latestRoundData", row.data);
+        const answer = BigInt(decoded[1]);
+        if (answer > 0n) {
+          // USD e8 for one whole token
+          const one = 10n ** BigInt(item.decimals);
+          unitUsd.set(item.key, usdE8FromAnswer(one, item.decimals, answer, feed.priceDecimals));
+        }
+      } catch { /* skip */ }
+    });
+    // POL shares WPOL; bridged USDC ~ native USDC.
+    if (unitUsd.has(tokenKey(WPOL))) unitUsd.set(tokenKey(NATIVE), unitUsd.get(tokenKey(WPOL)));
+    const usdcKey = tokenKey("0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359");
+    if (unitUsd.has(usdcKey)) unitUsd.set(tokenKey("0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"), unitUsd.get(usdcKey));
+
+    const held = tokens.filter((token) => (bal.get(tokenKey(isNative(token.address) ? NATIVE : token.address)) || 0n) > 0n);
+    const needPair = held.filter((token) => {
+      const key = tokenKey(isNative(token.address) ? NATIVE : poolToken(token.address));
+      return !unitUsd.has(tokenKey(isNative(token.address) ? NATIVE : token.address)) && !unitUsd.has(key);
+    });
+
+    const USDC = "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359";
+    const factories = [VENUES.v2[0].factory, VENUES.v2[1].factory]; // Blazar, QuickSwap
+    const pairQueries = [];
+    for (const token of needPair) {
+      const asset = poolToken(token.address);
+      for (const factory of factories) {
+        pairQueries.push({ token, asset, factory, quote: WPOL });
+        pairQueries.push({ token, asset, factory, quote: USDC });
+      }
+    }
+    if (pairQueries.length) {
+      const pairRows = await multicallChunked(pairQueries.map((q) => ({
+        to: q.factory,
+        data: factoryIface.encodeFunctionData("getPair", [q.asset, q.quote]),
+      })));
+      if (gen !== state.holdings.gen || state.account !== account) return;
+      const reserveJobs = [];
+      pairQueries.forEach((q, i) => {
+        const row = pairRows[i];
+        if (!row?.success || !row.data || row.data === "0x") return;
+        let pair;
+        try { pair = factoryIface.decodeFunctionResult("getPair", row.data)[0]; } catch { return; }
+        if (!pair || pair === ethers.ZeroAddress) return;
+        reserveJobs.push({ ...q, pair });
+      });
+      if (reserveJobs.length) {
+        const detail = await multicallChunked(reserveJobs.flatMap((job) => [
+          { to: job.pair, data: pairIface.encodeFunctionData("token0", []) },
+          { to: job.pair, data: pairIface.encodeFunctionData("getReserves", []) },
+        ]));
+        if (gen !== state.holdings.gen || state.account !== account) return;
+        for (let i = 0; i < reserveJobs.length; i++) {
+          const job = reserveJobs[i];
+          const t0row = detail[i * 2];
+          const rrow = detail[i * 2 + 1];
+          if (!t0row?.success || !rrow?.success) continue;
+          let token0, reserves;
+          try {
+            token0 = pairIface.decodeFunctionResult("token0", t0row.data)[0];
+            reserves = pairIface.decodeFunctionResult("getReserves", rrow.data);
+          } catch { continue; }
+          const reserve0 = BigInt(reserves[0]);
+          const reserve1 = BigInt(reserves[1]);
+          // Skip empty / dust pools
+          if (reserve0 === 0n || reserve1 === 0n) continue;
+          const one = 10n ** BigInt(job.token.decimals);
+          const quoteOut = quoteViaReserves(one, job.asset, token0, reserve0, reserve1);
+          if (quoteOut <= 0n) continue;
+          const quoteKey = tokenKey(job.quote);
+          const quoteUnit = unitUsd.get(quoteKey);
+          if (!quoteUnit) continue;
+          const quoteDecimals = job.quote === WPOL ? 18 : 6;
+          // quoteOut is raw quote wei for one whole token; convert to USD e8
+          const usd = (quoteOut * quoteUnit) / (10n ** BigInt(quoteDecimals));
+          if (usd <= 0n) continue;
+          const key = tokenKey(isNative(job.token.address) ? NATIVE : job.token.address);
+          const prev = unitUsd.get(key) || 0n;
+          // Prefer the deeper-looking quote (higher implied unit value from larger pool is fine; take max of sensible)
+          if (usd > prev) unitUsd.set(key, usd);
+        }
+      }
+    }
+
+    const usdE8 = new Map();
+    for (const token of tokens) {
+      const key = tokenKey(isNative(token.address) ? NATIVE : token.address);
+      const amount = bal.get(key) || 0n;
+      const unitKey = key;
+      const poolKey = tokenKey(poolToken(token.address));
+      const unit = unitUsd.get(unitKey) ?? unitUsd.get(poolKey);
+      if (unit === undefined) continue; // unknown — omit from map
+      const one = 10n ** BigInt(token.decimals);
+      usdE8.set(key, amount <= 0n ? 0n : (amount * unit) / one);
+    }
+
+    if (gen !== state.holdings.gen || state.account !== account) return;
+    state.holdings.account = account;
+    state.holdings.bal = bal;
+    state.holdings.usdE8 = usdE8;
+    state.holdings.at = Date.now();
+    notifyPickers();
+  } catch {
+    // Keep prior cache; menu still works without values.
+  } finally {
+    if (gen === state.holdings.gen) state.holdings.loading = false;
+  }
+}
+
 function rejected(err) {
   return err?.code === 4001 || err?.code === "ACTION_REJECTED" || /rejected|denied/i.test(String(err?.message || err?.shortMessage || ""));
 }
@@ -634,6 +929,7 @@ async function doSwap() {
       log("swapLog", `${wrapping === "unwrap" ? "Unwrapped" : "Wrapped"} in block ${receipt.blockNumber}.`, "ok");
       state.quote = null;
       await paintBalances();
+      refreshHoldings({ force: true }).catch(() => {});
       scheduleQuote();
       return;
     }
@@ -735,6 +1031,7 @@ async function doSwap() {
     log("swapLog", `Swapped in block ${receipt.blockNumber}.`, "ok");
     state.quote = null;
     await paintBalances();
+    refreshHoldings({ force: true }).catch(() => {});
     scheduleQuote();
   } catch (err) {
     log("swapLog", err.shortMessage || err.message || "Swap failed", "err");
@@ -792,7 +1089,7 @@ function dressTokenSelect(select) {
   const render = () => {
     const query = search.value.trim().toLowerCase();
     list.replaceChildren();
-    for (const token of POLYGON_TOKENS) {
+    for (const token of sortedPickerTokens()) {
       const hay = `${token.symbol} ${token.name} ${token.address}`.toLowerCase();
       if (query && !hay.includes(query)) continue;
       const row = document.createElement("button");
@@ -804,6 +1101,7 @@ function dressTokenSelect(select) {
       icon.hidden = !token.logo;
       icon.addEventListener("error", () => { icon.hidden = true; });
       const text = document.createElement("span");
+      text.className = "tok-meta";
       const name = document.createElement("b");
       name.textContent = token.symbol;
       const sub = document.createElement("small");
@@ -816,6 +1114,17 @@ function dressTokenSelect(select) {
       }
       text.append(name, sub);
       row.append(icon, text);
+      if (state.account) {
+        const hold = holdingOf(token);
+        const balEl = document.createElement("span");
+        balEl.className = "tok-bal";
+        if (hold.bal === null) {
+          balEl.textContent = state.holdings.loading ? "…" : "";
+        } else {
+          balEl.textContent = compactBal(hold.bal, token.decimals);
+        }
+        row.appendChild(balEl);
+      }
       row.addEventListener("click", () => {
         const key = token.address.toLowerCase();
         if (![...select.options].some((opt) => opt.value.toLowerCase() === key)) {
@@ -832,12 +1141,16 @@ function dressTokenSelect(select) {
       list.appendChild(row);
     }
   };
+  const onHoldings = () => { if (!menu.hidden) render(); };
+  pickerRefreshers.add(onHoldings);
   button.addEventListener("click", () => {
     menu.hidden = !menu.hidden;
     if (!menu.hidden) {
       search.value = "";
       render();
       search.focus();
+      // Kick a soft refresh; do not await — menu stays interactive.
+      if (state.account) refreshHoldings().catch(() => {});
     }
   });
   search.addEventListener("input", render);
@@ -1471,6 +1784,7 @@ async function addLiquidity() {
     }
     const receipt = await send(tx, "liqLog");
     log("liqLog", `Liquidity added in block ${receipt.blockNumber}.`, "ok");
+    refreshHoldings({ force: true }).catch(() => {});
     await loadPositions();
   } catch (err) {
     log("liqLog", err.shortMessage || err.message || "Add liquidity failed", "err");
@@ -1607,6 +1921,7 @@ async function removePosition(pair, balance, token0, token1, reserve0, reserve1,
     }
     const receipt = await send(tx, "liqLog");
     log("liqLog", `Liquidity removed in block ${receipt.blockNumber}.`, "ok");
+    refreshHoldings({ force: true }).catch(() => {});
     await loadPositions();
   } catch (err) {
     log("liqLog", err.shortMessage || err.message || "Remove failed", "err");
@@ -1700,6 +2015,28 @@ async function connect(kind) {
   paintWallet();
   $("walletDrop").hidden = true;
   await paintBalances();
+  refreshHoldings({ force: true }).catch(() => {});
+  if (injected && !injected.__blazarHoldingsHooked) {
+    injected.__blazarHoldingsHooked = true;
+    injected.on?.("accountsChanged", (accounts) => {
+      if (state.leaving) return;
+      if (!accounts?.length) {
+        disconnect();
+        return;
+      }
+      state.account = ethers.getAddress(accounts[0]);
+      paintWallet();
+      paintBalances();
+      refreshHoldings({ force: true }).catch(() => {});
+      loadStake();
+      loadPositions();
+    });
+    injected.on?.("chainChanged", (hex) => {
+      state.chainId = parseInt(hex, 16);
+      paintWallet();
+      refreshHoldings({ force: true }).catch(() => {});
+    });
+  }
   await loadStake();
   await loadPositions();
 }
@@ -1711,6 +2048,7 @@ function disconnect() {
   state.injected = null;
   paintWallet();
   paintBalances();
+  clearHoldings();
   loadStake();
   loadPositions();
   $("walletDrop").hidden = true;
