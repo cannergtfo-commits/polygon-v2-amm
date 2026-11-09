@@ -42,6 +42,7 @@ import {
   wrapperOnSpend,
 } from "./desk-core.mjs?v=desk11";
 import { POLYGON_TOKENS } from "./polygon-tokens.mjs?v=desk11";
+import { POLYPUMP_LIST_URL, mergeTokenList } from "./token-lists.mjs?v=desk12";
 
 const $ = (id) => document.getElementById(id);
 const ethers = window.ethers;
@@ -806,7 +807,7 @@ function dressTokenSelect(select) {
       const name = document.createElement("b");
       name.textContent = token.symbol;
       const sub = document.createElement("small");
-      sub.textContent = token.name;
+      sub.textContent = token.source ? `${token.name} · ${token.source}` : token.name;
       text.append(name, sub);
       row.append(icon, text);
       row.addEventListener("click", () => {
@@ -834,6 +835,30 @@ function dressTokenSelect(select) {
   });
   img.addEventListener("error", () => { img.hidden = true; });
   syncTokenButton(select);
+}
+
+/** Merge graduated PolyPump tokens (launch.blazarforce.net/tokenlist.json) into the picker. */
+async function loadRemoteLists() {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 6000);
+  try {
+    const response = await fetch(POLYPUMP_LIST_URL, { signal: controller.signal, cache: "no-cache" });
+    if (!response.ok) return;
+    const added = mergeTokenList(POLYGON_TOKENS, await response.json(), "PolyPump");
+    for (const id of ["tokenIn", "tokenOut"]) {
+      const select = $(id);
+      for (const token of added) {
+        const option = document.createElement("option");
+        option.value = token.address;
+        option.textContent = token.symbol;
+        select.appendChild(option);
+      }
+    }
+  } catch {
+    // The launchpad list is optional; the built-in list keeps working without it.
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function fillSelect(id, prefer) {
@@ -1348,6 +1373,7 @@ function boot() {
   }
   fillSelect("tokenIn", NATIVE);
   fillSelect("tokenOut", BZB);
+  loadRemoteLists();
   $("routeDetail").textContent = `${coverage.searched} ${coverage.discovery} ${coverage.notCovered}`;
   document.querySelectorAll(".desk-live .tabs button").forEach((button) => {
     button.addEventListener("click", () => showTab(button.dataset.tab));
