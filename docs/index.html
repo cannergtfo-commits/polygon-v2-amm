@@ -7,98 +7,50 @@
   <link rel="icon" href="favicon.ico" sizes="any" />
   <link rel="icon" type="image/png" sizes="64x64" href="favicon.png" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-  <link rel="stylesheet" href="css/style.css?v=usd1" />
+  <link rel="stylesheet" href="css/style.css?v=desk1" />
   <style>
-    .bal-row{display:inline-flex;align-items:center;gap:8px}
-    .max{font-family:Syne,sans-serif;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#021018;background:linear-gradient(90deg,#3ee0ff,#7af);border:0;border-radius:999px;padding:4px 8px;cursor:pointer}
-    .slip-row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
-    .slip-picks{display:inline-flex;align-items:center;gap:6px;justify-content:flex-end}
-    .slip-picks button{font-family:Sora,sans-serif;font-size:12px;color:var(--muted);background:transparent;border:1px solid var(--stroke);border-radius:999px;padding:4px 8px;cursor:pointer}
-    .slip-picks button.on{color:#021018;background:linear-gradient(90deg,#3ee0ff,#7af);border-color:transparent}
-    .slip-input{width:58px!important;max-width:58px;font-size:14px!important;font-weight:600;margin:0!important;padding:4px 6px!important;background:rgba(0,0,0,.35);border:1px solid var(--stroke);border-radius:8px;color:var(--text)}
-    .field-top{display:flex;justify-content:space-between;align-items:center;gap:12px}
-    .chart-wrap{width:auto;margin:0;display:flex;flex-direction:column;min-width:0;position:relative;z-index:2}
-    .chart-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-    .chart-top h3{font-family:Syne,sans-serif;letter-spacing:.14em;font-size:13px;text-transform:uppercase;color:var(--cyan)}
-    .chart-top a{color:var(--muted);font-size:12px}
-    .chart-frame{flex:1;height:auto;min-height:560px;border:1px solid var(--stroke);border-radius:18px;overflow:hidden;background:#030712}
-    .chart-frame iframe{width:100%;height:100%;border:0}
-    .desk{width:100%;margin:0 0 40px}
-    .trade-row{display:grid;grid-template-columns:minmax(420px,560px) minmax(0,1fr);gap:18px;align-items:stretch}
-    @media(max-width:900px){.trade-row{grid-template-columns:1fr}.chart-frame{min-height:420px}}
-    .wrap-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px}
     .wallet-menu{position:relative}
     .wallet-drop{position:absolute;right:0;top:calc(100% + 8px);min-width:168px;padding:6px;background:rgba(6,12,28,.96);border:1px solid var(--stroke);border-radius:14px;box-shadow:0 18px 40px rgba(0,0,0,.45);z-index:40}
     .wallet-drop button{width:100%;text-align:left;font-family:Syne,sans-serif;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text);background:transparent;border:0;border-radius:10px;padding:10px 12px;cursor:pointer}
     .wallet-drop button:hover{background:rgba(62,224,255,.12);color:var(--cyan)}
-    video.floater{--gutter:max(0px,calc((100vw - 1180px) / 2));object-fit:cover;object-position:center;border-radius:22px;width:min(168px,max(80px,calc(var(--gutter) - 56px)));right:max(24px,calc((var(--gutter) - min(168px,max(80px,calc(var(--gutter) - 56px)))) / 2));bottom:36px;z-index:1;animation:fly-out 22s ease-in-out infinite alternate,jetglow 2.4s ease-in-out infinite}
-    @keyframes fly-out{from{transform:translate3d(0,4px,0) rotate(-3deg)}to{transform:translate3d(0,-10px,0) rotate(2deg)}}
-    #m421Slippage{width:64px;margin:0;padding:4px 8px;background:rgba(0,0,0,.35);border:1px solid var(--stroke);border-radius:8px;color:var(--text);font-family:Sora,sans-serif;font-size:14px}
-    #pane-m421:not(.visible){display:none}
-    #pane-draw:not(.visible){display:none}
-    .desk>.tabs{overflow-x:auto}
-    .desk>.tabs button{flex:1 0 auto;white-space:nowrap}
-    .draw-note{color:var(--muted);font-size:13px;line-height:1.45;margin:8px 0}
-    .draw-note a,.draw-winners a{color:var(--cyan)}
-    .draw-field{display:block;margin:10px 0;color:var(--muted);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
-    .draw-field input,.draw-field textarea,.draw-field select{width:100%;margin-top:6px;background:rgba(0,0,0,.28);border:1px solid var(--stroke);border-radius:12px;padding:10px 12px;color:var(--text);font-size:15px;font-family:Sora,sans-serif;text-transform:none;letter-spacing:0}
-    .draw-field textarea{min-height:72px;resize:vertical;font-family:"JetBrains Mono",monospace;font-size:12px}
-    .draw-token-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
-    .draw-field .draw-token-row input{margin-top:0}
-    .draw-token-row button{margin-top:6px}
-    .draw-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-    .draw-list{max-height:220px;overflow:auto;margin:8px 0 12px;border:1px solid var(--stroke);border-radius:14px;background:rgba(0,0,0,.22)}
-    .draw-holder{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-bottom:1px solid var(--stroke);font-size:13px;text-transform:none;letter-spacing:0;color:var(--text)}
-    .draw-holder:last-child{border-bottom:0}
-    .draw-holder.dim{color:var(--muted)}
-    .draw-holder input{width:auto;margin:0 8px 0 0}
-    .draw-kicker{font-family:Syne,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--cyan);font-size:12px;margin:12px 0 8px}
-    .draw-prize{display:grid;grid-template-columns:96px minmax(0,1fr) 92px;gap:8px;margin-bottom:8px}
-    .draw-prize input,.draw-prize select{width:100%;margin:0;background:rgba(0,0,0,.28);border:1px solid var(--stroke);border-radius:12px;padding:8px 10px;color:var(--text);font-size:14px;font-family:Sora,sans-serif}
-    .draw-phase{font-family:Syne,sans-serif;font-size:22px;text-transform:capitalize;margin-top:8px}
-    .draw-resume{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}
-    .draw-resume button{margin-bottom:10px}
-    .draw-actions{display:grid;gap:8px;margin-top:8px}
-    .draw-winners{margin:6px 0 0 16px;font-size:13px}
+    .seal-btn{position:static;left:auto;top:auto;transform:none;display:flex;align-items:center;height:40px;max-width:180px;padding:0;border:0;background:transparent;z-index:6;line-height:0}
+    .seal-btn img{height:40px;width:auto;max-width:100%;object-fit:contain;display:block}
+    .desk{width:100%;margin:0}
+    .desk-live .tabs{display:flex}
+    .trade-row{display:grid;grid-template-columns:minmax(340px,520px) minmax(0,1fr);gap:18px;align-items:stretch}
+    .chart-wrap{margin:0;min-width:0}
+    .chart-frame{min-height:520px}
+    .chart-meta,.chart-note,.fine p,.status{color:var(--muted);font-size:13px;line-height:1.45}
+    .chart-note{margin-top:8px}
+    .pane[hidden],.trade-row[hidden]{display:none!important}
+    .slip-row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+    .slip-picks{display:inline-flex;align-items:center;gap:6px}
+    .slip-picks button{font-family:Sora,sans-serif;font-size:12px;color:var(--muted);background:transparent;border:1px solid var(--stroke);border-radius:999px;padding:4px 8px;cursor:pointer}
+    .slip-picks button.on{color:#021018;background:linear-gradient(90deg,#3ee0ff,#7af);border-color:transparent}
+    .slip-input{width:58px!important;max-width:58px;font-size:14px!important;font-weight:600;margin:0!important;padding:4px 6px!important;background:rgba(0,0,0,.35);border:1px solid var(--stroke);border-radius:8px;color:var(--text)}
+    .stats-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:16px}
+    .stats-grid article{border:1px solid var(--stroke);border-radius:16px;padding:12px;background:rgba(0,0,0,.22);min-width:0}
+    .stats-grid b{display:block;font-family:Sora,sans-serif;font-size:18px;font-weight:600;word-break:break-word}
+    .stats-grid small{color:var(--muted);letter-spacing:.06em;text-transform:uppercase;font-size:11px}
+    .actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+    .actions .primary,.actions .ghost{width:100%}
+    details.fine{margin:12px 0;color:var(--muted);font-size:13px}
+    details.fine summary{cursor:pointer;color:var(--cyan);font-family:Syne,sans-serif;letter-spacing:.08em;text-transform:uppercase;font-size:12px}
+    .board-wrap{overflow:auto;border:1px solid var(--stroke);border-radius:16px}
+    table.board{width:100%;border-collapse:collapse;font-size:13px}
+    table.board th,table.board td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--stroke);white-space:nowrap}
+    table.board th{color:var(--muted);font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:500}
+    .row-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
+    select,input.amt{width:100%}
+    .leg select{width:auto;max-width:46%}
     @media(max-width:900px){
-      .desk>.tabs{display:grid;grid-template-columns:1fr 1fr;overflow:visible;border-radius:18px}
-      .desk>.tabs button{font-size:10px;padding:8px 4px}
-      .draw-grid,.draw-prize,.draw-resume{grid-template-columns:1fr}
-    }
-    .pane.m421{margin-top:0}
-    .liq-px{margin-left:8px;color:var(--cyan);font-style:normal;font-size:13px;letter-spacing:0;text-transform:none}
-    .field input[type=range]{width:100%;height:28px;margin-top:8px;padding:0;background:transparent;border:0;border-radius:0;accent-color:#3ee0ff}
-    .remove-pct{font-family:Syne,sans-serif;color:var(--cyan);letter-spacing:.04em}
-    .seal-btn{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;height:64px;max-width:min(420px,34vw);padding:0;border:0;background:transparent;z-index:6;line-height:0}
-    .seal-btn img{height:64px;width:auto;max-width:100%;object-fit:contain;display:block;filter:drop-shadow(0 0 12px rgba(255,150,40,.4))}
-    .seal-btn:hover img{filter:drop-shadow(0 0 16px rgba(62,224,255,.55)) drop-shadow(0 0 12px rgba(255,150,40,.55))}
-    @media(max-width:900px){.seal-btn,.seal-btn img{height:36px;max-width:40vw}}
-    .m421-out{display:grid;gap:6px;margin:10px 0 12px}
-    .m421-out div{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--muted)}
-    .m421-out b{color:var(--text);font-weight:600;text-align:right}
-
-    .liveboard{margin:0 0 34px;padding:22px;border:1px solid var(--stroke);border-radius:24px;background:rgba(6,12,28,.55)}
-    .live-kicker{font-family:Syne,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--cyan);font-size:12px}
-    .live-copy h2{font-family:Syne,sans-serif;font-size:clamp(28px,4vw,44px);line-height:1.05;margin-top:8px}
-    .live-copy p{margin-top:12px;color:var(--muted);max-width:70ch;line-height:1.5;font-size:16px}
-    .live-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:18px}
-    .live-card,.live-trade{border:1px solid var(--stroke);border-radius:16px;padding:14px;background:rgba(0,0,0,.22);min-width:0}
-    .live-card b{display:block;font-family:Syne,sans-serif;font-size:15px;letter-spacing:.04em}
-    .live-card small,.live-trade p{display:block;margin-top:6px;color:var(--muted);font-size:13px;line-height:1.45}
-    .live-card a,.live-trade a{color:var(--cyan)}
-    .live-card code,.live-trade code{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--gold);word-break:break-all}
-    .live-trade{margin-top:12px;border-color:rgba(240,195,106,.4);background:rgba(240,195,106,.06)}
-    .live-trade h3{font-family:Syne,sans-serif;font-size:clamp(18px,3vw,26px);line-height:1.2;margin:8px 0}
-    .live-products{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
-    .live-products a{text-decoration:none;border:1px solid var(--stroke);border-radius:999px;padding:8px 12px;font-family:Syne,sans-serif;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text)}
-    .live-products a:hover{color:#021018;background:linear-gradient(90deg,var(--cyan),#7af);border-color:transparent}
-    .live-notes{margin:14px 0 0 18px;color:var(--muted);font-size:13px;line-height:1.5}
-    .live-notes li{margin:5px 0}
-    @media(max-width:900px){
-      header{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;row-gap:10px}
-      .seal-btn{position:static;left:auto;top:auto;transform:none;height:44px;max-width:220px;margin:0 auto;grid-column:1 / -1;justify-content:center}
-      .seal-btn img{height:44px;max-width:220px}
-      .live-grid{grid-template-columns:1fr}
+      header{display:flex;flex-wrap:wrap}
+      .seal-btn,.seal-btn img{height:36px;max-width:148px}
+      .trade-row,.stats-grid,.actions{grid-template-columns:1fr}
+      .chart-frame{min-height:360px}
+      .desk-live .tabs{display:grid;grid-template-columns:1fr 1fr 1fr;border-radius:18px}
+      .desk-live .tabs button{font-size:11px;padding:10px 4px}
     }
   </style>
 </head>
@@ -113,7 +65,7 @@
       <img data-img="coin" alt="BzB" />
       <div>
         <h1>BlazarSwap</h1>
-        <span>Polygon DEX</span>
+        <span>Polygon</span>
       </div>
     </div>
     <a class="seal-btn" href="blazar-apps.html" aria-label="Blazar Apps"><img src="apps-btn.png" alt="Blazar Apps" /></a>
@@ -133,317 +85,113 @@
   </header>
   <audio id="bgm" loop preload="auto" src="audio/theme.mp3?v=ruins"></audio>
 
-  <video class="floater" src="video/fighter.mp4" poster="https://i.imgur.com/zGd7VZ4.jpeg" autoplay muted loop playsinline></video>
-
   <main>
-    <section class="film" aria-hidden="true">
-      <img class="wide" data-img="blazar" alt="" />
-      <img data-img="fleet" alt="" />
-      <img data-img="planet" alt="" />
-    </section>
-
-    <section class="hero">
-      <div class="hero-copy">
-        <h2>Play on-chain</h2>
-        <p>
-          The next games will not rent you a character. They will let you keep it.
-          Skins, worlds, and wins can move with you. BlazarBits is fuel for that
-          loop — trade in, load a match, and take the loot back out.
-          The desk on this page still fills the live Blazar pools.
-        </p>
-        <div class="stats">
-          <div class="stat"><b>Own it</b><small>Items stay yours</small></div>
-          <div class="stat"><b>Keep it</b><small>Progress travels</small></div>
-          <div class="stat"><b>BzB</b><small>Play token</small></div>
-          <div class="stat"><b id="pairCount">—</b><small>Live markets</small></div>
-        </div>
-      </div>
-      <div class="hero-art">
-        <img id="heroShot" data-img="astronaut" alt="" />
-      </div>
-    </section>
-
-
-    <section class="liveboard" id="live-status" aria-labelledby="live-title">
-      <div class="live-copy">
-        <p class="live-kicker">Polygon PoS · chain 137</p>
-        <h2 id="live-title">Four contracts are on-chain</h2>
-        <p>
-          The swap desk below is still the live Blazar factory. A separate fee router is deployed beside it.
-          Blazar factory legs pay no extra wrapper fee. External principal pays 0.05% once.
-          Ownership acceptance is deferred. PolygonScan source is not verified.
-        </p>
-      </div>
-      <div class="live-grid">
-        <article class="live-card">
-          <b>Oracle</b>
-          <small>USD quotes for the indexer. Spot prices stay untrusted.</small>
-          <code>0x7d022EB5b18a79b585601326d87964C87F948892</code>
-          <small><a href="https://polygonscan.com/address/0x7d022EB5b18a79b585601326d87964C87F948892" target="_blank" rel="noopener">Bytecode on PolygonScan</a> · <a href="https://sourcify.dev/server/v2/contract/137/0x7d022EB5b18a79b585601326d87964C87F948892" target="_blank" rel="noopener">Sourcify exact match</a></small>
-        </article>
-        <article class="live-card">
-          <b>Fee router</b>
-          <small>Reviewed routes. This page does not send through it.</small>
-          <code>0x014AC678c96dd5dFAEc78BfffD8E00EEbf117E9b</code>
-          <small><a href="https://polygonscan.com/address/0x014AC678c96dd5dFAEc78BfffD8E00EEbf117E9b" target="_blank" rel="noopener">Bytecode on PolygonScan</a> · <a href="https://sourcify.dev/server/v2/contract/137/0x014AC678c96dd5dFAEc78BfffD8E00EEbf117E9b" target="_blank" rel="noopener">Sourcify exact match</a></small>
-        </article>
-        <article class="live-card">
-          <b>Daily rewards</b>
-          <small>Poster is separate from the owner. Not a funded public program yet.</small>
-          <code>0x323DCb75A4f265D26dd3f5F203e12e7625d49951</code>
-          <small><a href="https://polygonscan.com/address/0x323DCb75A4f265D26dd3f5F203e12e7625d49951" target="_blank" rel="noopener">Bytecode on PolygonScan</a> · <a href="https://sourcify.dev/server/v2/contract/137/0x323DCb75A4f265D26dd3f5F203e12e7625d49951" target="_blank" rel="noopener">Sourcify exact match</a></small>
-        </article>
-        <article class="live-card">
-          <b>BZB staking</b>
-          <small>No lock and no stake fee. Distinct from M421 staking.</small>
-          <code>0x3Aa4a59deC4F677A138857a828220eEd259b2469</code>
-          <small><a href="https://polygonscan.com/address/0x3Aa4a59deC4F677A138857a828220eEd259b2469" target="_blank" rel="noopener">Bytecode on PolygonScan</a> · <a href="https://sourcify.dev/server/v2/contract/137/0x3Aa4a59deC4F677A138857a828220eEd259b2469" target="_blank" rel="noopener">Sourcify exact match</a></small>
-        </article>
-      </div>
-      <article class="live-trade">
-        <p class="live-kicker">One reviewed buy · Nov 8, 2026, 4:17 PM PT</p>
-        <h3>2 POL in. 35.724819195641942150 BZB out.</h3>
-        <p>
-          Sent by the local signer through the fee router into Blazar pair
-          <code>0x31eCA8f077beCD2CCC11b8a0BAD5515d21250d14</code>.
-          Wrapper fee 0. Block 96985334. Gas 0.073823070974366448 POL.
-          The 15 deployment receipts used 2.110833552073840492 POL. No second trade.
-        </p>
-        <p><a href="https://polygonscan.com/tx/0xe8abb28a9be4d14d53675e84954c1494492a39e46285545c828e695c9af16ed3" target="_blank" rel="noopener">Transaction 0xe8abb28a9be4d14d53675e84954c1494492a39e46285545c828e695c9af16ed3</a></p>
-      </article>
-      <div class="live-products">
-        <a href="blazar-apps.html">Blazar Apps</a>
-        <a href="sealforge.html">SealForge</a>
-        <a href="lyra/">Lyra</a>
-        <a href="mythbind/">Mythbind</a>
-        <a href="fun-nfts/">NFTs</a>
-        <a href="developers.html">Developers</a>
-      </div>
-      <ul class="live-notes">
-        <li>Owner is still PixelForge <code>0xB452329B7b9d55a82f10a4e60E22748De6e490F2</code>. Pending owner <code>0x6F47aa396215ab22647dDB3E86b4663DFe11dB14</code> has not accepted. Poster <code>0x55BA739Ba386D634CF81bd53d974dAF95241952C</code>.</li>
-        <li>Sourcify reports an exact creation match and an exact runtime match. PolygonScan still shows bytecode and Verify and Publish. Do not treat that as verified source.</li>
-        <li>The agent kit in the repository is a local prototype. This site does not host a quote API or an MCP server.</li>
-        <li>The Android wallet in the source tree is a debug build. It is not a production signer and it is not on this app shelf as a secure release.</li>
-      </ul>
-    </section>
-
-    <section class="desk">
+    <section class="desk desk-live">
       <div class="tabs" role="tablist">
-        <button class="active" data-tab="swap" type="button">Swap</button>
-        <button data-tab="add" type="button">Add liquidity</button>
-        <button data-tab="positions" type="button">Your positions</button>
-        <button data-tab="m421" type="button" hidden>M421</button>
-        <button data-tab="draw" type="button">Raffle</button>
+        <button class="active" id="tab-swap" data-tab="swap" type="button">Swap</button>
+        <button id="tab-stake" data-tab="stake" type="button">Stake BZB</button>
+        <button id="tab-board" data-tab="board" type="button">Leaderboard</button>
       </div>
 
-      <div class="trade-row">
-      <div class="stack">
-        <div class="panel card pane visible" id="pane-swap" data-card="swap">
+      <div class="trade-row" id="swap-layout">
+        <div class="panel card pane visible" id="pane-swap">
           <h3>Swap</h3>
+          <p class="status" id="swapStatus">Quotes use the fee router. Nothing is signed until you press Swap.</p>
           <div class="leg">
-            <div class="leg-top"><span>From<em class="liq-px" id="swapPriceIn"></em></span><span class="bal-row"><button class="max" id="maxIn" type="button">Max</button><span id="balIn">Balance —</span></span></div>
+            <div class="leg-top"><span>From</span><span class="bal-row"><button class="max" id="maxIn" type="button">Max</button><span id="balIn">Balance —</span></span></div>
             <div class="leg-top">
-              <input id="amountIn" type="text" inputmode="decimal" placeholder="0.0" />
-              <select id="tokenIn"></select>
+              <input id="amountIn" class="amt" type="text" inputmode="decimal" placeholder="0.0" autocomplete="off" />
+              <select id="tokenIn" aria-label="Token to sell"></select>
             </div>
           </div>
           <div class="flip"><button id="flipBtn" title="Switch tokens" type="button">⇅</button></div>
           <div class="leg">
-            <div class="leg-top"><span>To<em class="liq-px" id="swapPriceOut"></em></span><span id="balOut">Balance —</span></div>
+            <div class="leg-top"><span>To</span><span id="balOut">Balance —</span></div>
             <div class="leg-top">
-              <input id="amountOut" type="text" inputmode="decimal" placeholder="0.0" />
-              <select id="tokenOut"></select>
+              <input id="amountOut" class="amt" type="text" inputmode="decimal" placeholder="0.0" readonly />
+              <select id="tokenOut" aria-label="Token to buy"></select>
             </div>
           </div>
           <div class="meta">
             <div><span>Route</span><span id="routeLabel">—</span></div>
-            <div><span>Price</span><span id="priceLabel">—</span></div>
-            <div><span>Price impact</span><span id="impactLabel">—</span></div>
             <div><span>Minimum received</span><span id="minOutLabel">—</span></div>
+            <div><span>Wrapper fee</span><span id="feeLabel">—</span></div>
+            <div><span>Gas estimate</span><span id="gasLabel">—</span></div>
             <div class="slip-row"><span>Slippage</span><span class="slip-picks"><button type="button" data-slip="0.1">0.1%</button><button type="button" data-slip="0.5" class="on">0.5%</button><button type="button" data-slip="1">1%</button><input class="slip-input" id="slippage" type="text" inputmode="decimal" value="0.50" />%</span></div>
-            <div><span>Approval</span><span id="approveLabel">Exact amount</span></div>
           </div>
+          <details class="fine">
+            <summary>Route detail</summary>
+            <p id="routeDetail">Allowlisted venues only. The chart is not the route.</p>
+          </details>
           <button class="primary full" id="swapBtn" type="button">Swap</button>
-          <div class="log" id="swapLog"></div>
+          <div class="log" id="swapLog" role="status"></div>
         </div>
-
-        <div class="panel card pane" id="pane-add" data-card="add">
-          <h3>Add liquidity</h3>
-          <div class="leg">
-            <div class="leg-top"><span><span id="liqLabelA">Token</span><em class="liq-px" id="liqPriceA"></em></span><span class="bal-row"><button class="max" id="maxA" type="button">Max</button><span id="balLiqA">Balance —</span></span></div>
-            <div class="leg-top">
-              <input id="liqAmtA" type="text" inputmode="decimal" placeholder="0.0" />
-              <select id="liqTokenA"></select>
-            </div>
+        <section class="chart-wrap panel" id="chart-card">
+          <div class="chart-top">
+            <h3>BZB pool</h3>
+            <a id="chartLink" href="https://www.geckoterminal.com/polygon_pos/tokens/0x462d8d82c2b2d2ddabf7f8a93928de09d47a5807" target="_blank" rel="noopener">GeckoTerminal</a>
           </div>
-          <div class="leg">
-            <div class="leg-top"><span><span id="liqLabelB">Token</span><em class="liq-px" id="liqPriceB"></em></span><span class="bal-row"><button class="max" id="maxB" type="button">Max</button><span id="balLiqB">Balance —</span></span></div>
-            <div class="leg-top">
-              <input id="liqAmtB" type="text" inputmode="decimal" placeholder="0.0" />
-              <select id="liqTokenB"></select>
-            </div>
+          <p class="chart-meta"><span id="chartLiq">Liquidity —</span> · <span id="chartAge">Age —</span></p>
+          <div class="chart-frame">
+            <iframe id="geckoChart" title="BZB pool chart" loading="lazy" allow="clipboard-write" allowfullscreen src="https://www.geckoterminal.com/polygon_pos/pools/0x31eca8f077becd2ccc11b8a0bad5515d21250d14?embed=1&amp;info=0&amp;swaps=0&amp;light_chart=0&amp;chart_type=price&amp;resolution=15m&amp;bg_color=030712"></iframe>
           </div>
-          <div class="meta">
-            <div class="slip-row"><span>Slippage</span><span class="slip-picks"><button type="button" data-slip="0.1">0.1%</button><button type="button" data-slip="0.5" class="on">0.5%</button><button type="button" data-slip="1">1%</button><input class="slip-input" id="slippageAdd" type="text" inputmode="decimal" value="0.50" />%</span></div>
-            <div><span>Approval</span><span id="approveLiqLabel">Exact amounts</span></div>
-          </div>
-          <button class="primary full" id="addLiqBtn" type="button">Add liquidity</button>
-          <button class="ghost full" id="createPairBtn" type="button" style="margin-top:10px">Create pair</button>
-          <div class="log" id="liqLog">Enter one amount. If the pair exists, the other side fills 50/50.</div>
-        </div>
-
-        <div class="panel card pane" id="pane-positions" data-card="positions">
-          <h3>Your positions</h3>
-          <div class="field">
-            <div class="field-top"><label>Remove LP</label><button class="max" id="maxRemove" type="button">Max</button></div>
-            <select id="removePair"></select>
-            <div class="field-top"><span>Share of your LP</span><b class="remove-pct" id="removePctLabel">100%</b></div>
-            <input id="removePct" type="range" min="0" max="100" step="1" value="100" />
-          </div>
-          <div class="meta">
-            <div class="slip-row"><span>Slippage</span><span class="slip-picks"><button type="button" data-slip="0.1">0.1%</button><button type="button" data-slip="0.5" class="on">0.5%</button><button type="button" data-slip="1">1%</button><input class="slip-input" id="slippageRemove" type="text" inputmode="decimal" value="0.50" />%</span></div>
-          </div>
-          <button class="ghost full" id="removeLiqBtn" type="button">Remove liquidity</button>
-          <div class="log" id="posLog">Slippage sets the minimum tokens you accept back.</div>
-          <div class="pools" id="poolList"></div>
-        </div>
-        <div class="panel card pane m421" id="pane-m421" data-card="m421">
-          <div class="m421-head">
-            <img src="m421.jpg" alt="Jet of the blazar Markarian 421" />
-            <div>
-              <p class="kicker">Basket · M421</p>
-              <h2>Markarian 421</h2>
-              <p>Scientists can keep staring at the jet. You get the receipt: equal parts digital gold, digital gas, and actual BlazarBits.</p>
-            </div>
-          </div>
-          <div class="m421-stats">
-            <article><b id="m421Bzb">—</b><em class="m421-usd" id="m421BzbUsd">—</em><small>BzB in basket</small></article>
-            <article><b id="m421Wbtc">—</b><em class="m421-usd" id="m421WbtcUsd">—</em><small>WBTC in basket</small></article>
-            <article><b id="m421Weth">—</b><em class="m421-usd" id="m421WethUsd">—</em><small>WETH in basket</small></article>
-            <article><b id="m421Supply">—</b><small>Receipt supply</small></article>
-            <article><b id="m421Each">—</b><small>Each M421 backed by</small></article>
-          </div>
-          <div class="panel">
-            <div class="m421-top">
-              <div>
-                <h3 id="m421Rate">—</h3>
-                <p id="m421Fund" class="m421-note">Rewards: 500 BzB/day for 100 days, 250 for the next 100, then 100. Send BzB to the staking contract.</p>
-                <p id="m421Pos" class="m421-note">Connect to see your M421.</p>
-              </div>
-              <button class="connect" id="m421Account" type="button">Use wallet</button>
-            </div>
-            <div class="slip-row m421-slip">
-              <span>Slippage</span>
-              <span class="slip-picks">
-                <button type="button" data-m421slip="1">1%</button>
-                <button type="button" data-m421slip="5" class="on">5%</button>
-                <button type="button" data-m421slip="10">10%</button>
-                <input id="m421Slippage" type="text" inputmode="decimal" value="5" />%
-              </span>
-            </div>
-            <div class="tabs m421-tabs">
-              <button class="active" id="m421tab-deposit" data-m421tab="deposit" type="button">Deposit</button>
-              <button id="m421tab-withdraw" data-m421tab="withdraw" type="button">Withdraw</button>
-              <button id="m421tab-stake" data-m421tab="stake" type="button">Stake</button>
-            </div>
-            <div id="m421-deposit">
-              <div class="m421-grid">
-                <label>BzB<input id="m421AmtBzb" type="text" inputmode="decimal" placeholder="0.0" /><em class="m421-usd" id="m421InBzbUsd">$0.00</em></label>
-                <label>WBTC<input id="m421AmtWbtc" type="text" inputmode="decimal" placeholder="0.0" /><em class="m421-usd" id="m421InWbtcUsd">$0.00</em></label>
-                <label>WETH<input id="m421AmtWeth" type="text" inputmode="decimal" placeholder="0.0" /><em class="m421-usd" id="m421InWethUsd">$0.00</em></label>
-              </div>
-              <button class="primary full" id="m421Deposit" type="button">Deposit basket</button>
-            </div>
-            <div id="m421-withdraw" hidden>
-              <label class="m421-field">M421 to burn<input id="m421Shares" type="text" inputmode="decimal" placeholder="0.0" /></label>
-              <div class="m421-out">
-                <div><span>BzB</span><b id="m421OutBzb">—</b></div>
-                <div><span>WBTC</span><b id="m421OutWbtc">—</b></div>
-                <div><span>WETH</span><b id="m421OutWeth">—</b></div>
-              </div>
-              <button class="primary full" id="m421Withdraw" type="button">Withdraw each asset</button>
-            </div>
-            <div id="m421-stake" hidden>
-              <label class="m421-field">M421<input id="m421StakeAmt" type="text" inputmode="decimal" placeholder="0.0" /></label>
-              <div class="m421-actions">
-                <button class="primary full" id="m421Stake" type="button">Stake</button>
-                <button class="ghost full" id="m421Unstake" type="button">Unstake</button>
-                <button class="ghost full" id="m421Claim" type="button">Claim BzB</button>
-                <button class="ghost full" id="m421Exit" type="button">Exit</button>
-              </div>
-              <p class="m421-note">Staking contract <a href="https://polygonscan.com/address/0x3d8C5cB54B3E2a18cf6F8015833aAC6B484Df72E" target="_blank" rel="noopener">0x3d8C…f72E</a>. Vault <a href="https://polygonscan.com/address/0x213C7a13CC3C8A519867FA29cB010c575FBBB4F8" target="_blank" rel="noopener">0x213C…B4F8</a>.</p>
-            </div>
-            <div class="log" id="m421Log">Enter one amount. The other two fill to match.</div>
-          </div>
-        </div>
-        <div class="panel card pane" id="pane-draw" data-card="draw">
-          <h3>Holder raffle</h3>
-          <p class="draw-note">A wallet that holds the token is a ticket. Contracts, pools, and smart wallets are left out. The prize can be tokens, an NFT, or both, dropped on the wallets the draw lands on.</p>
-          <label class="draw-field">Ticket token
-            <span class="draw-token-row">
-              <input id="drawToken" type="text" placeholder="0x…" spellcheck="false" />
-              <button class="ghost" id="drawBzb" type="button">BzB</button>
-            </span>
-          </label>
-          <label class="draw-field">Or paste wallets
-            <textarea id="drawPaste" placeholder="Leave empty to load holders from the explorer"></textarea>
-          </label>
-          <button class="ghost full draw-act" id="drawFind" type="button">Find holders</button>
-          <div id="drawFound" hidden>
-            <p class="draw-note" id="drawMeta"></p>
-            <div class="draw-list" id="drawList"></div>
-          </div>
-          <div class="draw-grid">
-            <label class="draw-field">Tickets
-              <select id="drawMode">
-                <option value="weight">One per whole token</option>
-                <option value="each">One per wallet</option>
-              </select>
-            </label>
-            <label class="draw-field">Minimum balance
-              <input id="drawMin" type="text" inputmode="decimal" value="1" />
-            </label>
-            <label class="draw-field">Winners
-              <input id="drawWinners" type="text" inputmode="numeric" value="1" />
-            </label>
-          </div>
-          <p class="draw-note" id="drawSeat">Find holders first.</p>
-          <p class="draw-kicker">Prizes</p>
-          <div id="drawPrizes"></div>
-          <button class="ghost full draw-act" id="drawAddPrize" type="button">Add another prize</button>
-          <button class="primary full draw-act" id="drawCreate" type="button">Create the draw</button>
-          <div class="draw-resume">
-            <label class="draw-field">Draw number
-              <input id="drawId" type="text" inputmode="numeric" placeholder="0" />
-            </label>
-            <button class="connect" id="drawAccount" type="button">Use wallet</button>
-          </div>
-          <div id="drawStatus"><p class="draw-note">No draw loaded yet. The number appears after you create one.</p></div>
-          <div class="draw-actions" id="drawActions"></div>
-          <div class="log" id="drawLog">Contracts are checked on-chain before anyone is entered. The ticket count is read a block after the list closes.</div>
-          <p class="draw-note">Contract <a href="https://polygonscan.com/address/0x48c66cd325FB48603E783166924Dee6f901aD2Bf#code" target="_blank" rel="noopener">0x48c6…D2Bf</a>. At most 120 wallets. After you commit, prizes cannot be taken back. The winner is a later block hash.</p>
-        </div>
+          <p class="chart-note">One pool, for display. Swaps search the allowlisted venues on their own.</p>
+        </section>
       </div>
 
-      <section class="chart-wrap">
-        <div class="chart-top">
-          <h3>Chart</h3>
-          <a id="chartLink" href="https://www.geckoterminal.com/polygon_pos" target="_blank" rel="noopener">GeckoTerminal</a>
+      <div class="panel card pane" id="pane-stake" hidden>
+        <h3>Stake BZB</h3>
+        <p class="status" id="stakeStatus">No lock and no stake fee. Stake, withdraw, and claim each wait for your signature.</p>
+        <div class="stats-grid">
+          <article><b id="stakeWallet">—</b><small>Wallet BZB</small></article>
+          <article><b id="stakeStaked">—</b><small>Staked</small></article>
+          <article><b id="stakeEarned">—</b><small>Earned</small></article>
+          <article><b id="stakeRate">—</b><small>Reward rate</small></article>
+          <article><b id="stakePeriod">—</b><small>Period</small></article>
+          <article><b id="stakeFloat">—</b><small>BZB in contract</small></article>
         </div>
-        <div class="chart-frame">
-          <iframe id="geckoChart" title="GeckoTerminal chart" loading="lazy" allow="clipboard-write" allowfullscreen></iframe>
+        <div class="leg">
+          <div class="leg-top"><span>Amount</span><button class="max" id="maxStake" type="button">Max wallet</button></div>
+          <input id="stakeAmount" class="amt" type="text" inputmode="decimal" placeholder="0.0" autocomplete="off" />
         </div>
-      </section>
+        <div class="actions">
+          <button class="primary" id="stakeBtn" type="button">Stake</button>
+          <button class="ghost" id="withdrawBtn" type="button">Withdraw</button>
+          <button class="ghost" id="claimStakeBtn" type="button">Claim</button>
+        </div>
+        <div class="log" id="stakeLog" role="status"></div>
+      </div>
+
+      <div class="panel card pane" id="pane-board" hidden>
+        <h3>Leaderboard</h3>
+        <p class="status" id="boardStatus">Loading scored trades from the fee router.</p>
+        <div class="row-actions">
+          <label>Day <select id="boardDay" aria-label="Score day"></select></label>
+          <button class="ghost" id="boardRetry" type="button">Reload</button>
+          <button class="primary" id="claimRewardBtn" type="button" hidden>Claim posted BZB</button>
+        </div>
+        <p class="status" id="boardFund"></p>
+        <div class="board-wrap">
+          <table class="board">
+            <thead>
+              <tr><th>Rank</th><th>Trader</th><th>Scored USD</th><th>Schedule</th><th>Posted</th></tr>
+            </thead>
+            <tbody id="boardBody"></tbody>
+          </table>
+        </div>
+        <p class="status" id="boardCoverage"></p>
+        <details class="fine">
+          <summary>Scoring rules</summary>
+          <p>Points use the previous block's Chainlink price for WPOL, WETH, WBTC, USDC, and USDT. A missing, stale, or non-positive feed scores zero. Spot prices are not used. Native POL is priced as WPOL. The scored amount is what the router kept after refunds. Trades under $25 are dropped. A wallet's reverse trade within 10 minutes is netted. Each wallet is capped at $50,000 of scored volume a day. That does not stop a sybil from using many wallets. The visible board is 50. Only the top 25 can be paid, at 15%, 10%, 5%, then a descending share of the remaining 70%, and empty ranks are not redistributed. The schedule is an estimate. It is not a payment. Posted and claimable BZB come from the rewards contract. That contract is unfunded until someone posts a day, and this page does not post winners or move rewards.</p>
+        </details>
+        <div class="log" id="boardLog" role="status"></div>
       </div>
     </section>
-
-
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
   <script src="js/images.js"></script>
-  <script src="js/config.js?v=m421"></script>
-  <script src="js/abis.js?v=pol1"></script>
+  <script src="js/config.js?v=desk1"></script>
   <script>
     (function () {
       var imgs = window.BLAZAR_IMGS || {};
@@ -452,19 +200,11 @@
       });
       var space = document.getElementById("space");
       if (space && imgs.blazar) {
-        space.style.backgroundImage = "linear-gradient(180deg, rgba(3,7,18,0.18), rgba(3,7,18,0.72)), url(" + imgs.blazar + ")";
+        space.style.backgroundImage = "linear-gradient(180deg, rgba(3,7,18,0.55), rgba(3,7,18,0.88)), url(" + imgs.blazar + ")";
       }
     })();
   </script>
-  <script src="js/app.js?v=wallet4"></script>
-  <script src="js/m421.js?v=wallet1"></script>
-  <script src="js/draw.js?v=wallet1"></script>
-  <script src="js/token-ui.js"></script>
   <script src="js/music.js?v=snd1"></script>
-  <script>
-    document.querySelectorAll("select option").forEach(function (opt) {
-      opt.textContent = opt.textContent.replace(/\s*[·•]?\s*BASE\s*$/i, "");
-    });
-  </script>
+  <script type="module" src="js/desk.js?v=desk3"></script>
 </body>
 </html>

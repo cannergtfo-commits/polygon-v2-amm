@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1 --port 38471",
-    "test:score": "tsx src/lib/pool-score.test.ts && tsx src/lib/wrapper-fee.test.ts && tsx src/lib/trade-selection.test.ts && tsx src/lib/review-envelope.test.ts && tsx src/lib/quote-budget.test.ts && tsx src/lib/quote-abort.test.ts && tsx src/lib/quote-reference.test.ts && tsx src/lib/bot.test.ts && node scripts/volume-score.test.mjs && tsx src/lib/quote-workers.test.ts",
+    "test:score": "tsx src/lib/pool-score.test.ts && tsx src/lib/wrapper-fee.test.ts && tsx src/lib/trade-selection.test.ts && tsx src/lib/review-envelope.test.ts && tsx src/lib/quote-budget.test.ts && tsx src/lib/quote-abort.test.ts && tsx src/lib/quote-reference.test.ts && tsx src/lib/bot.test.ts && node scripts/volume-score.test.mjs && tsx src/lib/quote-workers.test.ts && tsx src/lib/desk-live.test.ts",
     "mcp": "tsx scripts/mcp-stdio.ts",
     "index:volume": "node scripts/index-volume.mjs",
     "build": "next build",
