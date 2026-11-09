@@ -57,6 +57,12 @@
     .tok-row b{font-size:13px;font-weight:600}
     .tok-row small{color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .tok-row:hover{background:rgba(62,224,255,.12)}
+    .pos-card{border:1px solid var(--stroke);border-radius:16px;padding:12px;margin-top:10px;background:rgba(0,0,0,.22)}
+    .pos-card h4{font-family:Sora,sans-serif;font-size:15px;font-weight:600;margin:0 0 6px}
+    .pos-meta{color:var(--muted);font-size:13px;line-height:1.4}
+    .pos-slide{display:flex;align-items:center;gap:10px;margin:10px 0}
+    .pos-slide input[type=range]{flex:1;accent-color:#3ee0ff}
+    .pos-slide b{min-width:42px;text-align:right}
     @media(max-width:900px){
       header{display:flex;flex-wrap:wrap}
       .seal-btn,.seal-btn img{height:36px;max-width:148px}
@@ -102,6 +108,7 @@
     <section class="desk desk-live">
       <div class="tabs" role="tablist">
         <button class="active" id="tab-swap" data-tab="swap" type="button">Swap</button>
+        <button id="tab-liq" data-tab="liq" type="button">Liquidity</button>
         <button id="tab-stake" data-tab="stake" type="button">Stake BZB</button>
         <button id="tab-board" data-tab="board" type="button">Leaderboard</button>
       </div>
@@ -159,9 +166,9 @@
           <article><b id="stakeWallet">—</b><small>Wallet BZB</small></article>
           <article><b id="stakeStaked">—</b><small>Staked</small></article>
           <article><b id="stakeEarned">—</b><small>Earned</small></article>
-          <article><b id="stakeRate">—</b><small>Reward rate</small></article>
+          <article><b id="stakeRate">—</b><small id="stakeRateLabel">Approx. APR</small></article>
           <article><b id="stakePeriod">—</b><small>Period</small></article>
-          <article><b id="stakeFloat">—</b><small>BZB in contract</small></article>
+          <article><b id="stakeFloat">—</b><small>Staked BZB</small></article>
         </div>
         <div class="leg">
           <div class="leg-top"><span>Amount</span><button class="max" id="maxStake" type="button">Max wallet</button></div>
@@ -173,6 +180,30 @@
           <button class="ghost" id="claimStakeBtn" type="button">Claim</button>
         </div>
         <div class="log" id="stakeLog" role="status"></div>
+      </div>
+
+      <div class="panel card pane" id="pane-liq" hidden>
+        <h3>Liquidity</h3>
+        <p class="status" id="liqStatus">POL / BZB on the Blazar factory. POL wraps to WPOL in the deposit.</p>
+        <div id="posList"></div>
+        <p class="status" id="posStatus"></p>
+        <div class="leg">
+          <div class="leg-top"><span id="liqNameA">POL</span><button class="max" id="maxLiqA" type="button">Max</button></div>
+          <div class="leg-top">
+            <input id="liqAmtA" class="amt" type="text" inputmode="decimal" placeholder="0.0" autocomplete="off" />
+            <select id="liqA" aria-label="POL"></select>
+          </div>
+        </div>
+        <div class="leg">
+          <div class="leg-top"><span id="liqNameB">BZB</span><button class="max" id="maxLiqB" type="button">Max</button></div>
+          <div class="leg-top">
+            <input id="liqAmtB" class="amt" type="text" inputmode="decimal" placeholder="0.0" autocomplete="off" />
+            <select id="liqB" aria-label="BZB"></select>
+          </div>
+        </div>
+        <div class="slip-row"><span>Slippage</span><span class="slip-picks"><input class="slip-input" id="liqSlippage" type="text" inputmode="decimal" value="0.50" />%</span></div>
+        <button class="primary full" id="addLiqBtn" type="button">Add liquidity</button>
+        <div class="log" id="liqLog" role="status"></div>
       </div>
 
       <div class="panel card pane" id="pane-board" hidden>
@@ -219,6 +250,6 @@
     })();
   </script>
   <script src="js/music.js?v=snd1"></script>
-  <script type="module" src="js/desk.js?v=desk15"></script>
+  <script type="module" src="js/desk.js?v=desk16"></script>
 </body>
 </html>
