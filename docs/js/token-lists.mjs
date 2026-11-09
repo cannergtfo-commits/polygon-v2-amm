@@ -12,11 +12,18 @@ const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
  * major assets on a TR39-style confusable skeleton. The launchpad already refuses and de-lists
  * these; this is a second, client-side check.
  */
-// ---- B-2: confusable skeleton (subset of Unicode TR39 confusables, targeted at Latin look-alikes).
-// NFKD + drop combining marks folds accents and compatibility forms (fullwidth, math alphanumerics,
-// ligatures). The table then maps the Cyrillic / Greek / Armenian / Cherokee / misc letters that
-// render like Latin capitals or lowercase, plus digit look-alikes (0->O, 1/l/|->I). Compare skeletons,
-// never raw strings. Symbols are additionally restricted to ASCII so the table need not be complete.
+// ---- B-2 / L-1 / L-2: confusable skeleton (subset of Unicode TR39 confusables, targeted at Latin
+// look-alikes) plus a TR39 "highly restrictive" mixed-script rule for names.
+// 1. Invisible / format / bidi characters are stripped FIRST (L-1), so "USD<ZWSP>C" folds to "USDC"
+//    rather than "USD C". Names that contain them are refused outright (except ZWJ/ZWNJ and
+//    variation selectors, which emoji and some scripts need).
+// 2. NFKD + drop combining marks folds accents and compatibility forms (fullwidth, math alphanumerics,
+//    ligatures). The table then maps Cyrillic / Greek / Armenian / Cherokee / Lisu / misc letters that
+//    render like Latin, plus digit look-alikes (0->O, 1/l/|->I).
+// 3. Names may not mix Latin letters with letters of another script (L-2), except the CJK
+//    combinations TR39 allows (Latin + Han + Hiragana/Katakana, + Hangul, + Bopomofo). Pure
+//    non-Latin names are fine. This covers scripts the table does not list.
+// Symbols are additionally restricted to ASCII, so the table need not be complete for them.
 const CONFUSABLE = {
   // Cyrillic capitals
   'А': 'A', 'В': 'B', 'Б': 'B', 'Ь': 'B', 'С': 'C', 'Е': 'E', 'Ё': 'E', 'Н': 'H', 'І': 'I', 'Ї': 'I', 'Ӏ': 'I', 'Ј': 'J', 'К': 'K', 'М': 'M', 'О': 'O', 'Р': 'P', 'Ѕ': 'S', 'Т': 'T', 'Х': 'X', 'У': 'Y', 'Ү': 'Y', 'З': '3', 'Ԁ': 'D', 'Ԛ': 'Q', 'Ԝ': 'W', 'П': 'N', 'И': 'N', 'Л': 'N', 'Ц': 'U', 'Џ': 'U', 'Г': 'R',
@@ -25,23 +32,71 @@ const CONFUSABLE = {
   // Greek
   'Α': 'A', 'Β': 'B', 'Ε': 'E', 'Ζ': 'Z', 'Η': 'H', 'Ι': 'I', 'Κ': 'K', 'Μ': 'M', 'Ν': 'N', 'Ο': 'O', 'Ρ': 'P', 'Τ': 'T', 'Υ': 'Y', 'Χ': 'X', 'Ϲ': 'C', 'Ϝ': 'F', 'Δ': 'A', 'Λ': 'A', 'Σ': 'E', 'Π': 'N', 'Ω': 'O',
   'α': 'a', 'β': 'b', 'γ': 'y', 'δ': 'd', 'ε': 'e', 'η': 'n', 'ι': 'i', 'κ': 'k', 'ν': 'v', 'ο': 'o', 'ρ': 'p', 'σ': 'o', 'τ': 't', 'υ': 'u', 'χ': 'x', 'ω': 'w', 'ϲ': 'c', 'μ': 'u', 'µ': 'u', 'ϻ': 'm',
-  // Armenian / Cherokee / Latin extras
+  // Armenian / Cherokee
   'Օ': 'O', 'օ': 'o', 'Ս': 'U', 'ս': 'u', 'Ꭺ': 'A', 'Ᏼ': 'B', 'Ꮯ': 'C', 'Ꭼ': 'E', 'Ꮋ': 'H', 'Ꮶ': 'K', 'Ꮇ': 'M', 'Ꮲ': 'P', 'Ꮪ': 'S', 'Ꭲ': 'T', 'Ꮃ': 'W',
+  // Lisu (L-2)
+  'ꓮ': 'A', 'ꓐ': 'B', 'ꓚ': 'C', 'ꓓ': 'D', 'ꓰ': 'E', 'ꓝ': 'F', 'ꓖ': 'G', 'ꓧ': 'H', 'ꓲ': 'I', 'ꓙ': 'J', 'ꓗ': 'K', 'ꓡ': 'L', 'ꓟ': 'M', 'ꓠ': 'N', 'ꓳ': 'O', 'ꓑ': 'P', 'ꓣ': 'R', 'ꓢ': 'S', 'ꓔ': 'T', 'ꓴ': 'U', 'ꓦ': 'V', 'ꓪ': 'W', 'ꓫ': 'X', 'ꓬ': 'Y', 'ꓜ': 'Z',
+  // Coptic
+  'Ⲁ': 'A', 'Ⲃ': 'B', 'Ⲥ': 'C', 'Ⲉ': 'E', 'Ⲏ': 'H', 'Ⲓ': 'I', 'Ⲕ': 'K', 'Ⲙ': 'M', 'Ⲛ': 'N', 'Ⲟ': 'O', 'Ⲣ': 'P', 'Ⲧ': 'T', 'Ⲩ': 'Y', 'Ⲭ': 'X', 'ⲟ': 'o', 'ⲣ': 'p', 'ⲥ': 'c',
+  // CJK shapes allowed alongside Latin by the script rule
+  'ロ': 'O', '口': 'O', '〇': 'O', 'ㅇ': 'O', 'エ': 'I', 'ニ': '2', 'ㄖ': 'O',
+  // Latin extras
   'ı': 'i', 'ȷ': 'j', 'ł': 'l', 'Ł': 'L', 'đ': 'd', 'Đ': 'D', 'ø': 'o', 'Ø': 'O', 'ß': 'ss', 'æ': 'ae', 'Æ': 'AE', 'œ': 'oe', 'Œ': 'OE', 'ɑ': 'a', 'ɡ': 'g', 'ʏ': 'Y', 'ʙ': 'B', 'ᴅ': 'D', 'ᴇ': 'E', 'ᴋ': 'K', 'ᴍ': 'M', 'ᴏ': 'O', 'ᴘ': 'P', 'ᴛ': 'T', 'ᴜ': 'U', 'ᴠ': 'V', 'ᴡ': 'W', 'ᴢ': 'Z', 'ꜱ': 'S', 'ʀ': 'R', 'ɴ': 'N', 'ʜ': 'H', 'ɪ': 'I', 'ʟ': 'L', 'ᴄ': 'C',
   '$': 'S', '€': 'E', '¢': 'C', '₿': 'B', 'Ξ': 'E', '|': 'I', '!': 'I',
 };
-const INVISIBLE = /[\p{C}\p{Z}\s\u034f\u115f\u1160\u17b4\u17b5\u180b-\u180f\u3164\uffa0\ufe00-\ufe0f]/gu;
+// Everything that renders as nothing (or reorders text). Stripped before any other step.
+const INVISIBLE = /[\p{Cf}\p{Cc}\p{Co}\u034f\u115f\u1160\u17b4\u17b5\u180b-\u180f\u2800\u3164\uffa0\ufe00-\ufe0f\u{e0100}-\u{e01ef}]/gu;
+// Of those, what a token name may contain: ZWNJ/ZWJ (emoji sequences, Indic/Persian) and variation
+// selectors (emoji presentation). Everything else (ZWSP, WJ, BOM, soft hyphen, bidi controls,
+// tag characters, Hangul fillers, ...) is refused in names.
+const NAME_ALLOWED_INVISIBLE = /[\u200c\u200d\ufe00-\ufe0f\u{e0100}-\u{e01ef}]/u;
+
+/** Remove invisible, format and bidi characters. */
+export function stripInvisible(s) {
+  return String(s ?? '').replace(INVISIBLE, '');
+}
+
+/** The first hidden/bidi character a name may not contain, as "U+XXXX", or null. */
+export function hiddenCharIn(s) {
+  for (const ch of String(s ?? '')) {
+    if (ch.match(INVISIBLE) && !NAME_ALLOWED_INVISIBLE.test(ch)) return 'U+' + ch.codePointAt(0).toString(16).toUpperCase().padStart(4, '0');
+  }
+  return null;
+}
 
 /**
- * TR39-style skeleton, uppercased, keeping only A-Z and 0-9 (with 0->O, 1->I so "US0C"/"W1BTC"
- * fold too). `keepSpaces` keeps single spaces (for whole-word name rules).
+ * Display form of a user-supplied name: hidden/bidi characters (other than ZWJ/ZWNJ/variation
+ * selectors) removed, whitespace collapsed. Always render names through this.
+ */
+export function displayName(s, max = 60) {
+  let out = '';
+  for (const ch of String(s ?? '')) out += ch.match(INVISIBLE) && !NAME_ALLOWED_INVISIBLE.test(ch) ? '' : ch;
+  out = out.replace(/\s+/g, ' ').trim();
+  return [...out].slice(0, max).join('');
+}
+
+/**
+ * TR39-style skeleton, uppercased, keeping only A-Z and 0-9 (with 0->O, 1->I and L->I so
+ * "US0C"/"W1BTC"/"WBTC" with a lowercase l fold too). `keepSpaces` keeps single spaces (for
+ * whole-word name rules). Invisible characters are removed first, so they never become spaces.
  */
 export function skeleton(s, { keepSpaces = false } = {}) {
   let out = '';
-  for (const ch of String(s ?? '').normalize('NFKD').replace(/\p{M}/gu, '')) out += CONFUSABLE[ch] ?? ch;
-  out = out.normalize('NFKC').toUpperCase().replace(/0/g, 'O').replace(/1/g, 'I').replace(/L/g, 'I');
+  for (const ch of stripInvisible(s).normalize('NFKD').replace(/\p{M}/gu, '')) out += CONFUSABLE[ch] ?? ch;
+  out = stripInvisible(out.normalize('NFKC')).toUpperCase().replace(/0/g, 'O').replace(/1/g, 'I').replace(/L/g, 'I');
   if (keepSpaces) return out.replace(/[^A-Z0-9]+/g, ' ').trim();
-  return out.replace(INVISIBLE, '').replace(/[^A-Z0-9]/g, '');
+  return out.replace(/[^A-Z0-9]/g, '');
+}
+
+// Script classes for the mixed-script rule. CJK scripts may accompany Latin (TR39 highly restrictive).
+const LATIN = /\p{Script=Latin}/u;
+const CJK = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{Script=Bopomofo}]/u;
+const LETTER = /\p{L}/u;
+/** First non-Latin, non-CJK letter in a name that also contains Latin letters, or null. */
+export function mixedScriptLetter(s) {
+  const letters = [...stripInvisible(s).normalize('NFC')].filter((ch) => LETTER.test(ch));
+  if (!letters.some((ch) => LATIN.test(ch))) return null;
+  return letters.find((ch) => !LATIN.test(ch) && !CJK.test(ch)) ?? null;
 }
 
 /** Symbols must be printable ASCII (letters, digits, and . - _ only, whitespace ignored). */
@@ -54,15 +109,25 @@ export const RESERVED_SYMBOLS = new Set([
   'BZB', 'BLAZAR', 'BLAZARBITS',
   'LINK', 'AAVE', 'UNI', 'QUICK', 'DQUICK', 'CRV', 'BAL', 'SUSHI', 'GRT', 'SAND', 'MANA', 'GHST',
 ]);
-// B-2 suffix/prefix rule (compared on skeletons). Money-like tickers of 4+ characters also reserve
-// ANY 1-2 character suffix and any 1 character prefix (USDC2, USDCx, xUSDC, WPOL2, USDTE). Every
-// other reserved ticker (and 3-letter ones like ETH/POL/BZB) reserves digit / X / E suffixes only
-// (ETH2, BZBX, POL2, BALX), so ordinary words (BALL, POLY, ETHOS, UNIT) stay usable.
+// Suffix/prefix rule (symbols). Money-like tickers of 4+ characters reserve ANY 1-2 character suffix
+// and any 1 character prefix (USDC2, USDCx, xUSDC, WPOL2, USDTE). The 3-letter majors and our own
+// asset (ETH, BTC, POL, BZB, DAI) reserve digit and X suffixes (ETH2, BZBX). Every other reserved
+// ticker reserves digit suffixes only (BAL2, UNI2), so words like POLE, BALE, UNIX, ETHE, LINKX stay
+// usable (I-1).
 const CORE = ['USDC', 'USDT', 'FRAX', 'TUSD', 'BUSD', 'USDE', 'PYUSD', 'LUSD', 'EURC', 'EURS', 'WETH', 'WBTC', 'WPOL', 'MATIC', 'WMATIC', 'BLAZAR'];
+const X_SUFFIX = ['ETH', 'BTC', 'POL', 'BZB', 'DAI'];
+// Symbol folds: symbols are ASCII, so only digit shapes and a LOWERCASE l (which renders like I)
+// are folded. Uppercase L is left alone (DAL, MAL, UNL are not DAI, MAI, UNI; I-1). Every
+// symbol is checked both with and without the l->I fold, so "link" still matches LINK.
+const symFold = (s) => s.toUpperCase().replace(/[._-]/g, '').replace(/0/g, 'O').replace(/1/g, 'I');
+const symForms = (raw) => [...new Set([symFold(raw), symFold(raw.replace(/l/g, 'I'))])];
+const RES_SYM = new Map([...RESERVED_SYMBOLS].map((x) => [symFold(x), x]));
+const CORE_SYM = new Set(CORE.map(symFold));
+const X_SYM = new Set(X_SUFFIX.map(symFold));
+// Name skeletons (names keep the full fold, incl. L->I).
 const SK = (x) => skeleton(x);
 const RESERVED_SK = new Set([...RESERVED_SYMBOLS].map(SK));
 const BY_SK = new Map([...RESERVED_SYMBOLS].map((x) => [SK(x), x]));
-const CORE_SK = new Set(CORE.map(SK));
 // Whole-word name fragments, matched against the spaced skeleton of the name.
 const RESERVED_NAME = /\b(USD\s*COIN|USDC|USDT|TETHER|WRAPPED\s+(ETHER|ETH|BTC|BITCOIN|MATIC|POI)|POIYGON\s+ECOSYSTEM\s+TOKEN|MATIC\s+TOKEN|DAI\s+STABIECOIN|BIAZAR\s*BITS|BIAZARBITS|BIAZAR\s*BYTE|POIYPUMP\s+OFFICIAI)\b/;
 
@@ -71,20 +136,25 @@ export function symbolProblem(symbol) {
   const raw = String(symbol ?? '').replace(/\s+/g, '');
   if (!raw) return 'symbol is required';
   if (!ASCII_SYMBOL.test(raw)) return 'symbols must be plain ASCII letters and digits (look-alike characters are not allowed)';
-  const up = raw.toUpperCase().replace(/[._-]/g, '');
-  const sk = SK(up); // ASCII only here, so sk and up have the same length
   const shown = raw.toUpperCase();
-  if (RESERVED_SK.has(sk)) return `${shown} is a reserved ticker (looks like ${BY_SK.get(sk)})`;
-  for (const [r, orig] of BY_SK) {
-    if (sk.length <= r.length || sk.length > r.length + 2) continue;
-    if (sk.startsWith(r) && (CORE_SK.has(r) || /^[0-9XE]+$/.test(up.slice(r.length)))) return `${shown} looks like ${orig} with a suffix`;
-    if (CORE_SK.has(r) && sk.length === r.length + 1 && sk.endsWith(r)) return `${shown} looks like ${orig} with a prefix`;
+  for (const f of symForms(raw)) {
+    if (RES_SYM.has(f)) return `${shown} is a reserved ticker (looks like ${RES_SYM.get(f)})`;
+    for (const [r, orig] of RES_SYM) {
+      if (f.length <= r.length || f.length > r.length + 2) continue;
+      const suffix = f.slice(r.length);
+      if (f.startsWith(r) && (CORE_SYM.has(r) || /^[0-9OI]+$/.test(suffix) && /[0-9]/.test(raw.slice(-suffix.length)) || (X_SYM.has(r) && /^[0-9OIX]+$/.test(suffix) && /[0-9xX]/.test(raw.slice(-suffix.length))))) return `${shown} looks like ${orig} with a suffix`;
+      if (CORE_SYM.has(r) && f.length === r.length + 1 && f.endsWith(r)) return `${shown} looks like ${orig} with a prefix`;
+    }
   }
   return null;
 }
 
 /** Why `name` is not allowed (or null). */
 export function nameProblem(name) {
+  const hidden = hiddenCharIn(name);
+  if (hidden) return `names may not contain invisible or text-direction characters (${hidden})`;
+  const mixed = mixedScriptLetter(name);
+  if (mixed) return `names may not mix Latin letters with letters of another script ("${mixed}", look-alike risk)`;
   const flat = SK(name);
   if (RESERVED_SK.has(flat)) return `that name is a reserved ticker (looks like ${BY_SK.get(flat)})`;
   if (RESERVED_NAME.test(' ' + skeleton(name, { keepSpaces: true }) + ' ') || RESERVED_NAME.test(flat)) return 'that name impersonates a major asset';
@@ -102,7 +172,9 @@ export function isReserved(name, symbol) {
 }
 
 function clean(text, max, noSpace) {
-  let out = String(text ?? "").normalize("NFKC").replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2066-\u2069]/g, "");
+  // L-1: remove every invisible / format / bidi character (symbols: all of them; names: all but
+  // ZWJ/ZWNJ/variation selectors) before anything is displayed or compared.
+  let out = noSpace ? stripInvisible(String(text ?? "").normalize("NFKC")) : displayName(String(text ?? "").normalize("NFKC"), 1000);
   out = noSpace ? out.replace(/\s+/g, "") : out.replace(/\s+/g, " ").trim();
   return [...out].slice(0, max).join("");
 }
@@ -131,7 +203,9 @@ export function mergeTokenList(tokens, list, source, chainId = 137, { unverified
     const symbol = clean(entry.symbol, 20, true);
     if (!symbol) continue;
     const name = clean(entry.name, 60, false) || symbol;
-    if (symbolProblem(symbol) || nameProblem(name)) continue; // reserved, look-alike or suffixed
+    // Check the raw strings AND what would be displayed (L-1): reserved, look-alike, suffixed,
+    // hidden characters or mixed scripts.
+    if (symbolProblem(symbol) || nameProblem(name) || symbolProblem(entry.symbol) || nameProblem(entry.name ?? "")) continue;
     const symKey = skeleton(symbol);
     const nameKey = skeleton(name);
     if (symbols.has(symKey) || (nameKey && names.has(nameKey))) continue; // reuses a symbol or name already in the picker

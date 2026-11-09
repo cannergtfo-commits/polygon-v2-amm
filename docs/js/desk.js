@@ -42,7 +42,7 @@ import {
   wrapperOnSpend,
 } from "./desk-core.mjs?v=desk11";
 import { POLYGON_TOKENS } from "./polygon-tokens.mjs?v=desk11";
-import { POLYPUMP_LIST_URL, mergeTokenList } from "./token-lists.mjs?v=desk14";
+import { POLYPUMP_LIST_URL, mergeTokenList } from "./token-lists.mjs?v=desk15";
 
 const $ = (id) => document.getElementById(id);
 const ethers = window.ethers;

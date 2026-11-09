@@ -1,6 +1,6 @@
 // node docs/js/token-lists.test.mjs
 import assert from "node:assert/strict";
-import { mergeTokenList, isReserved, skeleton } from "./token-lists.mjs";
+import { mergeTokenList, isReserved, skeleton, nameProblem, reservedReason } from "./token-lists.mjs";
 
 const base = [{ symbol: "BZB", name: "BlazarBits", address: "0x462D8d82C2B2D2DDabf7f8a93928De09d47A5807", decimals: 18 }];
 const list = {
@@ -18,16 +18,18 @@ const list = {
 };
 const tokens = base.slice();
 const added = mergeTokenList(tokens, list, "PolyPump");
-assert.equal(added.length, 3); // USDC / BZB / second FROG impersonators dropped
+assert.equal(added.length, 2); // USDC / BZB / second FROG impersonators dropped; "J S<RLO>" (bidi control in the raw symbol, L-1) too
 assert.equal(tokens[0].name, "BlazarBits"); // pinned entry never overridden
 assert.equal(added[0].symbol, "FROG");
 assert.equal(added[0].name, "Grad Frog");
 assert.equal(added[0].pair, "0x33eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
 assert.equal(added[0].source, "PolyPump");
-assert.equal(added[1].symbol, "JS");
-assert.equal(added[1].logo, undefined);
-assert.equal(added[2].symbol, "GEM");
-assert.equal(added[2].quoteAsset, "BZB");
+assert.ok(!added.some((t) => t.symbol === "JS"));
+assert.equal(added[1].symbol, "GEM");
+assert.equal(added[1].quoteAsset, "BZB");
+// a javascript: logo is still never taken
+const js = mergeTokenList(base.slice(), { tokens: [{ chainId: 137, address: "0x" + "5".repeat(40), name: "Js", symbol: "JS", decimals: 18, logoURI: "javascript:alert(1)" }] }, "PolyPump");
+assert.equal(js[0].logo, undefined);
 assert.ok(added.every((t) => t.unverified === true));
 assert.equal(mergeTokenList(tokens, list, "PolyPump").length, 0); // idempotent
 assert.deepEqual(mergeTokenList(tokens, null, "x"), []);
@@ -67,4 +69,24 @@ assert.equal(ok[0].thinPool, true); // B-4
 assert.equal(ok[1].thinPool, undefined);
 for (const [symbol, name] of fakes.slice(0, 12)) assert.equal(isReserved(name, symbol), true, `${name}/${symbol}`);
 assert.equal(skeleton("USD \u0421oin"), "USDCOIN");
+
+// L-1: invisible / format / bidi characters are stripped first and refused, raw or cleaned.
+const hiddenNames = ["My USD\u200bC Token", "USD\u2060Coin", "Teth\ufeffer Gold", "US\u00adDC Coin", "Rev \u202eCDSU"];
+for (const n of hiddenNames) assert.match(nameProblem(n) || "", /invisible|text-direction/, JSON.stringify(n));
+assert.equal(skeleton("My USD\u200bC Token"), "MYUSDCTOKEN");
+// L-2: Latin mixed with another script (Lisu, Coptic); pure scripts are fine.
+assert.match(nameProblem("\ua4f4SD Coin") || "", /mix Latin/);
+assert.match(nameProblem("USD \u2c9ein") || "", /mix Latin/);
+assert.equal(nameProblem("\u041c\u043e\u0441\u043a\u0432\u0430"), null);
+// I-1: ordinary words pass, impersonations do not.
+for (const sy of ["POLE", "BALE", "UNIX", "ETHE", "LINKX", "DAL", "MAL", "UNL"]) assert.equal(reservedReason("Robo", sy), null, sy);
+for (const sy of ["USDC2", "USDCx", "BZB2", "ETHX", "DAl", "link"]) assert.notEqual(reservedReason("Robo", sy), null, sy);
+const sneaky = { tokens: [
+  ...hiddenNames.map((name, k) => ({ chainId: 137, address: "0x" + (0x900 + k).toString(16).padStart(40, "0"), name, symbol: "SNK" + k, decimals: 18 })),
+  { chainId: 137, address: "0x" + "a1".repeat(20), name: "\ua4f4SD Coin", symbol: "LSD", decimals: 18 },
+  { chainId: 137, address: "0x" + "a2".repeat(20), name: "Plain", symbol: "US\u200bDC", decimals: 18 },
+  { chainId: 137, address: "0x" + "a3".repeat(20), name: "Pole Vault", symbol: "POLE", decimals: 18 },
+] };
+const pk2 = picker.slice();
+assert.deepEqual(mergeTokenList(pk2, sneaky, "PolyPump").map((t) => t.symbol), ["POLE"]);
 console.log("token-lists ok");
