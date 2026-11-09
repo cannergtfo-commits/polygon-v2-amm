@@ -1,6 +1,6 @@
 # BlazarSwap
 
-Polygon PoS desk and games for Blazar Force. The live site is [blazarforce.net](https://blazarforce.net/). GitHub Pages publishes the `docs/` folder. The swap desk on that page still uses the original Blazar factory and router. It was not replaced by the Next.js app in `web/`.
+Polygon PoS desk and games for Blazar Force. The live site is [blazarforce.net](https://blazarforce.net/). GitHub Pages publishes the `docs/` folder. The homepage swap sends through the deployed fee router from the browser. The Next.js app in `web/` is not what GitHub Pages runs.
 
 Public repo: https://github.com/cannergtfo-commits/polygon-v2-amm
 
@@ -8,9 +8,9 @@ Public repo: https://github.com/cannergtfo-commits/polygon-v2-amm
 
 | Piece | Status |
 | --- | --- |
-| Homepage swap, liquidity, positions, raffle, chart | Live in `docs/`. Swaps go through fee router `0x014AC678c96dd5dFAEc78BfffD8E00EEbf117E9b` into factory `0x8e9663F4b15F3B291B1354e20d1B019d8864830F`. Liquidity still uses router `0x5C0cCC397A5B222B06815C3c23959dd83F42aA86` |
-| Blazar Apps | [blazar-apps.html](https://blazarforce.net/blazar-apps.html). SealForge, Lyra, Mythbind, and the NFT shelf stay linked from the homepage |
-| Fee router `0x014AC678c96dd5dFAEc78BfffD8E00EEbf117E9b` | Deployed. Homepage swaps use it. Blazar factory legs pay no extra wrapper fee. External principal pays 0.05% once |
+| Homepage | Live in `docs/`. Tabs are Swap, Stake BZB, and Leaderboard. The header still links to [blazar-apps.html](https://blazarforce.net/blazar-apps.html) |
+| Swap | Browser quotes allowlisted V2 factories plus Uniswap v3 and QuickSwap v3, then the user signs the fee router. Blazar factory legs pay no extra wrapper fee. External principal pays 0.05% once |
+| Fee router `0x014AC678c96dd5dFAEc78BfffD8E00EEbf117E9b` | Deployed and used by the homepage swap. The Next.js registry still keeps this address at zero, so that app's unsigned builder stays closed |
 | Oracle `0x7d022EB5b18a79b585601326d87964C87F948892` | Deployed |
 | Daily rewards `0x323DCb75A4f265D26dd3f5F203e12e7625d49951` | Deployed. Poster `0x55BA739Ba386D634CF81bd53d974dAF95241952C`. Not a funded public rewards program |
 | BZB staking `0x3Aa4a59deC4F677A138857a828220eEd259b2469` | Deployed. No lock and no stake fee. Separate from M421 staking |
