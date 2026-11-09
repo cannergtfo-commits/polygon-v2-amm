@@ -40,9 +40,9 @@ import {
   wrapDirection,
   wrapTx,
   wrapperOnSpend,
-} from "./desk-core.mjs?v=desk16";
-import { POLYGON_TOKENS } from "./polygon-tokens.mjs?v=desk16";
-import { POLYPUMP_LIST_URL, mergeTokenList } from "./token-lists.mjs?v=desk16";
+} from "./desk-core.mjs?v=desk17";
+import { POLYGON_TOKENS } from "./polygon-tokens.mjs?v=desk17";
+import { POLYPUMP_LIST_URL, mergeTokenList } from "./token-lists.mjs?v=desk17";
 
 const $ = (id) => document.getElementById(id);
 const ethers = window.ethers;
@@ -817,6 +817,13 @@ function dressTokenSelect(select) {
       text.append(name, sub);
       row.append(icon, text);
       row.addEventListener("click", () => {
+        const key = token.address.toLowerCase();
+        if (![...select.options].some((opt) => opt.value.toLowerCase() === key)) {
+          const option = document.createElement("option");
+          option.value = token.address;
+          option.textContent = token.unverified ? `${token.symbol} (unverified)` : token.symbol;
+          select.appendChild(option);
+        }
         select.value = token.address;
         menu.hidden = true;
         syncTokenButton(select);
@@ -851,7 +858,9 @@ async function loadRemoteLists() {
     const response = await fetch(POLYPUMP_LIST_URL, { signal: controller.signal, cache: "no-cache" });
     if (!response.ok) return;
     const added = mergeTokenList(POLYGON_TOKENS, await response.json(), "PolyPump");
-    for (const id of ["tokenIn", "tokenOut"]) {
+    // Swap and liquidity share the same remote list. Options must exist on every
+    // dressed <select> or the custom picker click (select.value = address) is a no-op.
+    for (const id of ["tokenIn", "tokenOut", "liqA", "liqB"]) {
       const select = $(id);
       for (const token of added) {
         const option = document.createElement("option");
