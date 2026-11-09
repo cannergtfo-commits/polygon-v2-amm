@@ -41,7 +41,7 @@ import {
   wrapDirection,
   wrapTx,
   wrapperOnSpend,
-} from "./desk-core.mjs?v=desk9";
+} from "./desk-core.mjs?v=desk10";
 
 const $ = (id) => document.getElementById(id);
 const ethers = window.ethers;
@@ -60,6 +60,8 @@ const state = {
   quote: null,
   quoteGen: 0,
   boardGen: 0,
+  paintGen: 0,
+  fillingDays: false,
   allow: null,
   routerPaused: false,
   stakePaused: false,
@@ -866,29 +868,23 @@ async function providerForLogs() {
 async function logsBetween() {
   const rpc = await providerForLogs();
   const latest = await rpc.getBlockNumber();
-  const lookback = 60_000;
+  const lookback = 40_000;
   const from = Math.max(0, latest - lookback);
+  const spans = [];
+  for (let cursor = from; cursor <= latest; cursor += 2000) spans.push([cursor, Math.min(latest, cursor + 1999)]);
   const rows = [];
-  let cursor = from;
   let failed = 0;
-  while (cursor <= latest && rows.length < 500) {
-    const end = Math.min(latest, cursor + 1999);
-    try {
-      rows.push(...await rpc.getLogs({ address: FEE_ROUTER, fromBlock: cursor, toBlock: end, topics: [SWAP_TOPIC] }));
-    } catch {
-      failed++;
-      let inner = cursor;
-      while (inner <= end && rows.length < 500) {
-        const innerEnd = Math.min(end, inner + 499);
-        try {
-          rows.push(...await rpc.getLogs({ address: FEE_ROUTER, fromBlock: inner, toBlock: innerEnd, topics: [SWAP_TOPIC] }));
-        } catch {
-          failed++;
-        }
-        inner = innerEnd + 1;
+  for (let i = 0; i < spans.length; i += 4) {
+    const batch = spans.slice(i, i + 4);
+    const found = await Promise.all(batch.map(async ([start, end]) => {
+      try {
+        return await rpc.getLogs({ address: FEE_ROUTER, fromBlock: start, toBlock: end, topics: [SWAP_TOPIC] });
+      } catch {
+        failed++;
+        return [];
       }
-    }
-    cursor = end + 1;
+    }));
+    for (const part of found) rows.push(...part);
   }
   if (!rows.length && failed) throw new Error("Swap logs could not be read. Reload the leaderboard.");
   return {
@@ -964,23 +960,31 @@ async function loadBoard() {
       const tokenIn = parsed.args.tokenIn === ethers.ZeroAddress ? NATIVE : parsed.args.tokenIn;
       const tokenOut = parsed.args.tokenOut === ethers.ZeroAddress ? NATIVE : parsed.args.tokenOut;
       const priced = feedFor(tokenIn) ? tokenIn : feedFor(tokenOut) ? tokenOut : null;
-      const feedRow = priced ? await priceAt(priced, row.blockNumber, stamp) : null;
-      let score = feedRow
-        ? scoreTrade({
-          tokenIn,
-          tokenOut,
-          consumed: parsed.args.amountIn,
-          amountOut: parsed.args.amountOut,
-          trader: parsed.args.trader,
-          time: stamp,
-          answer: feedRow[1],
-          updatedAt: feedRow[3],
-          blockTime: stamp,
-          answeredInRound: feedRow[4],
-          roundId: feedRow[0],
-        })
-        : 0n;
-      if (score === 0n && parsed.args.usdTrusted && parsed.args.usdE8 > 0n) score = parsed.args.usdE8;
+      let eventUsd = 0n;
+      try {
+        if (parsed.args.usdTrusted) eventUsd = BigInt(parsed.args.usdE8);
+      } catch {
+        eventUsd = 0n;
+      }
+      let score = eventUsd > 0n ? eventUsd : 0n;
+      if (score === 0n && priced) {
+        const feedRow = await priceAt(priced, row.blockNumber, stamp);
+        if (feedRow) {
+          score = scoreTrade({
+            tokenIn,
+            tokenOut,
+            consumed: parsed.args.amountIn,
+            amountOut: parsed.args.amountOut,
+            trader: parsed.args.trader,
+            time: stamp,
+            answer: feedRow[1],
+            updatedAt: feedRow[3],
+            blockTime: stamp,
+            answeredInRound: feedRow[4],
+            roundId: feedRow[0],
+          });
+        }
+      }
       trades.push({
         trader: parsed.args.trader,
         tokenIn,
@@ -999,6 +1003,7 @@ async function loadBoard() {
     state.board = { trades, partial, range, fundedBalance, dailyCap, rewardsReady: rewardCode && rewardCode !== "0x" };
     const days = [...new Set(trades.map((trade) => trade.day))].sort((a, b) => b - a);
     const select = $("boardDay");
+    state.fillingDays = true;
     select.replaceChildren();
     if (!days.length) {
       const option = document.createElement("option");
@@ -1012,6 +1017,8 @@ async function loadBoard() {
       option.textContent = new Date(day * 86400 * 1000).toISOString().slice(0, 10);
       select.appendChild(option);
     }
+    if (days.length) select.value = String(days[0]);
+    state.fillingDays = false;
     await paintBoard();
   } catch (err) {
     if (gen !== state.boardGen) return;
@@ -1019,33 +1026,47 @@ async function loadBoard() {
     $("boardCoverage").textContent = "";
     $("boardFund").textContent = "";
     log("boardLog", err.shortMessage || err.message || "Index failed", "err");
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = 5;
+    td.textContent = err.shortMessage || err.message || "The leaderboard could not be read.";
+    tr.appendChild(td);
+    $("boardBody").appendChild(tr);
   }
 }
 
 async function paintBoard() {
+  const gen = ++state.paintGen;
   const board = state.board;
   if (!board) return;
-  const day = Number($("boardDay").value);
+  const rawDay = $("boardDay").value;
+  if (!rawDay) return;
+  const day = Number(rawDay);
   const dayTrades = board.trades.filter((trade) => trade.day === day);
   const rows = Number.isFinite(day) ? buildDayBoard(dayTrades, { capBzb: board.dailyCap }) : [];
-  const body = $("boardBody");
-  body.replaceChildren();
   let postedMap = new Map();
   let posted = false;
   let claimable = 0n;
   if (board.rewardsReady && Number.isFinite(day)) {
-    const rpc = await provider();
-    const rewards = new ethers.Contract(REWARDS, rewardIface.fragments, rpc);
-    const info = await rewards.dayInfo(day);
-    posted = info.posted;
-    if (posted) {
-      for (let i = 0; i < 25; i++) {
-        const winner = await rewards.winner(day, i);
-        if (winner.trader && winner.trader !== ethers.ZeroAddress) postedMap.set(winner.trader.toLowerCase(), winner.amount);
+    try {
+      const rpc = await provider();
+      const rewards = new ethers.Contract(REWARDS, rewardIface.fragments, rpc);
+      const info = await rewards.dayInfo(day);
+      posted = Boolean(info.posted ?? info[4]);
+      if (posted) {
+        for (let i = 0; i < 25; i++) {
+          const winner = await rewards.winner(day, i);
+          if (winner.trader && winner.trader !== ethers.ZeroAddress) postedMap.set(winner.trader.toLowerCase(), winner.amount);
+        }
       }
+      if (state.account) claimable = await rewards.claimable(day, state.account);
+    } catch {
+      posted = false;
     }
-    if (state.account) claimable = await rewards.claimable(day, state.account);
   }
+  if (gen !== state.paintGen) return;
+  const body = $("boardBody");
+  body.replaceChildren();
   const funds = rewardState({ fundedBalance: board.fundedBalance, posted, claimable });
   if (!rows.length) {
     const tr = document.createElement("tr");
@@ -1271,7 +1292,10 @@ function boot() {
     $("stakeAmount").value = formatUnits(amount, 18, 6);
   });
   $("boardRetry").addEventListener("click", () => { state.board = null; loadBoard(); });
-  $("boardDay").addEventListener("change", () => { paintBoard().catch((err) => log("boardLog", err.message || "Could not read the day", "err")); });
+  $("boardDay").addEventListener("change", () => {
+    if (state.fillingDays) return;
+    paintBoard().catch((err) => log("boardLog", err.message || "Could not read the day", "err"));
+  });
   $("claimRewardBtn").addEventListener("click", () => { claimPosted(); });
   $("connectBtn").addEventListener("click", () => {
     const drop = $("walletDrop");
