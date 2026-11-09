@@ -1,0 +1,27 @@
+# Blazar Wallet threat model
+
+This is a debug build for the owner's review. It is not a release, it is not on a store, and it has not had an external audit.
+
+## What the debug build does
+
+- A 12-word BIP39 seed is created with `SecureRandom` or imported and checked with the BIP39 checksum (`org.web3j:crypto`, the same stack a lot of JVM wallets use).
+- Accounts are `m/44'/60'/0'/0/index`. The first account of the standard `abandon…about` vector is `0x9858EfFD232B4033E47d90003D41EC34EcaEda94`. That test is in `:crypto`.
+- The seed is encrypted with PBKDF2-HMAC-SHA256 (210,000 rounds) and AES-256-GCM under the PIN. A wrong PIN fails the GCM tag. The PIN buffer is wiped after use.
+- That box is written through an Android Keystore AES-GCM key. The app asks for an auth-bound key (StrongBox first, then TEE) that can be used only after BiometricPrompt authorizes its Cipher via a CryptoObject. A prompt without that Cipher does not unwrap the file. Every load reads KeyInfo on the existing alias. A missing seed file, a file header, or a default level is not treated as proof of how the key is protected. A legacy or non-auth alias is refused. Create, import, encrypt, unwrap, and the cipher methods all fail while that refusal stands. The alias and the ciphertext are not deleted. Seed replacement uses AtomicFile for both the write and the read, so a leftover `.bak` is restored before the file is classified. A successful create or unlock starts a fresh 60 second monotonic deadline. An unwrapped box, a pending seal, and an unsaved Reveal, backup, import, or pre-save PIN phrase use that same window. Fifteen seconds before an unsaved draft is cleared, the screen says so. Lock cancels the biometric prompt. The JVM tests cover the clock policy, not a device. This build does not verify that StrongBox or a TEE was actually used. No device, hardware, crash, or release-APK test has been run.
+- `allowBackup` is false. `backup_rules.xml` and `data_extraction_rules.xml` exclude file, prefs, and database domains from cloud backup and device transfer. The debug build type is debuggable. The release build type sets `isDebuggable = false`. Do not ship the debug APK.
+- Unlock of an auth-bound file is a keystore unwrap through BiometricPrompt's CryptoObject, then the PIN. The biometric result does not contain the seed. A device with only the fallback key unlocks with the PIN. Five wrong PIN attempts start a 30 second pause on `elapsedRealtime`. Wall-clock changes do not expire it. A reboot restarts the full pause when five failures are already stored. Attempts are serialized on one lock, and the counters are committed to preferences before the next attempt. Clearing app data removes the pause.
+- The decrypted seed lives in memory for the session and is cleared on lock and when the activity is destroyed. A 60 second timer starts from the last touch and locks the session. Android can defer that timer while the process is frozen, so backgrounding is not a hardware lock. The seed, backup, and PIN screens set `FLAG_SECURE`. The home and token screens do not, so a review screenshot of those screens is possible.
+- Five wrong PIN attempts record a 30 second wall-clock pause in app preferences. The preference stores a counter and a timestamp, not the PIN or the seed. Restarting the process does not clear it. Changing the device clock can shorten it. This is not a durable secure enclave throttle.
+- Before a send, approval, or revoke preview, `TxPreview` shows the kind, the target, and warnings: the zero address and a small local block list, unlimited approvals, and calls to contracts that are not on the Blazar allowlist. This debug build does not sign or broadcast those transactions. Review is a decoder, not a wallet send path.
+- Polygon is the default chain. The RPC URL is the public read endpoint. A swap is not broadcast while the fee router address is still the zero address.
+- Token prices and charts are read from the public GeckoTerminal API. That request carries the token address and a user agent. It does not carry the seed, the PIN, or a signature.
+
+## What an audit still has to cover before a release
+
+- The Android Keystore and biometric path on real hardware. JVM tests cannot open a hardware keystore. A review should confirm StrongBox/TEE behavior, biometric invalidation, and what a rooted device can do with the process.
+- Side channels around the PIN (accessibility services, clipboard, a rooted device). `FLAG_SECURE` is set on the seed, backup, and PIN screens. It is not a substitute for an external review, and the home screen is intentionally not flagged so a debug screenshot of balances and trending is possible.
+- The auto-lock timer is a session hint in this debug UI. A release should lock on `onStop` as well as on a clock, and should zero key material in a single place that is hard to copy.
+- web3j and BouncyCastle need a dependency review. Trust Wallet Core would be the alternative if the audit wants a single well-known native crypto library. It was not used here because the NDK build is a larger supply chain for a debug artifact, and the BIP39 vector is tested directly.
+- The scam list is a stub. A release needs a maintained list and a simulation against the real fee router (`eth_call` and a decoded trace), not only selector matching.
+- No password manager export, no cloud sync, and no analytics were added. A later SDK must not be allowed to log request bodies.
+- This APK is debuggable. Do not load a real seed into it.

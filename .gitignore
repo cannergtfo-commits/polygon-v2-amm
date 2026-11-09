@@ -4,3 +4,17 @@ artifacts
 .env
 typechain-types
 coverage
+
+# Build output and secrets. Do not commit these.
+web/node_modules/
+web/.next/
+android/.gradle/
+android/local.properties
+android/**/build/
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+*.keystore
+*.jks
+.env
+.env.*

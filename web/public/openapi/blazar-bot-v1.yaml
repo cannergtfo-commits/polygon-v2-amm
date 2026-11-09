@@ -1,0 +1,110 @@
+openapi: 3.1.0
+info:
+  title: BlazarSwap bot API
+  version: 1.0.0
+  summary: Local prototype for Polygon PoS chain 137. Not a live execution API.
+  description: |
+    Read-only token, fee, and quote surface. Quotes use integer base units.
+    The 0.05% wrapper fee applies once to external-routed principal.
+    A BlazarSwap factory leg pays no wrapper fee.
+    The chart pool is display-only and does not restrict routing.
+    Unsigned transaction building is closed until a reviewed fee router deployment exists.
+    This schema is not an installable plugin registry entry.
+servers:
+  - url: http://127.0.0.1:38471
+    description: Local desk. Not a public production host.
+paths:
+  /api/bot/discover:
+    get:
+      operationId: discover
+      summary: Machine-readable capability card
+      responses:
+        "200":
+          description: Prototype status
+  /api/bot/health:
+    get:
+      operationId: health
+      summary: Version, chain, and closed-execution flags
+      responses:
+        "200":
+          description: Health
+  /api/bot/tokens:
+    get:
+      operationId: searchTokens
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 32 }
+      responses:
+        "200":
+          description: At most eight registry tokens
+  /api/bot/fees:
+    get:
+      operationId: feePolicy
+      summary: Wrapper fee versus own-pool fee
+      responses:
+        "200":
+          description: Fee policy
+  /api/quote:
+    post:
+      operationId: quote
+      summary: Best allowlisted route for a base-unit amount
+      description: |
+        Body is capped at 4096 bytes and must arrive within 2 seconds.
+        At most four quotes run at once in this process. The work slot is held until the quote settles.
+        Timeout is 12 seconds. This does not sign or broadcast.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tokenIn, tokenOut, amountIn]
+              additionalProperties: false
+              properties:
+                tokenIn: { type: string, pattern: "^0x[a-fA-F0-9]{40}$" }
+                tokenOut: { type: string, pattern: "^0x[a-fA-F0-9]{40}$" }
+                amountIn: { type: string, pattern: "^[1-9][0-9]{0,77}$" }
+            examples:
+              sellBzb:
+                value:
+                  tokenIn: "0x462D8d82C2B2D2DDabf7f8a93928De09d47A5807"
+                  tokenOut: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359"
+                  amountIn: "1000000000000000000000"
+              sellUsdc:
+                value:
+                  tokenIn: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359"
+                  tokenOut: "0x462D8d82C2B2D2DDabf7f8a93928De09d47A5807"
+                  amountIn: "10000000"
+      responses:
+        "200":
+          description: Quote. Routes are not limited to the chart pool.
+        "400":
+          description: Rejected input
+        "408":
+          description: Timed out
+        "429":
+          description: Too many quotes in this process
+  /api/bot/preview:
+    post:
+      operationId: unsignedPreview
+      summary: Review-field explanation. Calldata is not returned.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tokenIn, tokenOut, amountIn]
+              properties:
+                tokenIn: { type: string }
+                tokenOut: { type: string }
+                amountIn: { type: string }
+                slippage: { type: string, description: "0.01 to 5.00 percent" }
+                recipient: { type: string }
+      responses:
+        "200":
+          description: Refusal with the fields a future unsigned review must freeze
+components:
+  schemas: {}
