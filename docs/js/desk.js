@@ -41,7 +41,7 @@ import {
   wrapDirection,
   wrapTx,
   wrapperOnSpend,
-} from "./desk-core.mjs?v=desk8";
+} from "./desk-core.mjs?v=desk9";
 
 const $ = (id) => document.getElementById(id);
 const ethers = window.ethers;
@@ -59,6 +59,7 @@ const state = {
   leaving: false,
   quote: null,
   quoteGen: 0,
+  boardGen: 0,
   allow: null,
   routerPaused: false,
   stakePaused: false,
@@ -180,8 +181,9 @@ async function provider() {
 
 async function call(to, data, blockTag) {
   const rpc = await provider();
-  if (blockTag === undefined || blockTag === null) return rpc.call({ to, data });
-  return rpc.call({ to, data }, blockTag);
+  const tx = { to, data };
+  if (blockTag !== undefined && blockTag !== null) tx.blockTag = blockTag;
+  return rpc.call(tx);
 }
 
 async function multicall(calls) {
@@ -909,20 +911,38 @@ function feedAccepts(decoded, blockTime) {
   }
 }
 
+let priceRpc = null;
 async function priceAt(token, blockNumber, blockTime) {
   const feed = feedFor(token);
   if (!feed) return null;
-  try {
-    const data = feedIface.encodeFunctionData("latestRoundData", []);
-    const raw = await call(feed.aggregator, data, Math.max(0, blockNumber - 1));
-    const decoded = feedIface.decodeFunctionResult("latestRoundData", raw);
-    return feedAccepts(decoded, blockTime) ? decoded : null;
-  } catch {
-    return null;
+  const data = feedIface.encodeFunctionData("latestRoundData", []);
+  const blockTag = Math.max(0, blockNumber - 1);
+  const urls = [...new Set(["https://polygon.drpc.org", ...(CFG.rpcUrls || [])])];
+  if (priceRpc?.url) {
+    const at = urls.indexOf(priceRpc.url);
+    if (at > 0) {
+      urls.splice(at, 1);
+      urls.unshift(priceRpc.url);
+    }
   }
+  for (const url of urls) {
+    const rpc = priceRpc?.url === url ? priceRpc : new ethers.JsonRpcProvider(url, CHAIN_ID, { staticNetwork: true });
+    try {
+      const raw = await rpc.call({ to: feed.aggregator, data, blockTag });
+      const decoded = feedIface.decodeFunctionResult("latestRoundData", raw);
+      if (!feedAccepts(decoded, blockTime)) continue;
+      rpc.url = url;
+      priceRpc = rpc;
+      return decoded;
+    } catch {
+      if (priceRpc?.url === url) priceRpc = null;
+    }
+  }
+  return null;
 }
 
 async function loadBoard() {
+  const gen = ++state.boardGen;
   setStatus("boardStatus", "Reading fee-router swaps…");
   $("boardBody").replaceChildren();
   try {
@@ -945,7 +965,7 @@ async function loadBoard() {
       const tokenOut = parsed.args.tokenOut === ethers.ZeroAddress ? NATIVE : parsed.args.tokenOut;
       const priced = feedFor(tokenIn) ? tokenIn : feedFor(tokenOut) ? tokenOut : null;
       const feedRow = priced ? await priceAt(priced, row.blockNumber, stamp) : null;
-      const score = feedRow
+      let score = feedRow
         ? scoreTrade({
           tokenIn,
           tokenOut,
@@ -960,6 +980,7 @@ async function loadBoard() {
           roundId: feedRow[0],
         })
         : 0n;
+      if (score === 0n && parsed.args.usdTrusted && parsed.args.usdE8 > 0n) score = parsed.args.usdE8;
       trades.push({
         trader: parsed.args.trader,
         tokenIn,
@@ -974,6 +995,7 @@ async function loadBoard() {
     const rewardCode = await rpc.getCode(REWARDS);
     const fundedBalance = rewardCode && rewardCode !== "0x" ? await balanceOf(tokenByAddress(BZB), REWARDS) : 0n;
     const dailyCap = rewardCode && rewardCode !== "0x" ? await rewards.dailyCap() : 0n;
+    if (gen !== state.boardGen) return;
     state.board = { trades, partial, range, fundedBalance, dailyCap, rewardsReady: rewardCode && rewardCode !== "0x" };
     const days = [...new Set(trades.map((trade) => trade.day))].sort((a, b) => b - a);
     const select = $("boardDay");
@@ -992,6 +1014,7 @@ async function loadBoard() {
     }
     await paintBoard();
   } catch (err) {
+    if (gen !== state.boardGen) return;
     setStatus("boardStatus", "The leaderboard could not be read.");
     $("boardCoverage").textContent = "";
     $("boardFund").textContent = "";
