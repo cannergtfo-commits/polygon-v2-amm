@@ -753,8 +753,7 @@ export function estimatedPayout(rankIndex, capBzb) {
 export function buildDayBoard(trades, { capBzb, wpol = WPOL } = {}) {
   const scored = trades.map((trade) => ({ ...trade, score: trade.score ?? scoreTrade(trade) }));
   const netted = subtractRoundTrips(scored, ROUND_TRIP_SEC, wpol);
-  const eligible = netted.filter((trade) => trade.score >= MIN_TRADE_USD_E8);
-  const kept = applyWalletCap(eligible).filter((trade) => trade.score > 0n);
+  const kept = netted.filter((trade) => trade.score > 0n);
   const totals = new Map();
   for (const trade of kept) {
     const key = lower(trade.trader);

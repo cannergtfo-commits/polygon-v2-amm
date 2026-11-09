@@ -395,7 +395,7 @@ const capped = buildDayBoard(
   ],
   { capBzb: 1000n * 10n ** 18n },
 );
-assert.equal(capped[0].scoreE8, 50_000n * 10n ** 8n);
+assert.equal(capped[0].scoreE8, 60_000n * 10n ** 8n);
 
 const empty = buildDayBoard([], { capBzb: 1000n * 10n ** 18n });
 assert.deepEqual(empty, []);

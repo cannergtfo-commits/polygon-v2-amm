@@ -166,7 +166,7 @@
       <div class="panel card pane" id="pane-board" hidden>
         <h3>Leaderboard</h3>
         <p class="status" id="boardStatus">Loading BZB buys and sells from the fee router.</p>
-        <p class="chart-note">BZB trading counts. A buy is scored on the POL, WETH, WBTC, USDC, or USDT you paid. A sell is scored on those tokens when you receive them. The price is the previous block's Chainlink price. Pool prices are not used.</p>
+        <p class="chart-note">BZB trading counts at its full dollar value. A buy is scored on the POL, WETH, WBTC, USDC, or USDT you paid. A sell is scored on those tokens when you receive them. Small trades count. The price is the previous block's Chainlink price. Pool prices are not used.</p>
         <div class="row-actions">
           <label>Day <select id="boardDay" aria-label="Score day"></select></label>
           <button class="ghost" id="boardRetry" type="button">Reload</button>
@@ -184,7 +184,7 @@
         <p class="status" id="boardCoverage"></p>
         <details class="fine">
           <summary>Scoring rules</summary>
-          <p>BZB buys and sells are both scored. Points use the previous block's Chainlink price for WPOL, WETH, WBTC, USDC, and USDT. A buy of BZB is scored on the tokens you paid. A sell of BZB is scored on the tokens you received when those are one of the priced assets. If neither side has a feed, the score is zero. Spot prices are not used. Native POL is priced as WPOL. The scored amount is what the router kept after refunds. Trades under $25 are dropped. A wallet's reverse trade within 10 minutes is netted. Each wallet is capped at $50,000 of scored volume a day. That does not stop a sybil from using many wallets. The visible board is 50. Only the top 25 can be paid in BZB, at 15%, 10%, 5%, then a descending share of the remaining 70%, and empty ranks are not redistributed. The schedule is an estimate. It is not a payment. Posted and claimable BZB come from the rewards contract. That contract is unfunded until someone posts a day, and this page does not post winners or move rewards.</p>
+          <p>BZB buys and sells are both scored at their full dollar value. Points use the previous block's Chainlink price for WPOL, WETH, WBTC, USDC, and USDT. A buy of BZB is scored on the tokens you paid. A sell of BZB is scored on the tokens you received when those are one of the priced assets. If neither side has a feed, the score is zero. Spot prices are not used. Native POL is priced as WPOL. There is no minimum trade size and no daily wallet cap. The scored amount is what the router kept after refunds. A wallet's reverse trade within 10 minutes is netted. The visible board is 50. Only the top 25 can be paid in BZB, at 15%, 10%, 5%, then a descending share of the remaining 70%, and empty ranks are not redistributed. The schedule is an estimate. It is not a payment. Posted and claimable BZB come from the rewards contract. That contract is unfunded until someone posts a day, and this page does not post winners or move rewards.</p>
         </details>
         <div class="log" id="boardLog" role="status"></div>
       </div>
@@ -207,6 +207,6 @@
     })();
   </script>
   <script src="js/music.js?v=snd1"></script>
-  <script type="module" src="js/desk.js?v=desk7"></script>
+  <script type="module" src="js/desk.js?v=desk8"></script>
 </body>
 </html>

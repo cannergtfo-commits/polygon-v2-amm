@@ -25,7 +25,6 @@ import {
   formatUsdE8,
   gasUnits,
   isNative,
-  MIN_TRADE_USD_E8,
   minBuy,
   parseUnits,
   poolToken,
@@ -42,7 +41,7 @@ import {
   wrapDirection,
   wrapTx,
   wrapperOnSpend,
-} from "./desk-core.mjs?v=desk7";
+} from "./desk-core.mjs?v=desk8";
 
 const $ = (id) => document.getElementById(id);
 const ethers = window.ethers;
@@ -1030,12 +1029,11 @@ async function paintBoard() {
     const td = document.createElement("td");
     td.colSpan = 5;
     const priced = dayTrades.filter((trade) => trade.score > 0n).length;
-    const under = dayTrades.filter((trade) => trade.score > 0n && trade.score < MIN_TRADE_USD_E8).length;
     td.textContent = !dayTrades.length
       ? "No BZB buys or sells were indexed for this day."
       : priced
-        ? `${dayTrades.length} swaps, ${under} under $25. None stayed on the board.`
-        : `${dayTrades.length} swaps had no Chainlink price on either side, so BZB volume there scored zero.`;
+        ? `${dayTrades.length} priced swaps were netted off the board.`
+        : `${dayTrades.length} swaps had no Chainlink price on either side, so that volume scored zero.`;
     tr.appendChild(td);
     body.appendChild(tr);
   }
