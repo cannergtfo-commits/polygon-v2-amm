@@ -2,7 +2,6 @@ import {
   BZB,
   CHAIN_ID,
   FEE_ROUTER,
-  FEEDS,
   HUBS,
   NATIVE,
   VENUES,
@@ -26,6 +25,7 @@ import {
   formatUsdE8,
   gasUnits,
   isNative,
+  MIN_TRADE_USD_E8,
   minBuy,
   parseUnits,
   poolToken,
@@ -42,7 +42,7 @@ import {
   wrapDirection,
   wrapTx,
   wrapperOnSpend,
-} from "./desk-core.mjs?v=desk6";
+} from "./desk-core.mjs?v=desk7";
 
 const $ = (id) => document.getElementById(id);
 const ethers = window.ethers;
@@ -181,7 +181,8 @@ async function provider() {
 
 async function call(to, data, blockTag) {
   const rpc = await provider();
-  return rpc.call({ to, data, blockTag });
+  if (blockTag === undefined || blockTag === null) return rpc.call({ to, data });
+  return rpc.call({ to, data }, blockTag);
 }
 
 async function multicall(calls) {
@@ -837,57 +838,63 @@ function dayKey(time) {
   return Math.floor(Number(time) / 86400);
 }
 
-async function findCreation(address) {
-  const rpc = await provider();
-  const latest = await rpc.getBlockNumber();
-  let lo = Math.max(0, latest - 400_000);
-  let hi = latest;
-  let found = latest;
-  try {
-    while (lo <= hi) {
-      const mid = Math.floor((lo + hi) / 2);
-      const code = await rpc.getCode(address, mid);
-      if (code && code !== "0x") {
-        found = mid;
-        hi = mid - 1;
-      } else lo = mid + 1;
-    }
-    return { created: found, latest, bounded: found <= Math.max(0, latest - 400_000) };
-  } catch {
-    return { created: Math.max(0, latest - 150_000), latest, bounded: true };
-  }
-}
-
-async function logSlice(rpc, fromBlock, toBlock, topic) {
-  try {
-    return await rpc.getLogs({ address: FEE_ROUTER, fromBlock, toBlock, topics: [topic] });
-  } catch (err) {
-    if (toBlock - fromBlock <= 99) throw err;
-    const mid = fromBlock + Math.floor((toBlock - fromBlock) / 2);
-    const left = await logSlice(rpc, fromBlock, mid, topic);
-    const right = await logSlice(rpc, mid + 1, toBlock, topic);
-    return left.concat(right);
-  }
-}
-
-async function logsBetween(fromBlock, toBlock) {
-  const rpc = await provider();
-  const topic = ethers.id("AggregatedSwap(address,address,address,address,uint256,uint256,uint256,uint256,bool,uint16,bytes32)");
-  if (topic.toLowerCase() !== SWAP_TOPIC) throw new Error("Swap event topic does not match the reviewed router");
-  const out = [];
-  let cursor = fromBlock;
-  let partial = false;
-  while (cursor <= toBlock && out.length < 500) {
-    const end = Math.min(toBlock, cursor + 1999);
+let logsRpc = null;
+async function providerForLogs() {
+  if (logsRpc) return logsRpc;
+  const urls = ["https://polygon-bor-rpc.publicnode.com", ...(CFG.rpcUrls || [])];
+  let last;
+  for (const url of [...new Set(urls)]) {
     try {
-      out.push(...await logSlice(rpc, cursor, end, topic));
+      const next = new ethers.JsonRpcProvider(url, CHAIN_ID, { staticNetwork: true });
+      const latest = await next.getBlockNumber();
+      await next.getLogs({
+        address: FEE_ROUTER,
+        fromBlock: Math.max(0, latest - 20),
+        toBlock: latest,
+        topics: [SWAP_TOPIC],
+      });
+      logsRpc = next;
+      return next;
+    } catch (err) {
+      last = err;
+    }
+  }
+  throw last || new Error("No RPC could read swap logs");
+}
+
+async function logsBetween() {
+  const rpc = await providerForLogs();
+  const latest = await rpc.getBlockNumber();
+  const lookback = 60_000;
+  const from = Math.max(0, latest - lookback);
+  const rows = [];
+  let cursor = from;
+  let failed = 0;
+  while (cursor <= latest && rows.length < 500) {
+    const end = Math.min(latest, cursor + 1999);
+    try {
+      rows.push(...await rpc.getLogs({ address: FEE_ROUTER, fromBlock: cursor, toBlock: end, topics: [SWAP_TOPIC] }));
     } catch {
-      partial = true;
+      failed++;
+      let inner = cursor;
+      while (inner <= end && rows.length < 500) {
+        const innerEnd = Math.min(end, inner + 499);
+        try {
+          rows.push(...await rpc.getLogs({ address: FEE_ROUTER, fromBlock: inner, toBlock: innerEnd, topics: [SWAP_TOPIC] }));
+        } catch {
+          failed++;
+        }
+        inner = innerEnd + 1;
+      }
     }
     cursor = end + 1;
   }
-  if (cursor <= toBlock) partial = true;
-  return { rows: out.slice(0, 500), partial };
+  if (!rows.length && failed) throw new Error("Swap logs could not be read. Reload the leaderboard.");
+  return {
+    rows: rows.slice(0, 500),
+    partial: failed > 0,
+    range: { created: from, latest, bounded: true },
+  };
 }
 
 function feedAccepts(decoded, blockTime) {
@@ -923,8 +930,7 @@ async function loadBoard() {
     const rpc = await provider();
     const code = await rpc.getCode(FEE_ROUTER);
     if (!code || code === "0x") throw new Error("Fee router has no code");
-    const range = await findCreation(FEE_ROUTER);
-    const { rows, partial } = await logsBetween(range.created, range.latest);
+    const { rows, partial, range } = await logsBetween();
     const blocks = new Map();
     const trades = [];
     for (const row of rows) {
@@ -1023,7 +1029,13 @@ async function paintBoard() {
     const tr = document.createElement("tr");
     const td = document.createElement("td");
     td.colSpan = 5;
-    td.textContent = "No scored trades for this day.";
+    const priced = dayTrades.filter((trade) => trade.score > 0n).length;
+    const under = dayTrades.filter((trade) => trade.score > 0n && trade.score < MIN_TRADE_USD_E8).length;
+    td.textContent = !dayTrades.length
+      ? "No BZB buys or sells were indexed for this day."
+      : priced
+        ? `${dayTrades.length} swaps, ${under} under $25. None stayed on the board.`
+        : `${dayTrades.length} swaps had no Chainlink price on either side, so BZB volume there scored zero.`;
     tr.appendChild(td);
     body.appendChild(tr);
   }
@@ -1048,9 +1060,9 @@ async function paintBoard() {
     : "Rewards contract BZB balance is 0. The schedule is not claimable and this page will not fund it.";
   $("claimRewardBtn").hidden = !(funds.claimable > 0n);
   state.claimDay = funds.claimable > 0n ? day : null;
-  setStatus("boardStatus", rows.length ? `${rows.length} scored wallet${rows.length === 1 ? "" : "s"}. Estimates are not payments.` : "Nothing scored.");
-  const span = board.partial || board.range.bounded ? "Partial index, marked" : "Index covers creation through the latest block";
-  $("boardCoverage").textContent = `${span}. Blocks ${board.range.created.toLocaleString()}–${board.range.latest.toLocaleString()}. ${board.trades.length} router swaps read. Feeds: ${Object.keys(FEEDS).length} Chainlink prices, previous block only.`;
+  setStatus("boardStatus", rows.length ? `${rows.length} scored wallet${rows.length === 1 ? "" : "s"}. BZB buys and sells are included. Estimates are not payments.` : "Nothing scored.");
+  const span = board.partial ? "Some log pages failed" : "Log read finished";
+  $("boardCoverage").textContent = `${span}. Blocks ${board.range.created.toLocaleString()}–${board.range.latest.toLocaleString()}. ${board.trades.length} router swaps. BZB buys score the POL, WETH, WBTC, USDC, or USDT paid. BZB sells score those tokens when they are what you received.`;
   log("boardLog", "");
 }
 
