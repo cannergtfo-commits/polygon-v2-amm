@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BlazarSwap developers</title>
+  <link rel="icon" href="favicon.ico" sizes="any" />
+  <link rel="stylesheet" href="css/style.css?v=usd1" />
+  <style>
+    .dev{display:grid;gap:16px}
+    .dev h2{font-family:Syne,sans-serif;font-size:clamp(28px,4vw,44px);line-height:1.05}
+    .dev p,.dev li{color:var(--muted);line-height:1.55}
+    .dev a{color:var(--cyan)}
+    .dev code,pre{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--gold)}
+    pre{white-space:pre-wrap;word-break:break-word;background:rgba(0,0,0,.28);border:1px solid var(--stroke);border-radius:14px;padding:12px;margin-top:10px}
+    .dev ul{margin:8px 0 0 18px}
+    .seal-btn{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;height:64px;max-width:min(420px,34vw);padding:0;border:0;background:transparent;z-index:6}
+    .seal-btn img{height:64px;width:auto;max-width:100%;object-fit:contain}
+    @media(max-width:900px){
+      header{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;row-gap:10px}
+      .seal-btn{position:static;transform:none;height:44px;max-width:220px;margin:0 auto;grid-column:1 / -1;justify-content:center}
+      .seal-btn img{height:44px;max-width:220px}
+    }
+  </style>
+</head>
+<body>
+  <div class="space" id="space"></div>
+  <div class="stars"></div>
+  <div class="stars2"></div>
+  <div class="vignette"></div>
+  <header>
+    <a class="brand" href="index.html" style="text-decoration:none;color:inherit">
+      <img src="https://i.imgur.com/BiGUlnC.png" alt="BzB" />
+      <div>
+        <h1>BlazarSwap</h1>
+        <span>Developers</span>
+      </div>
+    </a>
+    <a class="seal-btn" href="blazar-apps.html" aria-label="Blazar Apps"><img src="apps-btn.png" alt="Blazar Apps" /></a>
+    <a class="connect" href="index.html">Swap</a>
+  </header>
+  <main class="dev">
+    <section class="panel">
+      <p class="live-kicker" style="font-family:Syne,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--cyan);font-size:12px">Local prototype · not a hosted bot</p>
+      <h2>Integrate against the source</h2>
+      <p>GitHub Pages is a static site. It does not run the Next.js quote route or the MCP process. Run those on your own machine. The kit does not hold a seed, does not sign, and does not broadcast.</p>
+      <p>The OpenAPI document is <a href="developers/blazar-bot-v1.yaml">blazar-bot-v1.yaml</a>. Schema <code>blazar.bot.v1</code>. In the source tree the same file is <code>web/public/openapi/blazar-bot-v1.yaml</code>.</p>
+    </section>
+    <section class="panel">
+      <h3>Run the local connector</h3>
+      <pre>cd web
+pnpm install
+pnpm exec tsx scripts/mcp-stdio.ts</pre>
+      <pre>{
+  "mcpServers": {
+    "blazarswap": {
+      "command": "pnpm",
+      "args": ["exec", "tsx", "scripts/mcp-stdio.ts"],
+      "cwd": "web"
+    }
+  }
+}</pre>
+      <p>This is a local stdio process. It is not a published plugin and it is not registered. The tools search tokens, explain the fee, and quote. They do not accept an arbitrary RPC URL or an account-wide approval.</p>
+    </section>
+    <section class="panel">
+      <h3>Fees, units, and the chart</h3>
+      <ul>
+        <li>Chain 137. Amounts are base units. 2 POL is <code>2000000000000000000</code>. BZB and POL use 18 decimals.</li>
+        <li>POL and WPOL are the same asset after wrapping. Do not quote them against each other.</li>
+        <li>The wrapper fee is 0.05% of external principal, charged once. A Blazar factory leg pays 0 wrapper fee. Pool fees are already inside the quoted output. On 10,000 base units the external wrapper fee is 5 and the Blazar factory wrapper fee is 0.</li>
+        <li>The chart scores one pool as <code>0.70 * normalized liquidity + 0.30 * normalized age</code>. That choice does not restrict the route.</li>
+      </ul>
+    </section>
+    <section class="panel">
+      <h3>Deployed addresses</h3>
+      <p>These are the contracts on Polygon. The Next.js registry still stores the fee router as the zero address, so its unsigned preview stays closed. A nonzero address in a config file is not permission to send.</p>
+      <ul>
+        <li>Oracle <a href="https://polygonscan.com/address/0x7d022EB5b18a79b585601326d87964C87F948892"><code>0x7d022EB5b18a79b585601326d87964C87F948892</code></a></li>
+        <li>Fee router <a href="https://polygonscan.com/address/0x014AC678c96dd5dFAEc78BfffD8E00EEbf117E9b"><code>0x014AC678c96dd5dFAEc78BfffD8E00EEbf117E9b</code></a></li>
+        <li>Daily rewards <a href="https://polygonscan.com/address/0x323DCb75A4f265D26dd3f5F203e12e7625d49951"><code>0x323DCb75A4f265D26dd3f5F203e12e7625d49951</code></a></li>
+        <li>BZB staking <a href="https://polygonscan.com/address/0x3Aa4a59deC4F677A138857a828220eEd259b2469"><code>0x3Aa4a59deC4F677A138857a828220eEd259b2469</code></a></li>
+      </ul>
+      <p>Sourcify has an exact creation and runtime match for each. PolygonScan does not. Owner <code>0xB452329B7b9d55a82f10a4e60E22748De6e490F2</code>. Pending owner <code>0x6F47aa396215ab22647dDB3E86b4663DFe11dB14</code>. Poster <code>0x55BA739Ba386D634CF81bd53d974dAF95241952C</code>.</p>
+      <p>The reviewed buy is <a href="https://polygonscan.com/tx/0xe8abb28a9be4d14d53675e84954c1494492a39e46285545c828e695c9af16ed3">0xe8abb28a9be4d14d53675e84954c1494492a39e46285545c828e695c9af16ed3</a>: 2 POL to 35.724819195641942150 BZB, wrapper fee 0, block 96985334.</p>
+    </section>
+  </main>
+</body>
+</html>
