@@ -34,8 +34,10 @@
     video.floater{--gutter:max(0px,calc((100vw - 1180px) / 2));object-fit:cover;object-position:center;border-radius:22px;width:min(168px,max(80px,calc(var(--gutter) - 56px)));right:max(24px,calc((var(--gutter) - min(168px,max(80px,calc(var(--gutter) - 56px)))) / 2));bottom:36px;z-index:1;animation:fly-out 22s ease-in-out infinite alternate,jetglow 2.4s ease-in-out infinite}
     @keyframes fly-out{from{transform:translate3d(0,4px,0) rotate(-3deg)}to{transform:translate3d(0,-10px,0) rotate(2deg)}}
     #m421Slippage{width:64px;margin:0;padding:4px 8px;background:rgba(0,0,0,.35);border:1px solid var(--stroke);border-radius:8px;color:var(--text);font-family:Sora,sans-serif;font-size:14px}
-    #pane-m421:not(.visible){display:none}
-    #pane-draw:not(.visible){display:none}
+    #pane-m421:not(.visible),
+    #pane-draw:not(.visible),
+    #pane-stake:not(.visible),
+    #pane-rewards:not(.visible){display:none}
     .desk>.tabs{overflow-x:auto}
     .desk>.tabs button{flex:1 0 auto;white-space:nowrap}
     .draw-note{color:var(--muted);font-size:13px;line-height:1.45;margin:8px 0}
@@ -77,28 +79,10 @@
     .m421-out div{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--muted)}
     .m421-out b{color:var(--text);font-weight:600;text-align:right}
 
-    .liveboard{margin:0 0 34px;padding:22px;border:1px solid var(--stroke);border-radius:24px;background:rgba(6,12,28,.55)}
-    .live-kicker{font-family:Syne,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--cyan);font-size:12px}
-    .live-copy h2{font-family:Syne,sans-serif;font-size:clamp(28px,4vw,44px);line-height:1.05;margin-top:8px}
-    .live-copy p{margin-top:12px;color:var(--muted);max-width:70ch;line-height:1.5;font-size:16px}
-    .live-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:18px}
-    .live-card,.live-trade{border:1px solid var(--stroke);border-radius:16px;padding:14px;background:rgba(0,0,0,.22);min-width:0}
-    .live-card b{display:block;font-family:Syne,sans-serif;font-size:15px;letter-spacing:.04em}
-    .live-card small,.live-trade p{display:block;margin-top:6px;color:var(--muted);font-size:13px;line-height:1.45}
-    .live-card a,.live-trade a{color:var(--cyan)}
-    .live-card code,.live-trade code{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--gold);word-break:break-all}
-    .live-trade{margin-top:12px;border-color:rgba(240,195,106,.4);background:rgba(240,195,106,.06)}
-    .live-trade h3{font-family:Syne,sans-serif;font-size:clamp(18px,3vw,26px);line-height:1.2;margin:8px 0}
-    .live-products{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
-    .live-products a{text-decoration:none;border:1px solid var(--stroke);border-radius:999px;padding:8px 12px;font-family:Syne,sans-serif;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text)}
-    .live-products a:hover{color:#021018;background:linear-gradient(90deg,var(--cyan),#7af);border-color:transparent}
-    .live-notes{margin:14px 0 0 18px;color:var(--muted);font-size:13px;line-height:1.5}
-    .live-notes li{margin:5px 0}
     @media(max-width:900px){
       header{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;row-gap:10px}
       .seal-btn{position:static;left:auto;top:auto;transform:none;height:44px;max-width:220px;margin:0 auto;grid-column:1 / -1;justify-content:center}
       .seal-btn img{height:44px;max-width:220px}
-      .live-grid{grid-template-columns:1fr}
     }
   </style>
 </head>
@@ -163,70 +147,6 @@
       </div>
     </section>
 
-
-    <section class="liveboard" id="live-status" aria-labelledby="live-title">
-      <div class="live-copy">
-        <p class="live-kicker">Polygon PoS · chain 137</p>
-        <h2 id="live-title">Four contracts are on-chain</h2>
-        <p>
-          The swap desk below is still the live Blazar factory. A separate fee router is deployed beside it.
-          Blazar factory legs pay no extra wrapper fee. External principal pays 0.05% once.
-          Ownership acceptance is deferred. PolygonScan source is not verified.
-        </p>
-      </div>
-      <div class="live-grid">
-        <article class="live-card">
-          <b>Oracle</b>
-          <small>USD quotes for the indexer. Spot prices stay untrusted.</small>
-          <code>0x7d022EB5b18a79b585601326d87964C87F948892</code>
-          <small><a href="https://polygonscan.com/address/0x7d022EB5b18a79b585601326d87964C87F948892" target="_blank" rel="noopener">Bytecode on PolygonScan</a> · <a href="https://sourcify.dev/server/v2/contract/137/0x7d022EB5b18a79b585601326d87964C87F948892" target="_blank" rel="noopener">Sourcify exact match</a></small>
-        </article>
-        <article class="live-card">
-          <b>Fee router</b>
-          <small>Reviewed routes. This page does not send through it.</small>
-          <code>0x014AC678c96dd5dFAEc78BfffD8E00EEbf117E9b</code>
-          <small><a href="https://polygonscan.com/address/0x014AC678c96dd5dFAEc78BfffD8E00EEbf117E9b" target="_blank" rel="noopener">Bytecode on PolygonScan</a> · <a href="https://sourcify.dev/server/v2/contract/137/0x014AC678c96dd5dFAEc78BfffD8E00EEbf117E9b" target="_blank" rel="noopener">Sourcify exact match</a></small>
-        </article>
-        <article class="live-card">
-          <b>Daily rewards</b>
-          <small>Poster is separate from the owner. Not a funded public program yet.</small>
-          <code>0x323DCb75A4f265D26dd3f5F203e12e7625d49951</code>
-          <small><a href="https://polygonscan.com/address/0x323DCb75A4f265D26dd3f5F203e12e7625d49951" target="_blank" rel="noopener">Bytecode on PolygonScan</a> · <a href="https://sourcify.dev/server/v2/contract/137/0x323DCb75A4f265D26dd3f5F203e12e7625d49951" target="_blank" rel="noopener">Sourcify exact match</a></small>
-        </article>
-        <article class="live-card">
-          <b>BZB staking</b>
-          <small>No lock and no stake fee. Distinct from M421 staking.</small>
-          <code>0x3Aa4a59deC4F677A138857a828220eEd259b2469</code>
-          <small><a href="https://polygonscan.com/address/0x3Aa4a59deC4F677A138857a828220eEd259b2469" target="_blank" rel="noopener">Bytecode on PolygonScan</a> · <a href="https://sourcify.dev/server/v2/contract/137/0x3Aa4a59deC4F677A138857a828220eEd259b2469" target="_blank" rel="noopener">Sourcify exact match</a></small>
-        </article>
-      </div>
-      <article class="live-trade">
-        <p class="live-kicker">One reviewed buy · Nov 8, 2026, 4:17 PM PT</p>
-        <h3>2 POL in. 35.724819195641942150 BZB out.</h3>
-        <p>
-          Sent by the local signer through the fee router into Blazar pair
-          <code>0x31eCA8f077beCD2CCC11b8a0BAD5515d21250d14</code>.
-          Wrapper fee 0. Block 96985334. Gas 0.073823070974366448 POL.
-          The 15 deployment receipts used 2.110833552073840492 POL. No second trade.
-        </p>
-        <p><a href="https://polygonscan.com/tx/0xe8abb28a9be4d14d53675e84954c1494492a39e46285545c828e695c9af16ed3" target="_blank" rel="noopener">Transaction 0xe8abb28a9be4d14d53675e84954c1494492a39e46285545c828e695c9af16ed3</a></p>
-      </article>
-      <div class="live-products">
-        <a href="blazar-apps.html">Blazar Apps</a>
-        <a href="sealforge.html">SealForge</a>
-        <a href="lyra/">Lyra</a>
-        <a href="mythbind/">Mythbind</a>
-        <a href="fun-nfts/">NFTs</a>
-        <a href="developers.html">Developers</a>
-      </div>
-      <ul class="live-notes">
-        <li>Owner is still PixelForge <code>0xB452329B7b9d55a82f10a4e60E22748De6e490F2</code>. Pending owner <code>0x6F47aa396215ab22647dDB3E86b4663DFe11dB14</code> has not accepted. Poster <code>0x55BA739Ba386D634CF81bd53d974dAF95241952C</code>.</li>
-        <li>Sourcify reports an exact creation match and an exact runtime match. PolygonScan still shows bytecode and Verify and Publish. Do not treat that as verified source.</li>
-        <li>The agent kit in the repository is a local prototype. This site does not host a quote API or an MCP server.</li>
-        <li>The Android wallet in the source tree is a debug build. It is not a production signer and it is not on this app shelf as a secure release.</li>
-      </ul>
-    </section>
-
     <section class="desk">
       <div class="tabs" role="tablist">
         <button class="active" data-tab="swap" type="button">Swap</button>
@@ -234,6 +154,8 @@
         <button data-tab="positions" type="button">Your positions</button>
         <button data-tab="m421" type="button" hidden>M421</button>
         <button data-tab="draw" type="button">Raffle</button>
+        <button data-tab="stake" type="button">Stake</button>
+        <button data-tab="rewards" type="button">Rewards</button>
       </div>
 
       <div class="trade-row">
@@ -423,6 +345,41 @@
           <div class="log" id="drawLog">Contracts are checked on-chain before anyone is entered. The ticket count is read a block after the list closes.</div>
           <p class="draw-note">Contract <a href="https://polygonscan.com/address/0x48c66cd325FB48603E783166924Dee6f901aD2Bf#code" target="_blank" rel="noopener">0x48c6…D2Bf</a>. At most 120 wallets. After you commit, prizes cannot be taken back. The winner is a later block hash.</p>
         </div>
+        <div class="panel card pane" id="pane-stake" data-card="stake">
+          <h3>Stake BzB</h3>
+          <p class="draw-note">Stake BlazarBits and earn BlazarBits. No lock and no fee. This is separate from M421.</p>
+          <div class="m421-stats">
+            <article><b id="stakeYours">—</b><small>Your stake</small></article>
+            <article><b id="stakeEarned">—</b><small>Earned</small></article>
+            <article><b id="stakeTotal">—</b><small>Total staked</small></article>
+            <article><b id="stakeRate">—</b><small>BzB / day</small></article>
+          </div>
+          <label class="draw-field">BzB
+            <span class="draw-token-row">
+              <input id="stakeAmt" type="text" inputmode="decimal" placeholder="0.0" />
+              <button class="max" id="stakeMax" type="button">Max</button>
+            </span>
+          </label>
+          <div class="m421-actions">
+            <button class="primary full" id="stakeBtn" type="button">Stake</button>
+            <button class="ghost full" id="stakeWithdraw" type="button">Withdraw</button>
+            <button class="ghost full" id="stakeClaim" type="button">Claim</button>
+            <button class="ghost full" id="stakeExit" type="button">Exit</button>
+          </div>
+          <div class="log" id="stakeLog">No rewards are streaming until the contract is funded.</div>
+        </div>
+        <div class="panel card pane" id="pane-rewards" data-card="rewards">
+          <h3>Daily rewards</h3>
+          <p class="draw-note">Posted trading days pay BzB from the pot. Empty ranks are not paid out to anyone else.</p>
+          <div class="m421-stats">
+            <article><b id="rewardPot">—</b><small>BzB in pot</small></article>
+            <article><b id="rewardCap">—</b><small>Daily cap</small></article>
+            <article><b id="rewardMine">—</b><small>Ready to claim</small></article>
+          </div>
+          <button class="primary full" id="rewardClaim" type="button">Claim</button>
+          <div class="log" id="rewardLog">No posted reward is waiting.</div>
+          <div id="rewardBoard"></div>
+        </div>
       </div>
 
       <section class="chart-wrap">
@@ -442,7 +399,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
   <script src="js/images.js"></script>
-  <script src="js/config.js?v=m421"></script>
+  <script src="js/config.js?v=router1"></script>
   <script src="js/abis.js?v=pol1"></script>
   <script>
     (function () {
@@ -456,7 +413,8 @@
       }
     })();
   </script>
-  <script src="js/app.js?v=wallet4"></script>
+  <script src="js/app.js?v=router1"></script>
+  <script src="js/rewards.js?v=router1"></script>
   <script src="js/m421.js?v=wallet1"></script>
   <script src="js/draw.js?v=wallet1"></script>
   <script src="js/token-ui.js"></script>
