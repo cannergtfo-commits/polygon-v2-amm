@@ -43,6 +43,18 @@ import {
 } from "./desk-core.mjs?v=desk18";
 import { POLYGON_TOKENS } from "./polygon-tokens.mjs?v=desk18";
 import { POLYPUMP_LIST_URL, mergeTokenList } from "./token-lists.mjs?v=desk18";
+import {
+  ageLabel,
+  bestChartPool,
+  canonicalChartToken,
+  chartCaption,
+  emptyChartCopy,
+  geckoEmbedUrl,
+  geckoPoolUrl,
+  geckoPoolsPath,
+  geckoTokenUrl,
+  liquidityLabel,
+} from "./chart-pool.mjs?v=desk19";
 
 const $ = (id) => document.getElementById(id);
 const ethers = window.ethers;
@@ -2055,23 +2067,175 @@ function disconnect() {
   setTimeout(() => { state.leaving = false; }, 400);
 }
 
-const CHART_POOL = "0x6ccd623a2002f5198f7acd94011af1be0a193307";
+let chartGen = 0;
+let chartAbort = null;
+let shownChartKey = null;
+const chartPoolCache = new Map();
 
-async function loadChart() {
-  $("chartLink").href = `https://www.geckoterminal.com/polygon_pos/pools/${CHART_POOL}`;
+function chartLayers() {
+  const frame = $("chartFrame");
+  return frame ? [...frame.querySelectorAll(".chart-layer")] : [];
+}
+
+function liveChartLayer() {
+  return chartLayers().find((el) => el.classList.contains("live")) || null;
+}
+
+function stampInitialChart() {
+  const live = liveChartLayer();
+  if (!live || live.dataset.src) return;
+  live.dataset.src = live.src;
+  live.dataset.ready = "1";
+  const key = canonicalChartToken($("tokenOut")?.value);
+  if (key && key === BZB.toLowerCase()) live.dataset.token = key;
+}
+
+function paintChartHeading(token) {
+  const heading = $("chart-card")?.querySelector("h3");
+  if (heading) heading.textContent = token?.symbol || "Token";
+  const link = geckoTokenUrl(token?.address || "");
+  if (link && $("chartLink")) $("chartLink").href = link;
+}
+
+function embedLoaded(frame) {
   try {
-    const response = await fetch(`https://api.geckoterminal.com/api/v2/networks/polygon_pos/pools/${CHART_POOL}`);
-    if (!response.ok) throw new Error("chart");
-    const body = await response.json();
-    const attrs = body.data?.attributes || {};
-    const reserve = Number(attrs.reserve_in_usd);
-    $("chartLiq").textContent = Number.isFinite(reserve) ? `Liquidity $${reserve.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "Liquidity unavailable";
-    const created = Date.parse(attrs.pool_created_at || "");
-    $("chartAge").textContent = Number.isFinite(created) ? `Age ${Math.max(0, Math.floor((Date.now() - created) / 86400000))} days` : "Age unavailable";
-    if (attrs.name) $("chart-card").querySelector("h3").textContent = String(attrs.name);
+    return !frame.contentDocument;
   } catch {
-    $("chartLiq").textContent = "Liquidity unavailable";
-    $("chartAge").textContent = "Age unavailable";
+    return true;
+  }
+}
+
+function showChartPool(url, title, tokenKey) {
+  const frame = $("chartFrame");
+  const all = chartLayers();
+  const current = liveChartLayer() || all[0];
+  const standby = all.find((el) => el !== current) || current;
+  if (!frame || !current || !standby) return;
+  frame.classList.remove("show-empty");
+  const finish = (node) => {
+    if (node._chartTimer) clearTimeout(node._chartTimer);
+    node.dataset.token = tokenKey;
+    node.dataset.src = url;
+    node.dataset.ready = "1";
+    node.title = title;
+    node.setAttribute("aria-hidden", "false");
+    for (const el of all) {
+      const on = el === node;
+      el.classList.toggle("live", on);
+      if (!on) el.setAttribute("aria-hidden", "true");
+    }
+    frame.classList.remove("pending");
+    shownChartKey = tokenKey;
+  };
+  if (current.dataset.src === url && current.dataset.ready === "1") {
+    finish(current);
+    return;
+  }
+  if (standby !== current && standby.dataset.src === url && standby.dataset.ready === "1") {
+    finish(standby);
+    return;
+  }
+  const gen = chartGen;
+  const arm = (node) => {
+    if (node._chartTimer) clearTimeout(node._chartTimer);
+    node._chartTimer = setTimeout(() => {
+      if (gen !== chartGen || node.dataset.src !== url || node.dataset.ready === "1") return;
+      if (embedLoaded(node)) finish(node);
+      else frame.classList.remove("pending");
+    }, 10000);
+    node.onload = () => {
+      if (node._chartTimer) clearTimeout(node._chartTimer);
+      if (gen !== chartGen || node.dataset.src !== url || !embedLoaded(node)) return;
+      finish(node);
+    };
+  };
+  standby.title = title;
+  if (standby.dataset.src === url && standby.src === url) {
+    arm(standby);
+    if (embedLoaded(standby)) finish(standby);
+    return;
+  }
+  standby.dataset.ready = "0";
+  standby.dataset.src = url;
+  arm(standby);
+  standby.src = url;
+}
+
+function showChartEmpty(copy, token, tokenKey) {
+  const frame = $("chartFrame");
+  if (!frame) return;
+  paintChartHeading(token);
+  if ($("chartEmpty")) $("chartEmpty").textContent = copy.frame;
+  if ($("chartNote")) $("chartNote").textContent = copy.note;
+  if ($("chartLiq")) $("chartLiq").textContent = "Liquidity —";
+  if ($("chartAge")) $("chartAge").textContent = "Age —";
+  frame.classList.add("show-empty");
+  frame.classList.remove("pending");
+  shownChartKey = tokenKey;
+}
+
+async function lookupChartPool(tokenKey, signal) {
+  if (chartPoolCache.has(tokenKey)) return chartPoolCache.get(tokenKey);
+  const path = geckoPoolsPath(tokenKey);
+  if (!path) return null;
+  const response = await fetch(`https://api.geckoterminal.com/api/v2${path}`, {
+    headers: { accept: "application/json" },
+    signal,
+  });
+  if (!response.ok) throw new Error(`GeckoTerminal returned ${response.status}`);
+  const pool = bestChartPool(await response.json(), { token: tokenKey });
+  chartPoolCache.set(tokenKey, pool);
+  return pool;
+}
+
+// Token B (the output token) picks the chart. Quotes do not read this choice.
+async function loadChart() {
+  const token = selected("tokenOut");
+  const key = canonicalChartToken(token?.address || "");
+  if (!token || !key) return;
+  if (shownChartKey === key && chartPoolCache.has(key)) return;
+  const gen = ++chartGen;
+  chartAbort?.abort();
+  const abort = new AbortController();
+  chartAbort = abort;
+  const frame = $("chartFrame");
+  const live = liveChartLayer();
+  if (live?.dataset.token && live.dataset.token !== key) {
+    paintChartHeading(token);
+    if ($("chartLiq")) $("chartLiq").textContent = "Liquidity …";
+    if ($("chartAge")) $("chartAge").textContent = "Age …";
+  }
+  try {
+    const pool = await lookupChartPool(key, abort.signal);
+    if (gen !== chartGen) return;
+    if (!pool) {
+      showChartEmpty(emptyChartCopy("none"), token, key);
+      return;
+    }
+    const url = geckoEmbedUrl(pool.address);
+    if (!url) throw new Error("chart pool");
+    const heading = $("chart-card")?.querySelector("h3");
+    if (heading) heading.textContent = pool.name;
+    if ($("chartLiq")) $("chartLiq").textContent = liquidityLabel(pool.liquidityUsd);
+    if ($("chartAge")) $("chartAge").textContent = ageLabel(pool.createdAt);
+    const poolLink = geckoPoolUrl(pool.address);
+    if (poolLink && $("chartLink")) $("chartLink").href = poolLink;
+    if ($("chartNote")) {
+      $("chartNote").textContent = chartCaption(pool, { blazarPairUnlisted: key === BZB.toLowerCase() });
+    }
+    const showing = chartLayers().some((el) => el.dataset.src === url && el.dataset.ready === "1");
+    if (!showing) frame?.classList.add("pending");
+    showChartPool(url, `${token.symbol} pool chart`, key);
+  } catch (err) {
+    if (gen !== chartGen || err?.name === "AbortError") return;
+    const current = liveChartLayer();
+    frame?.classList.remove("pending");
+    if (current?.dataset.ready === "1" && current.dataset.token === key) {
+      if ($("chartNote")) $("chartNote").textContent = "GeckoTerminal is unavailable. Showing the last pool for this token. Swaps still search every allowlisted venue.";
+      return;
+    }
+    showChartEmpty(emptyChartCopy("down"), token, null);
+    shownChartKey = null;
   }
 }
 
@@ -2090,7 +2254,7 @@ function boot() {
     button.addEventListener("click", () => showTab(button.dataset.tab));
   });
   $("tokenIn").addEventListener("change", () => { scheduleQuote(); paintBalances(); });
-  $("tokenOut").addEventListener("change", () => { scheduleQuote(); paintBalances(); });
+  $("tokenOut").addEventListener("change", () => { scheduleQuote(); paintBalances(); loadChart(); });
   $("amountIn").addEventListener("input", scheduleQuote);
   $("slippage").addEventListener("input", () => { if (state.quote) paintQuote(state.quote); });
   document.querySelectorAll("[data-slip]").forEach((button) => {
@@ -2109,6 +2273,7 @@ function boot() {
     syncTokenButton($("tokenOut"));
     scheduleQuote();
     paintBalances();
+    loadChart();
   });
   $("maxIn").addEventListener("click", async () => {
     if (!state.account) return;
@@ -2163,6 +2328,7 @@ function boot() {
   }
   $("disconnectBtn").addEventListener("click", disconnect);
   announcedWallets();
+  stampInitialChart();
   loadChart();
   readAllowlist().then(() => refreshQuote()).catch((err) => {
     setStatus("swapStatus", "Could not read the fee router.");

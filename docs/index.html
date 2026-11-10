@@ -21,8 +21,13 @@
     .desk-live .tabs{display:flex}
     .trade-row{display:grid;grid-template-columns:minmax(340px,520px) minmax(0,1fr);gap:18px;align-items:stretch}
     .chart-wrap{margin:0;min-width:0}
-    .chart-frame{min-height:520px}
-    .chart-frame iframe{width:100%;height:520px;border:0;display:block;background:#030712}
+    .chart-frame{position:relative;height:520px;min-height:520px;background:#030712;overflow:hidden}
+    .chart-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;background:#030712;opacity:0;transition:opacity .32s ease;pointer-events:none}
+    .chart-frame iframe.live{opacity:1;pointer-events:auto}
+    .chart-frame.pending iframe.live{opacity:.62}
+    .chart-empty{position:absolute;inset:0;margin:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;color:var(--muted);opacity:0;transition:opacity .32s ease}
+    .chart-frame.show-empty iframe{opacity:0;pointer-events:none}
+    .chart-frame.show-empty .chart-empty{opacity:1}
     .chart-meta,.chart-note,.fine p,.status{color:var(--muted);font-size:13px;line-height:1.45}
     .chart-note{margin-top:8px}
     .pane[hidden],.trade-row[hidden]{display:none!important}
@@ -72,7 +77,7 @@
       .head-links{gap:6px}
       .seal-btn,.seal-btn img{height:32px;max-width:112px}
       .trade-row,.stats-grid,.actions{grid-template-columns:1fr}
-      .chart-frame,.chart-frame iframe{min-height:360px;height:360px}
+      .chart-frame{height:360px;min-height:360px}
       .desk-live .tabs{display:grid;grid-template-columns:1fr 1fr 1fr;border-radius:18px}
       .desk-live .tabs button{font-size:11px;padding:10px 4px}
     }
@@ -160,10 +165,12 @@
             <a id="chartLink" href="https://www.geckoterminal.com/polygon_pos/pools/0x6ccd623a2002f5198f7acd94011af1be0a193307" target="_blank" rel="noopener">GeckoTerminal</a>
           </div>
           <p class="chart-meta"><span id="chartLiq">Liquidity —</span> · <span id="chartAge">Age —</span></p>
-          <div class="chart-frame">
-            <iframe id="geckoChart" title="BZB pool chart" loading="lazy" allow="clipboard-write" allowfullscreen src="https://www.geckoterminal.com/polygon_pos/pools/0x6ccd623a2002f5198f7acd94011af1be0a193307?embed=1&amp;info=0&amp;swaps=0&amp;light_chart=0&amp;chart_type=price&amp;resolution=15m&amp;bg_color=030712"></iframe>
+          <div class="chart-frame" id="chartFrame">
+            <iframe class="chart-layer live" id="geckoChart" title="BZB pool chart" loading="lazy" allow="clipboard-write" allowfullscreen src="https://www.geckoterminal.com/polygon_pos/pools/0x6ccd623a2002f5198f7acd94011af1be0a193307?embed=1&amp;info=0&amp;swaps=0&amp;light_chart=0&amp;chart_type=price&amp;resolution=15m&amp;bg_color=030712"></iframe>
+            <iframe class="chart-layer" id="geckoChartBack" title="" aria-hidden="true" allow="clipboard-write" allowfullscreen></iframe>
+            <p class="chart-empty" id="chartEmpty"></p>
           </div>
-          <p class="chart-note">BzB / WPOL on QuickSwap, the pool GeckoTerminal actually lists. The Blazar pair is not on GeckoTerminal. Swaps still search every allowlisted venue.</p>
+          <p class="chart-note" id="chartNote">BzB / WPOL on QuickSwap, the pool GeckoTerminal actually lists. The Blazar pair is not on GeckoTerminal. Swaps still search every allowlisted venue.</p>
         </section>
       </div>
 
@@ -258,6 +265,6 @@
     })();
   </script>
   <script src="js/music.js?v=snd1"></script>
-  <script type="module" src="js/desk.js?v=desk18"></script>
+  <script type="module" src="js/desk.js?v=desk19"></script>
 </body>
 </html>
