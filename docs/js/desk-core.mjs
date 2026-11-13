@@ -64,6 +64,7 @@ export const VENUES = {
 
 export const HUBS = [
   WPOL,
+  BZB,
   "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
   "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
   "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
@@ -93,7 +94,7 @@ export const TOKENS = [
 
 const COVERAGE = {
   searched: "Allowlisted V2 factories (BlazarSwap, QuickSwap v2, SushiSwap, ApeSwap) and, only when the router allowlist includes them, Uniswap v3 and QuickSwap v3.",
-  discovery: "Pools are the pairs among the tokens on this desk, including one- and two-hop routes through WPOL, USDC, USDC.e, USDT, WETH, and WBTC, plus a two-venue V2 split when it beats the best single pool.",
+  discovery: "Pools are the pairs among the tokens on this desk, including one- and two-hop routes through WPOL, BZB, USDC, USDC.e, USDT, WETH, and WBTC, plus a two-venue V2 split when it beats the best single pool.",
   notCovered: "Balancer, Curve, Uniswap v4, order books, and any router that is not on the fee-router allowlist are not quoted and cannot be called. This is not every pool on Polygon.",
 };
 

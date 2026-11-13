@@ -40,7 +40,7 @@ import {
   wrapDirection,
   wrapTx,
   wrapperOnSpend,
-} from "./desk-core.mjs?v=desk18";
+} from "./desk-core.mjs?v=desk20";
 import { POLYGON_TOKENS } from "./polygon-tokens.mjs?v=desk18";
 import { POLYPUMP_LIST_URL, mergeTokenList } from "./token-lists.mjs?v=desk18";
 import {
@@ -155,6 +155,48 @@ const swapEvent = new ethers.Interface([
 ]);
 
 let readProvider = null;
+let readUrl = "";
+
+// Public Polygon RPCs cap JSON-RPC batches (1rpc is intermittent from ~10,
+// dRPC free rejects more than 10). ethers v6 batches concurrent calls by
+// default (up to 100). A batch that a relay rejects comes back as HTTP 403
+// text, HTTP 429, or a single JSON-RPC error with id: null, which ethers
+// surfaces as "missing response for request".
+const RPC_OPTS = { staticNetwork: true, batchMaxCount: 1 };
+
+function rpcUrls() {
+  const list = CFG.rpcUrls && CFG.rpcUrls.length ? CFG.rpcUrls : [CFG.rpcUrl];
+  return list.filter(Boolean);
+}
+
+function rpcFlaky(err) {
+  if (!err) return false;
+  if (err.code === "CALL_EXCEPTION" || err.code === "INSUFFICIENT_FUNDS" || err.code === "ACTION_REJECTED") return false;
+  if (err.code === "BAD_DATA" || err.code === "SERVER_ERROR" || err.code === "TIMEOUT" || err.code === "NETWORK_ERROR") return true;
+  const msg = String(err.shortMessage || err.message || "");
+  return /missing response|bad response|too many requests|429|not allowed|paid subscription|rate limit|batch of more|unavailable|failed to detect network|ECONNRESET|ETIMEDOUT/i.test(msg);
+}
+
+function explainError(err) {
+  const msg = String(err?.shortMessage || err?.reason || err?.message || err || "Request failed");
+  if (err?.code === "CALL_EXCEPTION" || /execution reverted|revert/i.test(msg)) {
+    const reason = err?.reason;
+    if (reason) return `Simulation reverted: ${reason}`;
+    return msg;
+  }
+  if (rpcFlaky(err) || /missing response for request/i.test(msg)) {
+    return "The Polygon RPC dropped that request. Wait a moment and try again.";
+  }
+  return msg;
+}
+
+function dropReadProvider() {
+  if (readProvider) {
+    try { readProvider.destroy(); } catch { /* already closed */ }
+  }
+  readProvider = null;
+  readUrl = "";
+}
 
 function log(id, message, kind) {
   const el = $(id);
@@ -190,11 +232,12 @@ function setStatus(id, text) {
 async function provider() {
   if (readProvider) return readProvider;
   let last;
-  for (const url of CFG.rpcUrls) {
+  for (const url of rpcUrls()) {
     try {
-      const next = new ethers.JsonRpcProvider(url, CHAIN_ID, { staticNetwork: true });
+      const next = new ethers.JsonRpcProvider(url, CHAIN_ID, RPC_OPTS);
       await next.getBlockNumber();
       readProvider = next;
+      readUrl = url;
       return next;
     } catch (err) {
       last = err;
@@ -203,19 +246,44 @@ async function provider() {
   throw last || new Error("Polygon RPC is unavailable");
 }
 
+async function withReadProvider(run) {
+  let last;
+  const urls = rpcUrls();
+  const ordered = readUrl ? [readUrl, ...urls.filter((url) => url !== readUrl)] : urls;
+  for (const url of ordered) {
+    try {
+      if (!readProvider || readUrl !== url) {
+        dropReadProvider();
+        const next = new ethers.JsonRpcProvider(url, CHAIN_ID, RPC_OPTS);
+        await next.getBlockNumber();
+        readProvider = next;
+        readUrl = url;
+      }
+      return await run(readProvider);
+    } catch (err) {
+      last = err;
+      if (!rpcFlaky(err)) throw err;
+      dropReadProvider();
+    }
+  }
+  throw last || new Error("Polygon RPC is unavailable");
+}
+
 async function call(to, data, blockTag) {
-  const rpc = await provider();
-  const tx = { to, data };
-  if (blockTag !== undefined && blockTag !== null) tx.blockTag = blockTag;
-  return rpc.call(tx);
+  return withReadProvider((rpc) => {
+    const tx = { to, data };
+    if (blockTag !== undefined && blockTag !== null) tx.blockTag = blockTag;
+    return rpc.call(tx);
+  });
 }
 
 async function multicall(calls) {
-  const rpc = await provider();
-  const data = multiIface.encodeFunctionData("aggregate3", [calls.map((item) => [item.to, true, item.data])]);
-  const raw = await rpc.call({ to: MULTICALL, data });
-  const [rows] = multiIface.decodeFunctionResult("aggregate3", raw);
-  return rows.map((row) => ({ success: Boolean(row.success ?? row[0]), data: row.returnData ?? row[1] }));
+  return withReadProvider(async (rpc) => {
+    const data = multiIface.encodeFunctionData("aggregate3", [calls.map((item) => [item.to, true, item.data])]);
+    const raw = await rpc.call({ to: MULTICALL, data });
+    const [rows] = multiIface.decodeFunctionResult("aggregate3", raw);
+    return rows.map((row) => ({ success: Boolean(row.success ?? row[0]), data: row.returnData ?? row[1] }));
+  });
 }
 
 function word(data, offset) {
@@ -487,8 +555,9 @@ function paintQuote(quote) {
     return;
   }
   if (!quote?.best) {
-    clearQuote("No allowlisted route");
-    $("routeDetail").textContent = `${coverage.searched} ${coverage.discovery} ${coverage.notCovered}`;
+    const pair = quote?.sell && quote?.buy ? `${quote.sell.symbol} → ${quote.buy.symbol}` : "this pair";
+    clearQuote(`No pool for ${pair}`);
+    $("routeDetail").textContent = `No ${pair} route on Blazar, QuickSwap, Sushi, Ape, Uniswap v3, or QuickSwap v3. ${coverage.discovery} ${coverage.notCovered}`;
     return;
   }
   const steps = quote.best.steps;
@@ -536,14 +605,14 @@ async function refreshQuote() {
       ? "1:1. Swap sends the wrap or unwrap directly."
       : quote.best
         ? "Quote is live for 20 seconds. Swap asks the wallet only after a simulation."
-        : "No route on the allowlisted venues.");
+        : `No ${quote.sell.symbol} → ${quote.buy.symbol} pool on Blazar, QuickSwap, Sushi, Ape, Uniswap v3, or QuickSwap v3.`);
     log("swapLog", "");
   } catch (err) {
     if (gen !== state.quoteGen) return;
     state.quote = null;
     paintQuote(null);
     setStatus("swapStatus", "Quote failed.");
-    log("swapLog", err.shortMessage || err.message || "Quote failed", "err");
+    log("swapLog", explainError(err) || "Quote failed", "err");
   }
 }
 
@@ -877,8 +946,7 @@ async function assertChain() {
 }
 
 async function simulate(tx) {
-  const rpc = await provider();
-  await rpc.call({ to: tx.to, from: state.account, data: tx.data, value: tx.value || 0n });
+  await withReadProvider((rpc) => rpc.call({ to: tx.to, from: state.account, data: tx.data, value: tx.value || 0n }));
 }
 
 async function send(tx, label) {
@@ -898,14 +966,13 @@ async function send(tx, label) {
 
 async function ensureAllowance(token, spender, amount, label) {
   if (isNative(token.address)) return;
-  const rpc = await provider();
   const data = erc20Iface.encodeFunctionData("allowance", [state.account, spender]);
-  const current = BigInt(erc20Iface.decodeFunctionResult("allowance", await rpc.call({ to: token.address, data }))[0]);
+  const current = BigInt(erc20Iface.decodeFunctionResult("allowance", await call(token.address, data))[0]);
   const steps = approvalPlan(current, amount);
   for (const step of steps) {
     const approve = erc20Iface.encodeFunctionData("approve", [spender, step]);
     const tx = { to: token.address, data: approve, value: 0n };
-    const code = await rpc.getCode(token.address);
+    const code = await withReadProvider((rpc) => rpc.getCode(token.address));
     const gate = executionGate({ chainId: state.chainId, code, paused: false, simulationOk: true, quoteFresh: true, stale: false, walletReject: false, action: "approve" });
     if (!gate.ok) throw new Error(gate.errors[0]);
     await simulate(tx);
@@ -954,7 +1021,11 @@ async function doSwap() {
       }
       quote = next;
     }
-    if (!quote?.best) throw new Error("No allowlisted route");
+    if (!quote?.best) {
+      const sell = quote?.sell?.symbol || selected("tokenIn")?.symbol || "token";
+      const buy = quote?.buy?.symbol || selected("tokenOut")?.symbol || "token";
+      throw new Error(`No ${sell} → ${buy} pool on Blazar, QuickSwap, Sushi, Ape, Uniswap v3, or QuickSwap v3.`);
+    }
     const rpc = await provider();
     const code = await rpc.getCode(FEE_ROUTER);
     const gate = executionGate({
@@ -1046,7 +1117,7 @@ async function doSwap() {
     refreshHoldings({ force: true }).catch(() => {});
     scheduleQuote();
   } catch (err) {
-    log("swapLog", err.shortMessage || err.message || "Swap failed", "err");
+    log("swapLog", explainError(err) || "Swap failed", "err");
   } finally {
     state.busy = false;
     $("swapBtn").disabled = false;
@@ -1258,7 +1329,7 @@ async function loadStake() {
     log("stakeLog", "");
   } catch (err) {
     setStatus("stakeStatus", "Could not read the staking contract.");
-    log("stakeLog", err.shortMessage || err.message || "Read failed", "err");
+    log("stakeLog", explainError(err) || "Read failed", "err");
   }
 }
 
@@ -1271,8 +1342,7 @@ async function stakeAction(kind) {
   state.busy = true;
   try {
     await assertChain();
-    const rpc = await provider();
-    const code = await rpc.getCode(STAKING);
+    const code = await withReadProvider((rpc) => rpc.getCode(STAKING));
     if (kind === "stake" && state.stakePaused) throw new Error("That contract is paused.");
     let data;
     if (kind === "claim") data = stakeIface.encodeFunctionData("getReward", []);
@@ -1303,7 +1373,7 @@ async function stakeAction(kind) {
     await loadStake();
     await paintBalances();
   } catch (err) {
-    log("stakeLog", err.shortMessage || err.message || "Staking action failed", "err");
+    log("stakeLog", explainError(err) || "Staking action failed", "err");
   } finally {
     state.busy = false;
   }
@@ -1320,7 +1390,7 @@ async function providerForLogs() {
   let last;
   for (const url of [...new Set(urls)]) {
     try {
-      const next = new ethers.JsonRpcProvider(url, CHAIN_ID, { staticNetwork: true });
+      const next = new ethers.JsonRpcProvider(url, CHAIN_ID, RPC_OPTS);
       const latest = await next.getBlockNumber();
       await next.getLogs({
         address: FEE_ROUTER,
@@ -1394,7 +1464,7 @@ async function priceAt(token, blockNumber, blockTime) {
     }
   }
   for (const url of urls) {
-    const rpc = priceRpc?.url === url ? priceRpc : new ethers.JsonRpcProvider(url, CHAIN_ID, { staticNetwork: true });
+    const rpc = priceRpc?.url === url ? priceRpc : new ethers.JsonRpcProvider(url, CHAIN_ID, RPC_OPTS);
     try {
       const raw = await rpc.call({ to: feed.aggregator, data, blockTag });
       const decoded = feedIface.decodeFunctionResult("latestRoundData", raw);
@@ -2332,7 +2402,7 @@ function boot() {
   loadChart();
   readAllowlist().then(() => refreshQuote()).catch((err) => {
     setStatus("swapStatus", "Could not read the fee router.");
-    log("swapLog", err.shortMessage || err.message || "Router read failed", "err");
+    log("swapLog", explainError(err) || "Router read failed", "err");
   });
   loadStake();
 }
