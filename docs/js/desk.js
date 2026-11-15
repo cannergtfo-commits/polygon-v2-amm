@@ -69,6 +69,7 @@ import {
   v2CandidateQueries,
   v2ShareAndAmounts,
 } from "./lp-positions.mjs?v=desk22";
+import { initProfile, loadProfile, profileAccountChanged } from "./profile.mjs?v=desk23";
 
 const $ = (id) => document.getElementById(id);
 const ethers = window.ethers;
@@ -295,6 +296,11 @@ async function call(to, data, blockTag) {
     if (blockTag !== undefined && blockTag !== null) tx.blockTag = blockTag;
     return rpc.call(tx);
   });
+}
+
+/** eth_call with an explicit sender (read-only simulations such as an NFT owner's collect). */
+async function callFrom(to, data, from) {
+  return withReadProvider((rpc) => rpc.call({ to, data, from }));
 }
 
 async function multicall(calls) {
@@ -2149,7 +2155,7 @@ function decodeNftPosition(kind, data) {
 async function loadNftPositions(account, manager) {
   const rawCount = await call(manager.manager, nftEnumIface.encodeFunctionData("balanceOf", [account]));
   const count = Number(nftEnumIface.decodeFunctionResult("balanceOf", rawCount)[0]);
-  if (!count) return [];
+  if (!count) return { rows: [], closed: 0 };
   const idRows = await multicall(Array.from({ length: count }, (_, i) => ({
     to: manager.manager,
     data: nftEnumIface.encodeFunctionData("tokenOfOwnerByIndex", [account, i]),
@@ -2427,8 +2433,51 @@ async function removePosition(pair, balance, token0, token1, reserve0, reserve1,
   }
 }
 
+/** USD for one WPOL from the Chainlink POL/USD feed. */
+async function wpolUsd() {
+  const feed = feedFor(WPOL);
+  if (!feed) return null;
+  const raw = await call(feed.aggregator, feedIface.encodeFunctionData("latestRoundData", []));
+  const answer = BigInt(feedIface.decodeFunctionResult("latestRoundData", raw)[1]);
+  return answer > 0n ? Number(answer) / 10 ** Number(feed.priceDecimals ?? 8) : null;
+}
+
+/** Fallback unit price from the deeper Blazar / QuickSwap V2 pool against WPOL (needs >= 100 WPOL depth). */
+async function reservePrice(token, wpolPrice) {
+  if (!wpolPrice) return null;
+  const factories = [VENUES.v2[0].factory, VENUES.v2[1].factory];
+  const pairs = await multicall(factories.map((factory) => ({ to: factory, data: factoryIface.encodeFunctionData("getPair", [token, WPOL]) })));
+  const found = pairs.map((row) => (row.success ? factoryIface.decodeFunctionResult("getPair", row.data)[0] : null)).filter((pair) => pair && pair !== ethers.ZeroAddress);
+  if (!found.length) return null;
+  const detail = await multicall([
+    { to: token, data: liqPairIface.encodeFunctionData("decimals", []) },
+    ...found.flatMap((pair) => [
+      { to: pair, data: pairIface.encodeFunctionData("token0", []) },
+      { to: pair, data: pairIface.encodeFunctionData("getReserves", []) },
+    ]),
+  ]);
+  if (!detail[0]?.success) return null;
+  const decimals = Number(liqPairIface.decodeFunctionResult("decimals", detail[0].data)[0]);
+  let best = null;
+  found.forEach((pair, i) => {
+    const t0 = detail[1 + i * 2];
+    const rs = detail[2 + i * 2];
+    if (!t0?.success || !rs?.success) return;
+    const token0 = pairIface.decodeFunctionResult("token0", t0.data)[0];
+    const reserves = pairIface.decodeFunctionResult("getReserves", rs.data);
+    const is0 = token0.toLowerCase() === token.toLowerCase();
+    const tokenRes = BigInt(is0 ? reserves[0] : reserves[1]);
+    const wpolRes = BigInt(is0 ? reserves[1] : reserves[0]);
+    if (tokenRes === 0n || wpolRes < 100n * 10n ** 18n) return;
+    if (!best || wpolRes > best.wpolRes) best = { tokenRes, wpolRes };
+  });
+  if (!best) return null;
+  const perToken = (Number(best.wpolRes) / 1e18) / (Number(best.tokenRes) / 10 ** decimals);
+  return { price: perToken * wpolPrice, liquidity: 2 * (Number(best.wpolRes) / 1e18) * wpolPrice };
+}
+
 function showTab(name) {
-  for (const tab of ["swap", "liq", "stake", "board"]) {
+  for (const tab of ["swap", "liq", "stake", "board", "profile"]) {
     const button = $(`tab-${tab}`);
     const on = tab === name;
     button.classList.toggle("active", on);
@@ -2438,6 +2487,8 @@ function showTab(name) {
   $("pane-liq").hidden = name !== "liq";
   $("pane-stake").hidden = name !== "stake";
   $("pane-board").hidden = name !== "board";
+  $("pane-profile").hidden = name !== "profile";
+  if (name === "profile") loadProfile().catch(() => {});
   if (name === "liq") {
     paintPoolHint();
     loadPositions();
@@ -2527,6 +2578,8 @@ async function connect(kind) {
       refreshHoldings({ force: true }).catch(() => {});
       loadStake();
       loadPositions();
+      profileAccountChanged();
+      if (!$("pane-profile").hidden) loadProfile({ force: true }).catch(() => {});
     });
     injected.on?.("chainChanged", (hex) => {
       state.chainId = parseInt(hex, 16);
@@ -2534,6 +2587,8 @@ async function connect(kind) {
       refreshHoldings({ force: true }).catch(() => {});
     });
   }
+  profileAccountChanged();
+  if (!$("pane-profile").hidden) loadProfile({ force: true }).catch(() => {});
   await loadStake();
   await loadPositions();
 }
@@ -2548,6 +2603,8 @@ function disconnect() {
   clearHoldings();
   loadStake();
   loadPositions();
+  profileAccountChanged();
+  if (!$("pane-profile").hidden) loadProfile({ force: true }).catch(() => {});
   $("walletDrop").hidden = true;
   setTimeout(() => { state.leaving = false; }, 400);
 }
@@ -2812,6 +2869,25 @@ function boot() {
     $(id).addEventListener("click", () => { connect($(id).dataset.wallet).catch((err) => log("swapLog", err.message || "Connect failed", "err")); });
   }
   $("disconnectBtn").addEventListener("click", disconnect);
+  const profileFromHash = initProfile({
+    state,
+    MULTICALL,
+    STAKING,
+    REWARDS,
+    BZB,
+    LP_NFT_MANAGERS,
+    tokens: () => POLYGON_TOKENS,
+    multicall,
+    multicallChunked,
+    callFrom,
+    loadBlazarV2Positions,
+    loadExternalV2Positions,
+    loadNftPositions,
+    reservePrice,
+    wpolUsd,
+    showTab,
+  });
+  if (profileFromHash) showTab("profile");
   announcedWallets();
   stampInitialChart();
   loadChart();
