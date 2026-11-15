@@ -72,6 +72,10 @@
     .pos-slide{display:flex;align-items:center;gap:10px;margin:10px 0}
     .pos-slide input[type=range]{flex:1;accent-color:#3ee0ff}
     .pos-slide b{min-width:42px;text-align:right}
+    .pos-venue{display:inline-block;margin-left:8px;font-size:11px;font-weight:600;color:var(--cyan);letter-spacing:.02em;vertical-align:middle}
+    .pos-in{color:var(--cyan)}
+    .pos-out{color:#ffb15e}
+    .pos-manage{display:inline-block;margin-top:8px;color:var(--cyan);font-size:13px;font-weight:600}
     @media(max-width:900px){
       header{display:flex;flex-wrap:wrap}
       .head-links{gap:6px}
@@ -199,6 +203,7 @@
 
       <div class="panel card pane" id="pane-liq" hidden>
         <h3>Liquidity</h3>
+        <p class="chart-note">This wallet's LP positions on BlazarSwap, QuickSwap, Uniswap, Sushi, and ApeSwap. Add and remove below are for BlazarSwap pools. Other venues open the venue's own manage page.</p>
         <p class="status" id="liqStatus">POL / BZB on the Blazar factory. POL wraps to WPOL in the deposit.</p>
         <div id="posList"></div>
         <p class="status" id="posStatus"></p>
@@ -265,6 +270,6 @@
     })();
   </script>
   <script src="js/music.js?v=snd1"></script>
-  <script type="module" src="js/desk.js?v=desk21"></script>
+  <script type="module" src="js/desk.js?v=desk22"></script>
 </body>
 </html>

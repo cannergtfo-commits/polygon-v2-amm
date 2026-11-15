@@ -40,7 +40,7 @@ import {
   wrapDirection,
   wrapTx,
   wrapperOnSpend,
-} from "./desk-core.mjs?v=desk21";
+} from "./desk-core.mjs?v=desk22";
 import { POLYGON_TOKENS } from "./polygon-tokens.mjs?v=desk18";
 import { POLYPUMP_LIST_URL, mergeTokenList } from "./token-lists.mjs?v=desk18";
 import {
@@ -55,6 +55,20 @@ import {
   geckoTokenUrl,
   liquidityLabel,
 } from "./chart-pool.mjs?v=desk19";
+import {
+  LP_NFT_MANAGERS,
+  LP_V2_FACTORIES,
+  NO_ROUTE_VENUES,
+  amountsForLiquidity,
+  countLabel,
+  feeLabel,
+  inRange,
+  isOpenPosition,
+  manageUrl,
+  rangeLabel,
+  v2CandidateQueries,
+  v2ShareAndAmounts,
+} from "./lp-positions.mjs?v=desk22";
 
 const $ = (id) => document.getElementById(id);
 const ethers = window.ethers;
@@ -645,7 +659,7 @@ async function refreshQuote() {
       ? "1:1. Swap sends the wrap or unwrap directly."
       : quote.best
         ? "Quote is live for 20 seconds. Swap asks the wallet only after a simulation."
-        : `No ${quote.sell.symbol} → ${quote.buy.symbol} pool on Blazar, QuickSwap, Sushi, Ape, Uniswap v3, or QuickSwap v3.`);
+        : `No ${quote.sell.symbol} → ${quote.buy.symbol} pool on ${NO_ROUTE_VENUES}.`);
     log("swapLog", "");
   } catch (err) {
     if (gen !== state.quoteGen) return;
@@ -1064,7 +1078,7 @@ async function doSwap() {
     if (!quote?.best) {
       const sell = quote?.sell?.symbol || selected("tokenIn")?.symbol || "token";
       const buy = quote?.buy?.symbol || selected("tokenOut")?.symbol || "token";
-      throw new Error(`No ${sell} → ${buy} pool on Blazar, QuickSwap, Sushi, Ape, Uniswap v3, or QuickSwap v3.`);
+      throw new Error(`No ${sell} → ${buy} pool on ${NO_ROUTE_VENUES}.`);
     }
     const rpc = await provider();
     const code = await rpc.getCode(FEE_ROUTER);
@@ -1730,6 +1744,32 @@ const liqPairIface = new ethers.Interface([
   "function symbol() view returns (string)",
   "function decimals() view returns (uint8)",
 ]);
+const nftEnumIface = new ethers.Interface([
+  "function balanceOf(address) view returns (uint256)",
+  "function tokenOfOwnerByIndex(address,uint256) view returns (uint256)",
+]);
+const uniPositionIface = new ethers.Interface([
+  "function positions(uint256) view returns (uint96,address,address,address,uint24,int24,int24,uint128,uint256,uint256,uint128,uint128)",
+]);
+const algebraPositionIface = new ethers.Interface([
+  "function positions(uint256) view returns (uint96,address,address,address,int24,int24,uint128,uint256,uint256,uint128,uint128)",
+]);
+const algebra4PositionIface = new ethers.Interface([
+  "function positions(uint256) view returns (uint88,address,address,address,address,int24,int24,uint128,uint256,uint256,uint128,uint128)",
+]);
+const uniFactoryIface = new ethers.Interface([
+  "function getPool(address,address,uint24) view returns (address)",
+]);
+const algebraFactoryIface = new ethers.Interface([
+  "function poolByPair(address,address) view returns (address)",
+]);
+const uniPoolIface = new ethers.Interface([
+  "function slot0() view returns (uint160,int24,uint16,uint16,uint16,uint8,bool)",
+]);
+const algebraPoolIface = new ethers.Interface([
+  "function globalState() view returns (uint160,int24,uint16)",
+]);
+const V2_PAIR_CACHE_KEY = "blazar.v2pairs.v1";
 const metaCache = new Map();
 let liqQuoteLock = false;
 
@@ -1916,102 +1956,437 @@ async function addLiquidity() {
   }
 }
 
+function readV2PairCache() {
+  try {
+    const raw = localStorage.getItem(V2_PAIR_CACHE_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeV2PairCache(cache) {
+  try {
+    localStorage.setItem(V2_PAIR_CACHE_KEY, JSON.stringify(cache));
+  } catch { /* quota or private mode */ }
+}
+
+async function readV2HeldPairs(factory, pairs, account) {
+  if (!pairs.length) return [];
+  const balances = await multicall(pairs.map((pair) => ({
+    to: pair,
+    data: liqPairIface.encodeFunctionData("balanceOf", [account]),
+  })));
+  const held = [];
+  balances.forEach((row, index) => {
+    if (!row.success) return;
+    const balance = BigInt(liqPairIface.decodeFunctionResult("balanceOf", row.data)[0]);
+    if (balance > 0n) held.push({ pair: pairs[index], factory, balance });
+  });
+  return held;
+}
+
+async function decorateV2Positions(held, venueId, venue, removable) {
+  if (!held.length) return [];
+  const detail = await multicall(held.flatMap((item) => [
+    { to: item.pair, data: liqPairIface.encodeFunctionData("token0", []) },
+    { to: item.pair, data: liqPairIface.encodeFunctionData("token1", []) },
+    { to: item.pair, data: liqPairIface.encodeFunctionData("getReserves", []) },
+    { to: item.pair, data: liqPairIface.encodeFunctionData("totalSupply", []) },
+  ]));
+  const rows = [];
+  for (let i = 0; i < held.length; i++) {
+    const token0Row = detail[i * 4];
+    const token1Row = detail[i * 4 + 1];
+    const reserveRow = detail[i * 4 + 2];
+    const supplyRow = detail[i * 4 + 3];
+    if (!token0Row?.success || !token1Row?.success || !reserveRow?.success || !supplyRow?.success) continue;
+    const token0 = liqPairIface.decodeFunctionResult("token0", token0Row.data)[0];
+    const token1 = liqPairIface.decodeFunctionResult("token1", token1Row.data)[0];
+    const reserves = liqPairIface.decodeFunctionResult("getReserves", reserveRow.data);
+    const supply = BigInt(liqPairIface.decodeFunctionResult("totalSupply", supplyRow.data)[0]);
+    const [meta0, meta1] = await Promise.all([tokenMeta(token0), tokenMeta(token1)]);
+    const share = v2ShareAndAmounts(held[i].balance, reserves[0], reserves[1], supply);
+    rows.push({
+      kind: "v2",
+      venueId,
+      venue,
+      removable,
+      pair: held[i].pair,
+      token0,
+      token1,
+      meta0,
+      meta1,
+      balance: held[i].balance,
+      supply,
+      reserve0: BigInt(reserves[0]),
+      reserve1: BigInt(reserves[1]),
+      amount0: share.amount0,
+      amount1: share.amount1,
+      shareBps: share.shareBps,
+      manageUrl: manageUrl(venueId, { token0, token1, pair: held[i].pair }),
+    });
+  }
+  return rows;
+}
+
+async function loadBlazarV2Positions(account) {
+  const factory = CFG.factory;
+  const lengthRaw = await call(factory, liqFactoryIface.encodeFunctionData("allPairsLength", []));
+  const count = Number(liqFactoryIface.decodeFunctionResult("allPairsLength", lengthRaw)[0]);
+  if (!count) return { rows: [], closed: 0 };
+  const pairRows = await multicall(Array.from({ length: count }, (_, i) => ({
+    to: factory,
+    data: liqFactoryIface.encodeFunctionData("allPairs", [i]),
+  })));
+  const pairs = pairRows.map((row) => (row.success ? liqFactoryIface.decodeFunctionResult("allPairs", row.data)[0] : null)).filter(Boolean);
+  const held = await readV2HeldPairs(factory, pairs, account);
+  return decorateV2Positions(held, "blazar", "BlazarSwap", true);
+}
+
+async function loadExternalV2Positions(account) {
+  const tokens = POLYGON_TOKENS.map((token) => poolToken(token.address));
+  const queries = v2CandidateQueries(tokens);
+  const cache = readV2PairCache();
+  const now = Date.now();
+  const ZERO_TTL = 6 * 60 * 60 * 1000;
+  const pending = [];
+  const known = [];
+  for (const query of queries) {
+    const hit = cache[query.key];
+    if (hit?.pair && hit.pair !== ethers.ZeroAddress) {
+      known.push(query);
+      query.pair = hit.pair;
+      continue;
+    }
+    if (hit?.zero && now - (hit.ts || 0) < ZERO_TTL) continue;
+    pending.push(query);
+  }
+  for (let i = 0; i < pending.length; i += 80) {
+    const slice = pending.slice(i, i + 80);
+    const rows = await multicall(slice.map((query) => ({
+      to: query.factory,
+      data: liqFactoryIface.encodeFunctionData("getPair", [query.a, query.b]),
+    })));
+    rows.forEach((row, index) => {
+      if (!row.success || row.data === "0x") {
+        cache[slice[index].key] = { zero: true, ts: now };
+        return;
+      }
+      const pair = liqFactoryIface.decodeFunctionResult("getPair", row.data)[0];
+      if (!pair || pair === ethers.ZeroAddress) {
+        cache[slice[index].key] = { zero: true, ts: now };
+        return;
+      }
+      slice[index].pair = pair;
+      cache[slice[index].key] = { pair };
+      known.push(slice[index]);
+    });
+  }
+  writeV2PairCache(cache);
+  const byFactory = new Map();
+  for (const query of known) {
+    if (!query.pair) continue;
+    const key = `${query.venueId}:${query.pair.toLowerCase()}`;
+    if (byFactory.has(key)) continue;
+    byFactory.set(key, query);
+  }
+  const rows = [];
+  const groups = new Map();
+  for (const query of byFactory.values()) {
+    const list = groups.get(query.venueId) || [];
+    list.push(query);
+    groups.set(query.venueId, list);
+  }
+  for (const [venueId, list] of groups) {
+    const held = await readV2HeldPairs(list[0].factory, list.map((item) => item.pair), account);
+    const venue = list[0].venue;
+    rows.push(...await decorateV2Positions(held, venueId, venue, false));
+  }
+  return rows;
+}
+
+function decodeNftPosition(kind, data) {
+  if (kind === "uni-v3") {
+    const row = uniPositionIface.decodeFunctionResult("positions", data);
+    return {
+      token0: row[2],
+      token1: row[3],
+      fee: Number(row[4]),
+      tickLower: Number(row[5]),
+      tickUpper: Number(row[6]),
+      liquidity: BigInt(row[7]),
+      owed0: BigInt(row[10]),
+      owed1: BigInt(row[11]),
+    };
+  }
+  if (kind === "algebra4") {
+    const row = algebra4PositionIface.decodeFunctionResult("positions", data);
+    return {
+      token0: row[2],
+      token1: row[3],
+      deployer: row[4],
+      tickLower: Number(row[5]),
+      tickUpper: Number(row[6]),
+      liquidity: BigInt(row[7]),
+      owed0: BigInt(row[10]),
+      owed1: BigInt(row[11]),
+    };
+  }
+  const row = algebraPositionIface.decodeFunctionResult("positions", data);
+  return {
+    token0: row[2],
+    token1: row[3],
+    tickLower: Number(row[4]),
+    tickUpper: Number(row[5]),
+    liquidity: BigInt(row[6]),
+    owed0: BigInt(row[9]),
+    owed1: BigInt(row[10]),
+  };
+}
+
+async function loadNftPositions(account, manager) {
+  const rawCount = await call(manager.manager, nftEnumIface.encodeFunctionData("balanceOf", [account]));
+  const count = Number(nftEnumIface.decodeFunctionResult("balanceOf", rawCount)[0]);
+  if (!count) return [];
+  const idRows = await multicall(Array.from({ length: count }, (_, i) => ({
+    to: manager.manager,
+    data: nftEnumIface.encodeFunctionData("tokenOfOwnerByIndex", [account, i]),
+  })));
+  const tokenIds = idRows.map((row) => (row.success ? nftEnumIface.decodeFunctionResult("tokenOfOwnerByIndex", row.data)[0] : null)).filter((id) => id != null);
+  const iface = manager.kind === "uni-v3" ? uniPositionIface : manager.kind === "algebra4" ? algebra4PositionIface : algebraPositionIface;
+  const posRows = await multicall(tokenIds.map((tokenId) => ({
+    to: manager.manager,
+    data: iface.encodeFunctionData("positions", [tokenId]),
+  })));
+  const parsed = [];
+  let closed = 0;
+  tokenIds.forEach((tokenId, index) => {
+    if (!posRows[index]?.success) return;
+    const position = decodeNftPosition(manager.kind, posRows[index].data);
+    if (!isOpenPosition(position.liquidity, position.owed0, position.owed1)) {
+      closed += 1;
+      return;
+    }
+    parsed.push({ tokenId, ...position });
+  });
+  if (!parsed.length) return { rows: [], closed };
+  const poolCalls = parsed.map((position) => {
+    if (manager.kind === "uni-v3") {
+      return {
+        to: manager.factory,
+        data: uniFactoryIface.encodeFunctionData("getPool", [position.token0, position.token1, position.fee]),
+      };
+    }
+    return {
+      to: manager.factory,
+      data: algebraFactoryIface.encodeFunctionData("poolByPair", [position.token0, position.token1]),
+    };
+  });
+  const poolRows = await multicall(poolCalls);
+  parsed.forEach((position, index) => {
+    if (!poolRows[index]?.success) return;
+    const decoder = manager.kind === "uni-v3" ? uniFactoryIface : algebraFactoryIface;
+    const name = manager.kind === "uni-v3" ? "getPool" : "poolByPair";
+    const pool = decoder.decodeFunctionResult(name, poolRows[index].data)[0];
+    position.pool = pool && pool !== ethers.ZeroAddress ? pool : null;
+  });
+  const stateCalls = parsed.flatMap((position) => {
+    if (!position.pool) return [];
+    if (manager.kind === "uni-v3") return [{ to: position.pool, data: uniPoolIface.encodeFunctionData("slot0", []), tag: position }];
+    return [{ to: position.pool, data: algebraPoolIface.encodeFunctionData("globalState", []), tag: position }];
+  });
+  if (stateCalls.length) {
+    const stateRows = await multicall(stateCalls.map(({ to, data }) => ({ to, data })));
+    stateRows.forEach((row, index) => {
+      const position = stateCalls[index].tag;
+      if (!row.success) return;
+      if (manager.kind === "uni-v3") {
+        const slot = uniPoolIface.decodeFunctionResult("slot0", row.data);
+        position.sqrtPriceX96 = BigInt(slot[0]);
+        position.tick = Number(slot[1]);
+      } else {
+        const slot = algebraPoolIface.decodeFunctionResult("globalState", row.data);
+        position.sqrtPriceX96 = BigInt(slot[0]);
+        position.tick = Number(slot[1]);
+        if (position.fee == null && slot[2] != null) position.fee = Number(slot[2]);
+      }
+    });
+  }
+  const rows = [];
+  for (const position of parsed) {
+    const [meta0, meta1] = await Promise.all([tokenMeta(position.token0), tokenMeta(position.token1)]);
+    const amounts = position.sqrtPriceX96
+      ? amountsForLiquidity(position.sqrtPriceX96, position.tickLower, position.tickUpper, position.liquidity)
+      : { amount0: 0n, amount1: 0n };
+    const inside = position.tick != null ? inRange(position.tick, position.tickLower, position.tickUpper) : false;
+    rows.push({
+      kind: "cl",
+      venueId: manager.id,
+      venue: manager.name,
+      removable: false,
+      tokenId: position.tokenId,
+      pool: position.pool,
+      token0: position.token0,
+      token1: position.token1,
+      meta0,
+      meta1,
+      amount0: amounts.amount0,
+      amount1: amounts.amount1,
+      owed0: position.owed0,
+      owed1: position.owed1,
+      feeLabel: position.fee != null ? feeLabel(position.fee) : "",
+      tickLower: position.tickLower,
+      tickUpper: position.tickUpper,
+      tick: position.tick,
+      inRange: inside,
+      rangeLabel: position.tick != null
+        ? rangeLabel({ tickLower: position.tickLower, tickUpper: position.tickUpper, tick: position.tick, inRange: inside })
+        : "",
+      manageUrl: manageUrl(manager.id, { tokenId: position.tokenId, pool: position.pool, token0: position.token0, token1: position.token1 }),
+    });
+  }
+  return { rows, closed };
+}
+
+function sortPositions(rows) {
+  return rows.slice().sort((a, b) => {
+    if (a.removable !== b.removable) return a.removable ? -1 : 1;
+    const venue = String(a.venue).localeCompare(String(b.venue));
+    if (venue) return venue;
+    const pairA = `${a.meta0?.symbol || ""}/${a.meta1?.symbol || ""}`;
+    const pairB = `${b.meta0?.symbol || ""}/${b.meta1?.symbol || ""}`;
+    return pairA.localeCompare(pairB);
+  });
+}
+
+function renderPosition(row) {
+  const card = document.createElement("article");
+  card.className = "pos-card";
+  const title = document.createElement("h4");
+  const name = document.createElement("span");
+  name.textContent = `${row.meta0.symbol} / ${row.meta1.symbol}`;
+  const venue = document.createElement("small");
+  venue.className = "pos-venue";
+  venue.textContent = row.feeLabel ? `${row.venue} · ${row.feeLabel}` : row.venue;
+  title.append(name, venue);
+  const meta = document.createElement("p");
+  meta.className = "pos-meta";
+  if (row.kind === "v2") {
+    meta.textContent = `${formatUnits(row.balance, 18, 6)} LP · ${row.shareBps.toFixed(2)}% of the pool · ${formatUnits(row.amount0, row.meta0.decimals, 6)} ${row.meta0.symbol} + ${formatUnits(row.amount1, row.meta1.decimals, 6)} ${row.meta1.symbol}`;
+  } else {
+    const bits = [
+      `≈ ${formatUnits(row.amount0, row.meta0.decimals, 6)} ${row.meta0.symbol} + ${formatUnits(row.amount1, row.meta1.decimals, 6)} ${row.meta1.symbol}`,
+    ];
+    if (row.tokenId != null) bits.unshift(`#${row.tokenId}`);
+    meta.textContent = bits.join(" · ");
+  }
+  card.append(title, meta);
+  if (row.kind === "cl" && row.rangeLabel) {
+    const range = document.createElement("p");
+    range.className = row.inRange ? "pos-meta pos-in" : "pos-meta pos-out";
+    range.textContent = row.rangeLabel;
+    card.append(range);
+  }
+  if (row.kind === "cl" && (row.owed0 > 0n || row.owed1 > 0n)) {
+    const fees = document.createElement("p");
+    fees.className = "pos-meta";
+    fees.textContent = `Uncollected fees (last update): ${formatUnits(row.owed0, row.meta0.decimals, 6)} ${row.meta0.symbol} + ${formatUnits(row.owed1, row.meta1.decimals, 6)} ${row.meta1.symbol}`;
+    card.append(fees);
+  }
+  if (row.removable) {
+    const out = document.createElement("p");
+    out.className = "pos-meta";
+    const slide = document.createElement("div");
+    slide.className = "pos-slide";
+    const range = document.createElement("input");
+    range.type = "range";
+    range.min = "0";
+    range.max = "100";
+    range.value = "100";
+    const pct = document.createElement("b");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "ghost";
+    button.textContent = "Remove";
+    const paintOut = () => {
+      const take = row.balance * BigInt(range.value) / 100n;
+      const amount0 = row.supply === 0n ? 0n : take * row.reserve0 / row.supply;
+      const amount1 = row.supply === 0n ? 0n : take * row.reserve1 / row.supply;
+      pct.textContent = `${range.value}%`;
+      out.textContent = `Removes about ${formatUnits(amount0, row.meta0.decimals, 6)} ${row.meta0.symbol} and ${formatUnits(amount1, row.meta1.decimals, 6)} ${row.meta1.symbol}.`;
+    };
+    range.addEventListener("input", paintOut);
+    button.addEventListener("click", () => {
+      removePosition(row.pair, row.balance, row.token0, row.token1, row.reserve0, row.reserve1, row.supply, Number(range.value)).catch((err) => {
+        log("liqLog", err.message || "Remove failed", "err");
+      });
+    });
+    slide.append(range, pct);
+    card.append(slide, out, button);
+    paintOut();
+  } else if (row.manageUrl) {
+    const link = document.createElement("a");
+    link.className = "pos-manage";
+    link.href = row.manageUrl;
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.textContent = `Manage on ${row.venue}`;
+    card.append(link);
+  }
+  return card;
+}
+
+function paintPositionList(rows) {
+  const box = $("posList");
+  if (!box) return;
+  box.replaceChildren();
+  for (const row of sortPositions(rows)) box.appendChild(renderPosition(row));
+  setStatus("posStatus", countLabel(rows));
+}
+
 async function loadPositions() {
   const box = $("posList");
   if (!box) return;
+  const gen = (state.posGen = (state.posGen || 0) + 1);
   box.replaceChildren();
   if (!state.account) {
     setStatus("posStatus", "");
     return;
   }
-  setStatus("posStatus", "");
+  const account = state.account;
+  setStatus("posStatus", "Reading LP positions…");
+  const collected = [];
+  const stale = () => gen !== state.posGen || state.account !== account;
+  const addRows = (rows) => {
+    if (stale()) return false;
+    collected.push(...rows);
+    paintPositionList(collected);
+    return true;
+  };
   try {
-    const rpc = await provider();
-    const lengthRaw = await rpc.call({ to: CFG.factory, data: liqFactoryIface.encodeFunctionData("allPairsLength", []) });
-    const count = Number(liqFactoryIface.decodeFunctionResult("allPairsLength", lengthRaw)[0]);
-    if (!count) {
-      setStatus("posStatus", "No Blazar pools yet.");
-      return;
+    const first = await Promise.all([
+      loadBlazarV2Positions(account).then((rows) => ({ rows, closed: 0 })),
+      ...LP_NFT_MANAGERS.map((manager) => loadNftPositions(account, manager)),
+    ]);
+    const hidden = first.reduce((sum, item) => sum + (item.closed || 0), 0);
+    if (!addRows(first.flatMap((item) => item.rows))) return;
+    const suffix = hidden ? ` · ${hidden} closed NFT position${hidden === 1 ? "" : "s"} hidden` : "";
+    setStatus("posStatus", collected.length ? `${countLabel(collected)} · looking for V2 LP tokens…` : `Looking for V2 LP tokens…${suffix}`);
+    try {
+      const v2 = await loadExternalV2Positions(account);
+      if (!addRows(v2)) return;
+    } catch (err) {
+      if (stale()) return;
+      log("liqLog", err.shortMessage || err.message || "Could not finish the V2 LP scan.", "err");
     }
-    const pairRows = await multicall(Array.from({ length: count }, (_, i) => ({
-      to: CFG.factory,
-      data: liqFactoryIface.encodeFunctionData("allPairs", [i]),
-    })));
-    const pairs = pairRows.map((row) => (row.success ? liqFactoryIface.decodeFunctionResult("allPairs", row.data)[0] : null)).filter(Boolean);
-    const balances = await multicall(pairs.map((pair) => ({
-      to: pair,
-      data: liqPairIface.encodeFunctionData("balanceOf", [state.account]),
-    })));
-    const held = [];
-    balances.forEach((row, index) => {
-      if (!row.success) return;
-      const balance = BigInt(liqPairIface.decodeFunctionResult("balanceOf", row.data)[0]);
-      if (balance > 0n) held.push({ pair: pairs[index], balance });
-    });
-    if (!held.length) {
-      setStatus("posStatus", "No liquidity in this wallet yet.");
-      return;
-    }
-    const detail = await multicall(held.flatMap((item) => [
-      { to: item.pair, data: liqPairIface.encodeFunctionData("token0", []) },
-      { to: item.pair, data: liqPairIface.encodeFunctionData("token1", []) },
-      { to: item.pair, data: liqPairIface.encodeFunctionData("getReserves", []) },
-      { to: item.pair, data: liqPairIface.encodeFunctionData("totalSupply", []) },
-    ]));
-    for (let i = 0; i < held.length; i++) {
-      const token0Row = detail[i * 4];
-      const token1Row = detail[i * 4 + 1];
-      const reserveRow = detail[i * 4 + 2];
-      const supplyRow = detail[i * 4 + 3];
-      if (!token0Row?.success || !token1Row?.success || !reserveRow?.success || !supplyRow?.success) continue;
-      const token0 = liqPairIface.decodeFunctionResult("token0", token0Row.data)[0];
-      const token1 = liqPairIface.decodeFunctionResult("token1", token1Row.data)[0];
-      const reserves = liqPairIface.decodeFunctionResult("getReserves", reserveRow.data);
-      const supply = BigInt(liqPairIface.decodeFunctionResult("totalSupply", supplyRow.data)[0]);
-      const [meta0, meta1] = await Promise.all([tokenMeta(token0), tokenMeta(token1)]);
-      const card = document.createElement("article");
-      card.className = "pos-card";
-      const title = document.createElement("h4");
-      title.textContent = `${meta0.symbol} / ${meta1.symbol}`;
-      const meta = document.createElement("p");
-      meta.className = "pos-meta";
-      const out = document.createElement("p");
-      out.className = "pos-meta";
-      const slide = document.createElement("div");
-      slide.className = "pos-slide";
-      const range = document.createElement("input");
-      range.type = "range";
-      range.min = "0";
-      range.max = "100";
-      range.value = "100";
-      const pct = document.createElement("b");
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "ghost";
-      button.textContent = "Remove";
-      const share = supply === 0n ? 0 : Number((held[i].balance * 10_000n) / supply) / 100;
-      meta.textContent = `${formatUnits(held[i].balance, 18, 6)} LP · ${share.toFixed(2)}% of the pool`;
-      const paintOut = () => {
-        const take = held[i].balance * BigInt(range.value) / 100n;
-        const amount0 = supply === 0n ? 0n : take * BigInt(reserves[0]) / supply;
-        const amount1 = supply === 0n ? 0n : take * BigInt(reserves[1]) / supply;
-        pct.textContent = `${range.value}%`;
-        out.textContent = `Removes about ${formatUnits(amount0, meta0.decimals, 6)} ${meta0.symbol} and ${formatUnits(amount1, meta1.decimals, 6)} ${meta1.symbol}.`;
-      };
-      range.addEventListener("input", paintOut);
-      button.addEventListener("click", () => {
-        removePosition(held[i].pair, held[i].balance, token0, token1, BigInt(reserves[0]), BigInt(reserves[1]), supply, Number(range.value)).catch((err) => {
-          log("liqLog", err.message || "Remove failed", "err");
-        });
-      });
-      slide.append(range, pct);
-      card.append(title, meta, slide, out, button);
-      box.appendChild(card);
-      paintOut();
-    }
-    setStatus("posStatus", "");
+    if (stale()) return;
+    const empty = "No liquidity in this wallet yet.";
+    setStatus("posStatus", `${collected.length ? countLabel(collected) : empty}${suffix}`);
   } catch (err) {
-    setStatus("posStatus", "Could not read positions.");
+    if (stale()) return;
+    if (!collected.length) setStatus("posStatus", "Could not read positions.");
     log("liqLog", err.shortMessage || err.message || "Position read failed", "err");
   }
 }
