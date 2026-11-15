@@ -40,7 +40,7 @@ import {
   wrapDirection,
   wrapTx,
   wrapperOnSpend,
-} from "./desk-core.mjs?v=desk20";
+} from "./desk-core.mjs?v=desk21";
 import { POLYGON_TOKENS } from "./polygon-tokens.mjs?v=desk18";
 import { POLYPUMP_LIST_URL, mergeTokenList } from "./token-lists.mjs?v=desk18";
 import {
@@ -106,6 +106,12 @@ const uniRouterIface = new ethers.Interface([
 ]);
 const algebraRouterIface = new ethers.Interface([
   "function exactInputSingle((address tokenIn,address tokenOut,address recipient,uint256 deadline,uint256 amountIn,uint256 amountOutMinimum,uint160 limitSqrtPrice)) payable returns (uint256)",
+]);
+const algebra4QuoterIface = new ethers.Interface([
+  "function quoteExactInputSingle(address,address,address,uint256,uint160) returns (uint256)",
+]);
+const algebra4RouterIface = new ethers.Interface([
+  "function exactInputSingle((address tokenIn,address tokenOut,address deployer,address recipient,uint256 deadline,uint256 amountIn,uint256 amountOutMinimum,uint160 limitSqrtPrice)) payable returns (uint256)",
 ]);
 const swapIface = new ethers.Interface([
   "function swap(address tokenIn,address tokenOut,uint256 amountIn,uint256 minAmountOut,address recipient,uint256 deadline,bool unwrapNative,(uint8 kind,address target,address spendToken,address v2TokenOut,uint16 bps,bool useBalance,uint256 minBuy,uint256 amountOffset,uint256 minOffset,bytes data)[] calls,address[] sweep) payable returns (uint256 amountOut)",
@@ -307,6 +313,22 @@ function encodeTarget(plan) {
     }
     return data;
   }
+  if (plan.args.deployer !== undefined) {
+    const data = algebra4RouterIface.encodeFunctionData("exactInputSingle", [[
+      plan.args.tokenIn,
+      plan.args.tokenOut,
+      plan.args.deployer,
+      plan.args.recipient,
+      plan.args.deadline,
+      plan.args.amountIn,
+      plan.args.amountOutMinimum,
+      plan.args.limitSqrtPrice,
+    ]]);
+    if (word(data, plan.amountOffset) !== 0n || word(data, plan.minOffset) !== plan.args.amountOutMinimum) {
+      throw new Error("Router calldata offsets do not match the reviewed adapter");
+    }
+    return data;
+  }
   const data = algebraRouterIface.encodeFunctionData("exactInputSingle", [[
     plan.args.tokenIn,
     plan.args.tokenOut,
@@ -423,6 +445,16 @@ async function quoteAlgebra(target, tokenIn, tokenOut, amountIn) {
   }
 }
 
+async function quoteAlgebra4(target, tokenIn, tokenOut, amountIn) {
+  try {
+    const data = algebra4QuoterIface.encodeFunctionData("quoteExactInputSingle", [tokenIn, tokenOut, ethers.ZeroAddress, amountIn, 0]);
+    const raw = await call(target.quoter, data);
+    return BigInt(algebra4QuoterIface.decodeFunctionResult("quoteExactInputSingle", raw)[0]);
+  } catch {
+    return 0n;
+  }
+}
+
 async function concentrated(targets, tokenIn, tokenOut, gross, unpaid, feeBps, useBalance) {
   const charged = wrapperOnSpend(gross, unpaid, true, feeBps);
   if (charged.net <= 0n) return [];
@@ -444,6 +476,14 @@ async function concentrated(targets, tokenIn, tokenOut, gross, unpaid, feeBps, u
         return pricedExternal({
           tokenIn, tokenOut, gross, unpaid, feeBps, quotedOut,
           venue: target.name, router: target.router, kind: "algebra", useBalance,
+        });
+      })());
+    } else if (target.kind === "algebra4") {
+      jobs.push((async () => {
+        const quotedOut = await quoteAlgebra4(target, tokenIn, tokenOut, charged.net);
+        return pricedExternal({
+          tokenIn, tokenOut, gross, unpaid, feeBps, quotedOut,
+          venue: target.name, router: target.router, kind: "algebra4", useBalance,
         });
       })());
     }
@@ -557,7 +597,7 @@ function paintQuote(quote) {
   if (!quote?.best) {
     const pair = quote?.sell && quote?.buy ? `${quote.sell.symbol} → ${quote.buy.symbol}` : "this pair";
     clearQuote(`No pool for ${pair}`);
-    $("routeDetail").textContent = `No ${pair} route on Blazar, QuickSwap, Sushi, Ape, Uniswap v3, or QuickSwap v3. ${coverage.discovery} ${coverage.notCovered}`;
+    $("routeDetail").textContent = `No ${pair} route on Blazar, QuickSwap, Sushi, Ape, Uniswap v3, QuickSwap v3, or QuickSwap v4. ${coverage.discovery} ${coverage.notCovered}`;
     return;
   }
   const steps = quote.best.steps;

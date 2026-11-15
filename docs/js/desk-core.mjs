@@ -59,6 +59,14 @@ export const VENUES = {
       quoter: "0xa15F0D7377B2A0C0c10db057f641beD21028FC89",
       factory: "0x411b0fAcC3489691f28ad58c47006AF5E3Ab3A28",
     },
+    {
+      id: "quickswap-v4",
+      name: "QuickSwap v4",
+      kind: "algebra4",
+      router: "0x96FeF39089380F4319e8eF01aA8338615C36f1BB",
+      quoter: "0x4666599D48E8C72B91a73f9aDE04eda17C5FDBa7",
+      factory: "0x134c1dBE4860A9cAaf89002574fFe814772D9904",
+    },
   ],
 };
 
@@ -93,7 +101,7 @@ export const TOKENS = [
 ];
 
 const COVERAGE = {
-  searched: "Allowlisted V2 factories (BlazarSwap, QuickSwap v2, SushiSwap, ApeSwap) and, only when the router allowlist includes them, Uniswap v3 and QuickSwap v3.",
+  searched: "Allowlisted V2 factories (BlazarSwap, QuickSwap v2, SushiSwap, ApeSwap) and, only when the router allowlist includes them, Uniswap v3, QuickSwap v3, and QuickSwap v4.",
   discovery: "Pools are the pairs among the tokens on this desk, including one- and two-hop routes through WPOL, BZB, USDC, USDC.e, USDT, WETH, and WBTC, plus a two-venue V2 split when it beats the best single pool.",
   notCovered: "Balancer, Curve, Uniswap v4, order books, and any router that is not on the fee-router allowlist are not quoted and cannot be called. This is not every pool on Polygon.",
 };
@@ -395,7 +403,7 @@ export function routeLabel(steps) {
   return steps
     .map((step) => {
       if (step.kind === "v3" && step.feeTier) return `${step.venue} ${(step.feeTier / 10_000).toFixed(2)}%`;
-      if (step.kind === "algebra") return `${step.venue}`;
+      if (step.kind === "algebra" || step.kind === "algebra4") return `${step.venue}`;
       return step.venue;
     })
     .join(" → ");
@@ -518,6 +526,25 @@ export function targetPlan(step, feeRouter, deadline, hopMin) {
       },
       amountOffset: 132n,
       minOffset: 164n,
+    };
+  }
+  if (step.kind === "algebra4") {
+    return {
+      kind: 0,
+      target: step.router,
+      functionName: "exactInputSingle",
+      args: {
+        tokenIn: poolToken(step.tokenIn),
+        tokenOut: poolToken(step.tokenOut),
+        deployer: ZERO,
+        recipient: feeRouter,
+        deadline,
+        amountIn: 0n,
+        amountOutMinimum: hopMin,
+        limitSqrtPrice: 0n,
+      },
+      amountOffset: 164n,
+      minOffset: 196n,
     };
   }
   throw new Error("Unsupported router adapter");

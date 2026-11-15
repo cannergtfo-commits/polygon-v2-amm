@@ -121,6 +121,30 @@ const algebraAbi = [
   },
 ] as const;
 
+const algebra4Abi = [
+  {
+    type: "function",
+    name: "exactInputSingle",
+    stateMutability: "payable",
+    inputs: [
+      {
+        type: "tuple",
+        components: [
+          { name: "tokenIn", type: "address" },
+          { name: "tokenOut", type: "address" },
+          { name: "deployer", type: "address" },
+          { name: "recipient", type: "address" },
+          { name: "deadline", type: "uint256" },
+          { name: "amountIn", type: "uint256" },
+          { name: "amountOutMinimum", type: "uint256" },
+          { name: "limitSqrtPrice", type: "uint160" },
+        ],
+      },
+    ],
+    outputs: [{ type: "uint256" }],
+  },
+] as const;
+
 function wordAt(data: `0x${string}`, offset: number) {
   const start = 2 + offset * 2;
   return BigInt(`0x${data.slice(start, start + 64)}`);
@@ -295,6 +319,37 @@ const algebraData = encodeFunctionData({
 assert.equal(wordAt(algebraData, 132), 0n);
 assert.equal(wordAt(algebraData, 164), hopMin);
 assert.equal(algebraPlan.plan.args.recipient.toLowerCase(), FEE_ROUTER.toLowerCase());
+
+const algebra4Plan = buildCalls(
+  [
+    {
+      kind: "algebra4",
+      venue: "QuickSwap v4",
+      router: "0x96FeF39089380F4319e8eF01aA8338615C36f1BB",
+      feeTier: null,
+      tokenIn: WPOL,
+      tokenOut: USDC,
+      bps: 10_000,
+      useBalance: true,
+      quotedOut: 1000n,
+      wrapperFee: 0n,
+    },
+  ],
+  FEE_ROUTER,
+  1_090n,
+  50,
+)[0];
+const algebra4Data = encodeFunctionData({
+  abi: algebra4Abi,
+  functionName: "exactInputSingle",
+  args: [algebra4Plan.plan.args],
+});
+assert.equal(algebra4Plan.amountOffset, 164n);
+assert.equal(algebra4Plan.minOffset, 196n);
+assert.equal(wordAt(algebra4Data, 164), 0n);
+assert.equal(wordAt(algebra4Data, 196), hopMin);
+assert.equal(algebra4Plan.plan.args.deployer.toLowerCase(), ZERO.toLowerCase());
+assert.equal(algebra4Plan.plan.args.recipient.toLowerCase(), FEE_ROUTER.toLowerCase());
 
 assert.equal(quoteFresh(1_000, 21_000), true);
 assert.equal(quoteFresh(1_000, 21_001), false);
