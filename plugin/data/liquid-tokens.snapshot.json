@@ -1,0 +1,3872 @@
+{
+ "block": 97443680,
+ "updatedAt": "2026-11-16T23:16:31.370Z",
+ "minTvlUsd": 10000,
+ "note": "Snapshot for reference only; run npm run refresh for live data.",
+ "tokens": [
+  {
+   "address": "0xeb51d9a39ad5eef215dc0bf39a8821ff804a0f01",
+   "symbol": "LGNS",
+   "name": "Longinus",
+   "decimals": 9,
+   "priceUsd": 0.1632685300686078,
+   "depthUsd": 15592430,
+   "hub": "DAI",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x6a92b1e99de09f71cd96bc91f934826d96b8b26e",
+   "symbol": "AS",
+   "name": "AS Token",
+   "decimals": 9,
+   "priceUsd": 0.13029329512352744,
+   "depthUsd": 5620819,
+   "hub": "DAI",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x27ab6e82f3458edbc0703db2756391b899ce6324",
+   "symbol": "RNT",
+   "name": "Reental Utility Token",
+   "decimals": 18,
+   "priceUsd": 0.3567086935160057,
+   "depthUsd": 4871108,
+   "hub": "USDT",
+   "venues": [
+    "sushi"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x7ee08c0fa1cb2a0ca40f309427d104a0d176eeb9",
+   "symbol": "FUN",
+   "name": "FunPay",
+   "decimals": 18,
+   "priceUsd": 3.3538059684720944,
+   "depthUsd": 3550089,
+   "hub": "DAI",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xb9bd3711ce82cd8f04fa4277d41b544db29294f0",
+   "symbol": "DLGNS",
+   "name": "DRAMA LGNS",
+   "decimals": 18,
+   "priceUsd": 0.1999804,
+   "depthUsd": 1999804,
+   "hub": "DAI",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x2791bca1f2de4661ed88a30c99a7a9449aa84174",
+   "symbol": "USDC.e",
+   "name": "USDC.e",
+   "decimals": 6,
+   "priceUsd": 0.99978217,
+   "depthUsd": 1953010,
+   "hub": "WETH",
+   "venues": [
+    "quickswap-v2",
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0011
+  },
+  {
+   "address": "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619",
+   "symbol": "WETH",
+   "name": "WETH",
+   "decimals": 18,
+   "priceUsd": 1828.89676376,
+   "depthUsd": 1950241,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2",
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xee997788f625809332baabb3110bcf1ba7400824",
+   "symbol": "FELY",
+   "name": "Felysyum",
+   "decimals": 18,
+   "priceUsd": 0.4529152804109538,
+   "depthUsd": 1331152,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x69ea5d1eca5c3893d0cdb2d1940d1d1ee2480c13",
+   "symbol": "FUN",
+   "name": "FunPay",
+   "decimals": 18,
+   "priceUsd": 0.2942473132032885,
+   "depthUsd": 941694,
+   "hub": "DAI",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xb4e876f6c9d5ba104112d222083527b1dad17103",
+   "symbol": "VOLLAR",
+   "name": "VDS",
+   "decimals": 8,
+   "priceUsd": 0.2723004429388714,
+   "depthUsd": 930885,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x88548808840220390dd9e19eefafa442e8e75041",
+   "symbol": "Vollar",
+   "name": "VDDS",
+   "decimals": 8,
+   "priceUsd": 3.2076583134319154,
+   "depthUsd": 840675,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xf0f9d895aca5c8678f706fb8216fa22957685a13",
+   "symbol": "RVLT",
+   "name": "Revolt 2 Earn",
+   "decimals": 18,
+   "priceUsd": 6.433815473346668e-9,
+   "depthUsd": 746206,
+   "hub": "WETH",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xa3fa99a148fa48d14ed51d610c367c61876997f1",
+   "symbol": "miMATIC",
+   "name": "miMATIC",
+   "decimals": 18,
+   "priceUsd": 0.9948373064566356,
+   "depthUsd": 631452,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2",
+    "uniswap-v3",
+    "quickswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xc2132d05d31c914a87c6611c10748aeb04b58e8f",
+   "symbol": "USDT",
+   "name": "USDT",
+   "decimals": 6,
+   "priceUsd": 0.99908,
+   "depthUsd": 620974,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2",
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0026
+  },
+  {
+   "address": "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270",
+   "symbol": "WPOL",
+   "name": "WPOL",
+   "decimals": 18,
+   "priceUsd": 0.07950198,
+   "depthUsd": 541172,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2",
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0021
+  },
+  {
+   "address": "0x8f3cf7ad23cd3cadbd9735aff958023239c6a063",
+   "symbol": "DAI",
+   "name": "DAI",
+   "decimals": 18,
+   "priceUsd": 0.999902,
+   "depthUsd": 412408,
+   "hub": "USDT",
+   "venues": [
+    "quickswap-v2",
+    "quickswap-v3",
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0001
+  },
+  {
+   "address": "0x6966fec28ae7f598bd29c788def80f56ffa12de9",
+   "symbol": "UVM",
+   "name": "Universe Meta",
+   "decimals": 18,
+   "priceUsd": 0.35514001351974916,
+   "depthUsd": 411054,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x99d11bb9bc5f1ee15a817934f33643dee41026d5",
+   "symbol": "MEBT",
+   "name": "MEBT",
+   "decimals": 18,
+   "priceUsd": 1.6165613787301507,
+   "depthUsd": 387744,
+   "hub": "USDT",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x1bf6634969eb3877759d31eefe60b974e57a8b28",
+   "symbol": "NODAL",
+   "name": "NodalWaves",
+   "decimals": 18,
+   "priceUsd": 0.001901871466414966,
+   "depthUsd": 378178,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x53e0bca35ec356bd5dddfebbd1fc0fd03fabad39",
+   "symbol": "LINK",
+   "name": "ChainLink Token",
+   "decimals": 18,
+   "priceUsd": 9.160711583227421,
+   "depthUsd": 373452,
+   "hub": "WETH",
+   "venues": [
+    "uniswap-v3",
+    "sushi",
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0014
+  },
+  {
+   "address": "0xf50d05a1402d0adafa880d36050736f9f6ee7dee",
+   "symbol": "INST",
+   "name": "Instadapp (PoS)",
+   "decimals": 18,
+   "priceUsd": 1.794823777357882,
+   "depthUsd": 364768,
+   "hub": "WETH",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x1bfd67037b42cf73acf2047067bd4f2c47d9bfd6",
+   "symbol": "WBTC",
+   "name": "WBTC",
+   "decimals": 8,
+   "priceUsd": 65252.25085152,
+   "depthUsd": 357932,
+   "hub": "WETH",
+   "venues": [
+    "quickswap-v2",
+    "uniswap-v3",
+    "sushi"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0006
+  },
+  {
+   "address": "0xd6df932a45c0f255f85145f286ea0b292b21c90b",
+   "symbol": "AAVE",
+   "name": "Aave (PoS)",
+   "decimals": 18,
+   "priceUsd": 108.09881823855616,
+   "depthUsd": 323972,
+   "hub": "WETH",
+   "venues": [
+    "uniswap-v3",
+    "sushi"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0001
+  },
+  {
+   "address": "0x614389eaae0a6821dc49062d56bda3d9d45fa2ff",
+   "symbol": "ORBS",
+   "name": "Orbs (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.006145465099032635,
+   "depthUsd": 312642,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x1a245896827450e9a8150ec470d551f4bc3c70c4",
+   "symbol": "ZRP",
+   "name": "Zorp Token",
+   "decimals": 6,
+   "priceUsd": 0.2695086455135815,
+   "depthUsd": 305378,
+   "hub": "USDT",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359",
+   "symbol": "USDC",
+   "name": "USDC",
+   "decimals": 6,
+   "priceUsd": 0.99978217,
+   "depthUsd": 296851,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3",
+    "quickswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xd1cd49a08aef3af93457aec17c786c2b7f48ecd7",
+   "symbol": "sPOL",
+   "name": "Staked POL",
+   "decimals": 18,
+   "priceUsd": 0.08124160690109791,
+   "depthUsd": 290436,
+   "hub": "WPOL",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xba05176748347944cc26900c821abfebebc57415",
+   "symbol": "OSG",
+   "name": "OneX Smart Gold",
+   "decimals": 18,
+   "priceUsd": 0.779027899340686,
+   "depthUsd": 277288,
+   "hub": "WPOL",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xd3144ff5f388d36c0a445686c08540296d8b209b",
+   "symbol": "WWD",
+   "name": "Wolf Works DAO",
+   "decimals": 18,
+   "priceUsd": 0.001777637287854113,
+   "depthUsd": 235459,
+   "hub": "USDC.e",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xd98e5bdbb77c1bfeac4dd6d2f4d598c9a6d0ab33",
+   "symbol": "99PC",
+   "name": "99 Cent Plus Coin",
+   "decimals": 18,
+   "priceUsd": 0.9904090045723319,
+   "depthUsd": 200577,
+   "hub": "USDT",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xae840deab9916d80fadf42e218119a6051468169",
+   "symbol": "EFI",
+   "name": "ElevateFi",
+   "decimals": 18,
+   "priceUsd": 6.886312968427174,
+   "depthUsd": 189862,
+   "hub": "DAI",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xb6c3c00d730acca326db40e418353f04f7444e2b",
+   "symbol": "fcc",
+   "name": "first choice coin",
+   "decimals": 18,
+   "priceUsd": 0.0075799103476076905,
+   "depthUsd": 173822,
+   "hub": "WBTC",
+   "venues": [
+    "quickswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x1379e8886a944d2d9d440b3d88df536aea08d9f3",
+   "symbol": "MYST",
+   "name": "Mysterium (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.12057357051496445,
+   "depthUsd": 158347,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2",
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xbbba073c31bf03b8acf7c28ef0738decf3695683",
+   "symbol": "SAND",
+   "name": "SAND",
+   "decimals": 18,
+   "priceUsd": 0.03572618643019894,
+   "depthUsd": 156149,
+   "hub": "WPOL",
+   "venues": [
+    "quickswap-v2",
+    "quickswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xdc3326e71d45186f113a2f448984ca0e8d201995",
+   "symbol": "XSGD",
+   "name": "XSGD",
+   "decimals": 6,
+   "priceUsd": 0.7771174923730251,
+   "depthUsd": 149749,
+   "hub": "USDC.e",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x03ee6b86ba7c7c2b2783817ddaada247b7a871a8",
+   "symbol": "ADAO",
+   "name": "ADAO Token",
+   "decimals": 9,
+   "priceUsd": 0.002408944861620824,
+   "depthUsd": 147683,
+   "hub": "AS",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x20cf65451376f1c6bc8de2ec29042e14f4062716",
+   "symbol": "MFY Token",
+   "name": "MFY",
+   "decimals": 18,
+   "priceUsd": 0.014744925670525107,
+   "depthUsd": 145824,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xebcc6462b001cea452e81a3b037787989b9aebcc",
+   "symbol": "EBCC",
+   "name": "EBCC Token",
+   "decimals": 18,
+   "priceUsd": 1.01132517660657,
+   "depthUsd": 143919,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x30de46509dbc3a491128f97be0aaf70dc7ff33cb",
+   "symbol": "XZAR",
+   "name": "South African Tether (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.06004407316964332,
+   "depthUsd": 135657,
+   "hub": "USDC.e",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x6ab4e20f36ca48b61ecd66c0450fdf665fa130be",
+   "symbol": "DOLZ",
+   "name": "Dolz (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.0018136530108803417,
+   "depthUsd": 133687,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xf0059cc2b3e980065a906940fbce5f9db7ae40a7",
+   "symbol": "ULT",
+   "name": "Shardus (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.026173905614697755,
+   "depthUsd": 133683,
+   "hub": "WETH",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xac0f66379a6d7801d7726d5a943356a172549adb",
+   "symbol": "GEOD",
+   "name": "Geodnet Token",
+   "decimals": 18,
+   "priceUsd": 0.20039882681757112,
+   "depthUsd": 132660,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3",
+    "quickswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0001
+  },
+  {
+   "address": "0xb5c064f955d8e7f38fe0460c556a72987494ee17",
+   "symbol": "QUICK",
+   "name": "QuickSwap",
+   "decimals": 18,
+   "priceUsd": 0.0032068290033415406,
+   "depthUsd": 120017,
+   "hub": "WETH",
+   "venues": [
+    "quickswap-v3",
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0035
+  },
+  {
+   "address": "0xb39ec11468f689c7984bc35171ed50247131e809",
+   "symbol": "Q",
+   "name": "QORA",
+   "decimals": 18,
+   "priceUsd": 0.0029453999424465037,
+   "depthUsd": 119273,
+   "hub": "USDT",
+   "venues": [
+    "quickswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xd2e57e7019a8faea8b3e4a3738ee5b269975008a",
+   "symbol": "THAT",
+   "name": "THAT",
+   "decimals": 18,
+   "priceUsd": 0.002322096944883994,
+   "depthUsd": 113227,
+   "hub": "USDC",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x2d34a748427801e5d3da862bf474e2b28e501624",
+   "symbol": "Mult Pool",
+   "name": "MPOOL",
+   "decimals": 18,
+   "priceUsd": 0.0025106182849447974,
+   "depthUsd": 112188,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x8368d401732a1b2a63b2183c5dbbe657107953a5",
+   "symbol": "NLT",
+   "name": "NLT",
+   "decimals": 18,
+   "priceUsd": 0.0009947880102567533,
+   "depthUsd": 108710,
+   "hub": "USDC",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x5cd963de59bd5399ac6ce7a4eb3d4dc8a73bcfd9",
+   "symbol": "RUS",
+   "name": "RuCoin",
+   "decimals": 18,
+   "priceUsd": 0.09991357442313616,
+   "depthUsd": 99973,
+   "hub": "USDT",
+   "venues": [
+    "quickswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xb33eaad8d922b1083446dc23f610c2567fb5180f",
+   "symbol": "UNI",
+   "name": "Uniswap (PoS)",
+   "decimals": 18,
+   "priceUsd": 5.157572167345706,
+   "depthUsd": 96073,
+   "hub": "WETH",
+   "venues": [
+    "uniswap-v3",
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0006
+  },
+  {
+   "address": "0x9f591781a8c15c82a3b60d310e0ae8dd1541a09e",
+   "symbol": "FLEET",
+   "name": "StorageFleet",
+   "decimals": 18,
+   "priceUsd": 0.003961932365560506,
+   "depthUsd": 95086,
+   "hub": "WPOL",
+   "venues": [
+    "quickswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xf36f79feb5d97e18c69078d8d13d941cae447a04",
+   "symbol": "b01",
+   "name": "b0rder1ess",
+   "decimals": 18,
+   "priceUsd": 0.013392565603507137,
+   "depthUsd": 92761,
+   "hub": "USDC",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x778575dda30c784678c5972ff41f75671415cddc",
+   "symbol": "GNZ",
+   "name": "GNZ Token",
+   "decimals": 6,
+   "priceUsd": 0.06667335785739464,
+   "depthUsd": 89566,
+   "hub": "USDT",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x059eb35959b5ad5a37ce9198726cab84824fd690",
+   "symbol": "IBY",
+   "name": "I Bet You (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.0015493484223840417,
+   "depthUsd": 84706,
+   "hub": "USDT",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x98965474ecbec2f532f1f780ee37b0b05f77ca55",
+   "symbol": "SUT",
+   "name": "SUPER TRUST",
+   "decimals": 18,
+   "priceUsd": 0.2205023395495946,
+   "depthUsd": 83790,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xa69d14d6369e414a32a5c7e729b7afbafd285965",
+   "symbol": "GCR",
+   "name": "Global Coin Research (PoS)",
+   "decimals": 4,
+   "priceUsd": 0.06889386382766692,
+   "depthUsd": 83253,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x0e2c818fea38e7df50410f772b7d59af20589a62",
+   "symbol": "DOM",
+   "name": "Dominium",
+   "decimals": 9,
+   "priceUsd": 0.15738868352288596,
+   "depthUsd": 82841,
+   "hub": "USDC.e",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xfd55e4a6767ff7ffc0b8105262a8cdaabe7fbf3f",
+   "symbol": "PPY",
+   "name": "Patriot Pay",
+   "decimals": 18,
+   "priceUsd": 0.000043979513895647004,
+   "depthUsd": 82753,
+   "hub": "WPOL",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x3bf668fe1ec79a84ca8481cead5dbb30d61cc685",
+   "symbol": "TELEBTC",
+   "name": "teleBTC",
+   "decimals": 8,
+   "priceUsd": 65220.90779335756,
+   "depthUsd": 80844,
+   "hub": "WBTC",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xd17c2ae3fb89448991d26bcd877692122341f1d6",
+   "symbol": "MV",
+   "name": "MV Token",
+   "decimals": 18,
+   "priceUsd": 0.02244435447038162,
+   "depthUsd": 80372,
+   "hub": "WPOL",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x750e4c4984a9e0f12978ea6742bc1c5d248f40ed",
+   "symbol": "axlUSDC",
+   "name": "Axelar Wrapped USDC",
+   "decimals": 6,
+   "priceUsd": 0.9998913387605786,
+   "depthUsd": 79312,
+   "hub": "USDC",
+   "venues": [
+    "uniswap-v3",
+    "quickswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0001
+  },
+  {
+   "address": "0x831753dd7087cac61ab5644b308642cc1c33dc13",
+   "symbol": "QUICK",
+   "name": "Quickswap",
+   "decimals": 18,
+   "priceUsd": 9.61598982341539,
+   "depthUsd": 79168,
+   "hub": "WETH",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0017
+  },
+  {
+   "address": "0xd838290e877e0188a4a44700463419ed96c16107",
+   "symbol": "NCT",
+   "name": "Toucan Protocol: Nature Carbon Tonne",
+   "decimals": 18,
+   "priceUsd": 0.22636370609267525,
+   "depthUsd": 78817,
+   "hub": "USDC.e",
+   "venues": [
+    "sushi",
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x3ad707da309f3845cd602059901e39c4dcd66473",
+   "symbol": "ETH2x-FLI-P",
+   "name": "ETH 2x Flexible Leverage Index",
+   "decimals": 18,
+   "priceUsd": 5.2144393729703316,
+   "depthUsd": 78381,
+   "hub": "WETH",
+   "venues": [
+    "sushi"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x62a872d9977db171d9e213a5dc2b782e72ca0033",
+   "symbol": "NEUY",
+   "name": "NEUY (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.017767030795098452,
+   "depthUsd": 75661,
+   "hub": "WETH",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0011
+  },
+  {
+   "address": "0xee7666aacaefaa6efeef62ea40176d3eb21953b9",
+   "symbol": "MCHC",
+   "name": "MCHCoin (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.003108233781209098,
+   "depthUsd": 74135,
+   "hub": "WETH",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xdf7837de1f2fa4631d716cf2502f8b230f1dcc32",
+   "symbol": "TEL",
+   "name": "Telcoin (PoS)",
+   "decimals": 2,
+   "priceUsd": 0.0015248235945484157,
+   "depthUsd": 73930,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2",
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0042
+  },
+  {
+   "address": "0x38f9bf9dce51833ec7f03c9dc218197999999999",
+   "symbol": "NYA",
+   "name": "Nya",
+   "decimals": 18,
+   "priceUsd": 3.866669614079694e-8,
+   "depthUsd": 72526,
+   "hub": "WPOL",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x29c28f7e50ea89343fe2b2c75f2652b883ed0cbd",
+   "symbol": "GPAY",
+   "name": "GemPay",
+   "decimals": 18,
+   "priceUsd": 0.002279784843928245,
+   "depthUsd": 71008,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x7e4c577ca35913af564ee2a24d882a4946ec492b",
+   "symbol": "MOONED",
+   "name": "MoonEdge",
+   "decimals": 18,
+   "priceUsd": 0.0008199648948905611,
+   "depthUsd": 70542,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xe78aee6ccb05471a69677fb74da80f5d251c042b",
+   "symbol": "TAKI",
+   "name": "TakiToken",
+   "decimals": 18,
+   "priceUsd": 0.0018447923249864655,
+   "depthUsd": 69442,
+   "hub": "USDC",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x45b0bf770edad9b3a8aaa015b47a1f46a7cf956f",
+   "symbol": "Falcon",
+   "name": "Falcon",
+   "decimals": 18,
+   "priceUsd": 0.00013988911925701605,
+   "depthUsd": 69385,
+   "hub": "USDT",
+   "venues": [
+    "sushi"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0001
+  },
+  {
+   "address": "0x385eeac5cb85a38a9a07a70c73e0a3271cfb54a7",
+   "symbol": "GHST",
+   "name": "Aavegotchi GHST Token (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.04716117089368588,
+   "depthUsd": 67116,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2",
+    "sushi"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0035
+  },
+  {
+   "address": "0xcdb1ddf9eea7614961568f2db19e69645dd708f5",
+   "symbol": "6022",
+   "name": "6022",
+   "decimals": 18,
+   "priceUsd": 0.0011068167391512973,
+   "depthUsd": 66561,
+   "hub": "USDC",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x11b37c9388420d79d48e8d531227f43c9bf1bbf1",
+   "symbol": "FIT",
+   "name": "FIT Token",
+   "decimals": 18,
+   "priceUsd": 0.03395600934168739,
+   "depthUsd": 65977,
+   "hub": "WBTC",
+   "venues": [
+    "sushi"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xed39e7bf06e946007a44b29b85a329311bbc3dc2",
+   "symbol": "FFI",
+   "name": "FishFi",
+   "decimals": 18,
+   "priceUsd": 0.8697732510400397,
+   "depthUsd": 65945,
+   "hub": "USDT",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x598e49f01befeb1753737934a5b11fea9119c796",
+   "symbol": "ADS",
+   "name": "Adshares (PoS)",
+   "decimals": 11,
+   "priceUsd": 0.3685848115522918,
+   "depthUsd": 62732,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x44d09156c7b4acf0c64459fbcced7613f5519918",
+   "symbol": "$KMC",
+   "name": "$KMC",
+   "decimals": 18,
+   "priceUsd": 0.000003911390174417567,
+   "depthUsd": 61377,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xc63e09651098e477dd041a68553ca3a177578d1a",
+   "symbol": "LY",
+   "name": "LY",
+   "decimals": 18,
+   "priceUsd": 0.10169883890092234,
+   "depthUsd": 60006,
+   "hub": "DAI",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x02011c7b7d9c6dfc563c92197557e8be490a85b4",
+   "symbol": "LEMNI",
+   "name": "Lemnicoin",
+   "decimals": 18,
+   "priceUsd": 8.03358926642816,
+   "depthUsd": 59902,
+   "hub": "USDC",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x2d64636b7fd92de85ec64c5f4f9aa19ae7def7a4",
+   "symbol": "LGT",
+   "name": "LGT",
+   "decimals": 18,
+   "priceUsd": 1.2487806517746518,
+   "depthUsd": 59729,
+   "hub": "USDT",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x681e04ea8f903da45a6520ee1e5f4b21b4503fcf",
+   "symbol": "HFG",
+   "name": "HashFair Games",
+   "decimals": 18,
+   "priceUsd": 0.008109895749803616,
+   "depthUsd": 59017,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x34d4ab47bee066f361fa52d792e69ac7bd05ee23",
+   "symbol": "AURUM",
+   "name": "RaiderAurum",
+   "decimals": 18,
+   "priceUsd": 0.00007385454071099528,
+   "depthUsd": 57064,
+   "hub": "USDC.e",
+   "venues": [
+    "sushi"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0031
+  },
+  {
+   "address": "0x311434160d7537be358930def317afb606c0d737",
+   "symbol": "NAKA",
+   "name": "Nakamoto.Games",
+   "decimals": 18,
+   "priceUsd": 0.0742807132407721,
+   "depthUsd": 56544,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2",
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0065
+  },
+  {
+   "address": "0xe111178a87a3bff0c8d18decba5798827539ae99",
+   "symbol": "EURS",
+   "name": "STASIS EURS Token (PoS)",
+   "decimals": 2,
+   "priceUsd": 1.1043753380138535,
+   "depthUsd": 56123,
+   "hub": "USDC.e",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x8e677ca17065ed74675bc27bcabadb7eef10a292",
+   "symbol": "RAIN",
+   "name": "Rain Coin",
+   "decimals": 18,
+   "priceUsd": 2.986325251716016,
+   "depthUsd": 56086,
+   "hub": "WPOL",
+   "venues": [
+    "sushi",
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0001
+  },
+  {
+   "address": "0x928277e774f34272717eadfafc3fd802dafbd0f5",
+   "symbol": "PRANA",
+   "name": "Prana_v2",
+   "decimals": 9,
+   "priceUsd": 0.0884675936355756,
+   "depthUsd": 55690,
+   "hub": "WBTC",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xd93f7e271cb87c23aaa73edc008a79646d1f9912",
+   "symbol": "SOL",
+   "name": "Wrapped SOL",
+   "decimals": 9,
+   "priceUsd": 71.91003538338059,
+   "depthUsd": 54353,
+   "hub": "WETH",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0023
+  },
+  {
+   "address": "0x7e26081d41fd9a18a32b66268c8cc5c621eb1cf2",
+   "symbol": "BUSO",
+   "name": "Butterfly Solution",
+   "decimals": 6,
+   "priceUsd": 0.0034170060395529896,
+   "depthUsd": 52680,
+   "hub": "USDT",
+   "venues": [
+    "quickswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x811997f9de4da23e622fdbd6072c08e8cac47815",
+   "symbol": "RICO",
+   "name": "RICO Token",
+   "decimals": 18,
+   "priceUsd": 0.4108460788031642,
+   "depthUsd": 51617,
+   "hub": "WPOL",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xeb7eab87837f4dad1bb80856db9e4506fc441f3d",
+   "symbol": "MEE",
+   "name": "MEE Governance Token",
+   "decimals": 18,
+   "priceUsd": 0.0001952158801044451,
+   "depthUsd": 51550,
+   "hub": "USDT",
+   "venues": [
+    "quickswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xe82808eaa78339b06a691fd92e1be79671cad8d3",
+   "symbol": "PLOT",
+   "name": "PlotX",
+   "decimals": 18,
+   "priceUsd": 0.002763764364392625,
+   "depthUsd": 51422,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x1599fe55cda767b1f631ee7d414b41f5d6de393d",
+   "symbol": "MILK",
+   "name": "Milk",
+   "decimals": 18,
+   "priceUsd": 0.00002657978504159714,
+   "depthUsd": 51084,
+   "hub": "WETH",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x21fdb8e43d84420afbd6351d645f50c9138daae0",
+   "symbol": "ECO",
+   "name": "ecoCREDIT",
+   "decimals": 18,
+   "priceUsd": 0.0025523150559655684,
+   "depthUsd": 50761,
+   "hub": "USDT",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xb2c63830d4478cb331142fac075a39671a5541dc",
+   "symbol": "BOMB",
+   "name": "Bombcrypto Coin",
+   "decimals": 18,
+   "priceUsd": 0.008321545166654986,
+   "depthUsd": 47109,
+   "hub": "USDT",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x43c73b90e0c2a355784dcf0da12f477729b31e77",
+   "symbol": "SOIL",
+   "name": "Soil",
+   "decimals": 18,
+   "priceUsd": 0.10419665721643036,
+   "depthUsd": 46509,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x7e1ae068ac4e0ffd7a84750c2fb093a0eae9aea2",
+   "symbol": "TBA",
+   "name": "THE BULLS ARMY",
+   "decimals": 18,
+   "priceUsd": 1.1785779938018374e-10,
+   "depthUsd": 45806,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xce899f26928a2b21c6a2fddd393ef37c61dba918",
+   "symbol": "MOCA",
+   "name": "Museum of Crypto Art",
+   "decimals": 18,
+   "priceUsd": 0.034436876972346216,
+   "depthUsd": 43783,
+   "hub": "WETH",
+   "venues": [
+    "uniswap-v3",
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0035
+  },
+  {
+   "address": "0x6ab4d79c4dbb009a2c4c6b7f8e8e067fc92e28b9",
+   "symbol": "CHC",
+   "name": "CHC",
+   "decimals": 18,
+   "priceUsd": 0.0038616857174537025,
+   "depthUsd": 40622,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x91642fb562f0736757e47f1853026a32e601a2c5",
+   "symbol": "JERO",
+   "name": "JeroCoin",
+   "decimals": 18,
+   "priceUsd": 0.0006111502796029636,
+   "depthUsd": 40368,
+   "hub": "WETH",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x71dd3170decabe12afe717cfdae0a7b1cdd734b4",
+   "symbol": "MEX",
+   "name": "MEX",
+   "decimals": 18,
+   "priceUsd": 0.04379654850131477,
+   "depthUsd": 39387,
+   "hub": "WETH",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xe5417af564e4bfda1c483642db72007871397896",
+   "symbol": "GNS",
+   "name": "Gains Network",
+   "decimals": 18,
+   "priceUsd": 0.3366003924335782,
+   "depthUsd": 39202,
+   "hub": "DAI",
+   "venues": [
+    "quickswap-v2",
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0011
+  },
+  {
+   "address": "0xead10301f600cb322f4748446da0d86d53255ec5",
+   "symbol": "GDST",
+   "name": "GDST",
+   "decimals": 8,
+   "priceUsd": 84.81384461529512,
+   "depthUsd": 39014,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x1bdf71ede1a4777db1eebe7232bcda20d6fc1610",
+   "symbol": "CES",
+   "name": "WhaleBit",
+   "decimals": 18,
+   "priceUsd": 0.2090597136280988,
+   "depthUsd": 38454,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xc3c7d422809852031b44ab29eec9f1eff2a58756",
+   "symbol": "LDO",
+   "name": "Lido DAO Token (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.2775741666331833,
+   "depthUsd": 37654,
+   "hub": "WPOL",
+   "venues": [
+    "uniswap-v3",
+    "quickswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0008
+  },
+  {
+   "address": "0xf796969fa47fb0748c80b8b153cbb895e88cbd54",
+   "symbol": "OCAVU",
+   "name": "Ocavu Network Token",
+   "decimals": 18,
+   "priceUsd": 0.00008732629281076404,
+   "depthUsd": 37543,
+   "hub": "USDC.e",
+   "venues": [
+    "sushi"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xdc685acc53ca2a760029cab2f6a587482aa9cf57",
+   "symbol": "SNI",
+   "name": "SNI",
+   "decimals": 18,
+   "priceUsd": 0.2816561612402619,
+   "depthUsd": 36691,
+   "hub": "USDC",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x89a468488af91f89a31f4ea433be730c83f73dc8",
+   "symbol": "MPAD",
+   "name": "PolyPAD",
+   "decimals": 18,
+   "priceUsd": 0.0007809682038622301,
+   "depthUsd": 36121,
+   "hub": "USDT",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xe537c642ac8c3136eb8914a047ab3b232f9e695d",
+   "symbol": "SAVE",
+   "name": "SaveToken",
+   "decimals": 18,
+   "priceUsd": 0.014340541570161637,
+   "depthUsd": 35753,
+   "hub": "USDC",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x3b56a704c01d650147ade2b8cee594066b3f9421",
+   "symbol": "FYN",
+   "name": "Affyn",
+   "decimals": 18,
+   "priceUsd": 0.0003898699440323888,
+   "depthUsd": 34607,
+   "hub": "WETH",
+   "venues": [
+    "uniswap-v3",
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0035
+  },
+  {
+   "address": "0x172370d5cd63279efa6d502dab29171933a610af",
+   "symbol": "CRV",
+   "name": "CRV (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.20819856956682664,
+   "depthUsd": 33429,
+   "hub": "WETH",
+   "venues": [
+    "sushi",
+    "uniswap-v3",
+    "apeswap",
+    "quickswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0001
+  },
+  {
+   "address": "0xcd7361ac3307d1c5a46b63086a90742ff44c63b3",
+   "symbol": "RAIDER",
+   "name": "RaiderToken",
+   "decimals": 18,
+   "priceUsd": 0.0012561343578551864,
+   "depthUsd": 33279,
+   "hub": "WETH",
+   "venues": [
+    "sushi"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0026
+  },
+  {
+   "address": "0x4f604735c1cf31399c6e711d5962b2b3e0225ad3",
+   "symbol": "USDGLO",
+   "name": "Glo Dollar",
+   "decimals": 18,
+   "priceUsd": 0.9997017857987603,
+   "depthUsd": 33153,
+   "hub": "USDC",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x1b815d120b3ef02039ee11dc2d33de7aa4a8c603",
+   "symbol": "WOO",
+   "name": "Wootrade Network (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.009133603719361137,
+   "depthUsd": 31977,
+   "hub": "WETH",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xc3fdbadc7c795ef1d6ba111e06ff8f16a20ea539",
+   "symbol": "ADDY",
+   "name": "Adamant",
+   "decimals": 18,
+   "priceUsd": 0.006811197744537701,
+   "depthUsd": 31590,
+   "hub": "WETH",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x8373cd56a39276f2f5ec7ce55b923caac79992c1",
+   "symbol": "SHIBA",
+   "name": "SHIBA",
+   "decimals": 18,
+   "priceUsd": 1.2204209157720414,
+   "depthUsd": 31495,
+   "hub": "USDC.e",
+   "venues": [
+    "sushi"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x14f74e11f0d9d469a4c9d686cfb18a771b31d94f",
+   "symbol": "ONLIVE",
+   "name": "ON",
+   "decimals": 18,
+   "priceUsd": 0.00017311087991697666,
+   "depthUsd": 31178,
+   "hub": "WPOL",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xc6a2c8bc986896b29c419305427d7f5c1f7e3212",
+   "symbol": "TDAO",
+   "name": "TradingDAO Token",
+   "decimals": 18,
+   "priceUsd": 0.00001564405102957881,
+   "depthUsd": 30896,
+   "hub": "DAI",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xd55fce7cdab84d84f2ef3f99816d765a2a94a509",
+   "symbol": "CHAIN",
+   "name": "Chain Games",
+   "decimals": 18,
+   "priceUsd": 0.002067081123797616,
+   "depthUsd": 30629,
+   "hub": "USDC",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xe6a537a407488807f0bbeb0038b79004f19dddfb",
+   "symbol": "BRLA",
+   "name": "BRLA Token",
+   "decimals": 18,
+   "priceUsd": 0.17175015629142637,
+   "depthUsd": 29514,
+   "hub": "USDC",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xf1c1a3c2481a3a8a3f173a9ab5ade275292a6fa3",
+   "symbol": "VEE",
+   "name": "BLOCKv Token (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.0044943130854406795,
+   "depthUsd": 29194,
+   "hub": "WETH",
+   "venues": [
+    "sushi"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x65a05db8322701724c197af82c9cae41195b0aa8",
+   "symbol": "FOX",
+   "name": "FOX (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.0035453386169490646,
+   "depthUsd": 28843,
+   "hub": "WETH",
+   "venues": [
+    "sushi"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xe51e88dd08499762b8e4eb3a9f3da9b8e79608c3",
+   "symbol": "SKRT",
+   "name": "Sekuritance (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.0001762351353732005,
+   "depthUsd": 28682,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x9719d867a500ef117cc201206b8ab51e794d3f82",
+   "symbol": "maUSDC",
+   "name": "Matic Aave interest bearing USDC",
+   "decimals": 6,
+   "priceUsd": 1.158039829644051,
+   "depthUsd": 28514,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x5a29585848c9bc9d65e0a28542d67094500dcecc",
+   "symbol": "GIE",
+   "name": "Global Token",
+   "decimals": 18,
+   "priceUsd": 0.05001524883108635,
+   "depthUsd": 28211,
+   "hub": "USDC",
+   "venues": [
+    "sushi"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x41f1f4d44553d85d336b3e10d15ccac6b1f22b91",
+   "symbol": "Mute Coin",
+   "name": "MUTE",
+   "decimals": 18,
+   "priceUsd": 0.00044339429183127914,
+   "depthUsd": 27714,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x7b2d2732dccc1830aa63241dc13649b7861d9b54",
+   "symbol": "ZENY",
+   "name": "ZENY",
+   "decimals": 18,
+   "priceUsd": 0.02110054073167048,
+   "depthUsd": 27324,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x649a2da7b28e0d54c13d5eff95d3a660652742cc",
+   "symbol": "IDRX",
+   "name": "IDRX",
+   "decimals": 0,
+   "priceUsd": 0.0000544874853428635,
+   "depthUsd": 27281,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xe8d17b127ba8b9899a160d9a07b69bca8e08bfc6",
+   "symbol": "NSDX",
+   "name": "NASDEX Token",
+   "decimals": 18,
+   "priceUsd": 0.002112727613915677,
+   "depthUsd": 27146,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x4e3decbb3645551b8a19f0ea1678079fcb33fb4c",
+   "symbol": "jEUR",
+   "name": "Jarvis Synthetic Euro",
+   "decimals": 18,
+   "priceUsd": 1.0915071185883962,
+   "depthUsd": 26647,
+   "hub": "WETH",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x8bd71fb99a3ec3b7a00fceedcfe22e31ffc1189c",
+   "symbol": "PMT",
+   "name": "PMT Token",
+   "decimals": 6,
+   "priceUsd": 0.045367853357897316,
+   "depthUsd": 26611,
+   "hub": "USDT",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x17d342b29f054030a455b4191f977c3b0aa62fd9",
+   "symbol": "KNG",
+   "name": "Kanga Exchange Token (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.7808149236002849,
+   "depthUsd": 24779,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x18e73a5333984549484348a94f4d219f4fab7b81",
+   "symbol": "DUCKIES",
+   "name": "Yellow Duckies",
+   "decimals": 8,
+   "priceUsd": 0.0018174938424272212,
+   "depthUsd": 24247,
+   "hub": "USDT",
+   "venues": [
+    "quickswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x1ea936097a79ae4f520c3b4ae8ec057675aee801",
+   "symbol": "OAG",
+   "name": "OperalAG",
+   "decimals": 0,
+   "priceUsd": 99.978217,
+   "depthUsd": 23995,
+   "hub": "USDC.e",
+   "venues": [
+    "sushi"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x9e20461bc2c4c980f62f1b279d71734207a6a356",
+   "symbol": "OMNI",
+   "name": "OmniCat",
+   "decimals": 18,
+   "priceUsd": 0.000005049229084025329,
+   "depthUsd": 23971,
+   "hub": "WETH",
+   "venues": [
+    "sushi"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x226ecef3914be351fd467182214255ce3d6adf93",
+   "symbol": "DICT",
+   "name": "DictToken",
+   "decimals": 18,
+   "priceUsd": 0.00022270022722366316,
+   "depthUsd": 23249,
+   "hub": "USDT",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xa9bc2da81799463965865c577c22a71738d2a185",
+   "symbol": "WBRC",
+   "name": "Wrapped BRC",
+   "decimals": 18,
+   "priceUsd": 0.0442684673096796,
+   "depthUsd": 23161,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x978338a9d2d0aa2ff388d3dc98b9bf25bff5efb4",
+   "symbol": "HAKKA",
+   "name": "Hakka Finance",
+   "decimals": 18,
+   "priceUsd": 0.0012548068249511892,
+   "depthUsd": 23099,
+   "hub": "WETH",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xe261d618a959afffd53168cd07d12e37b26761db",
+   "symbol": "DIMO",
+   "name": "Dimo",
+   "decimals": 18,
+   "priceUsd": 0.01392365770795525,
+   "depthUsd": 22354,
+   "hub": "WPOL",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xdfaf2680239d678d9551669727b93b62ad0d18cc",
+   "symbol": "YPRED",
+   "name": "yPredict",
+   "decimals": 18,
+   "priceUsd": 0.0009925624977071066,
+   "depthUsd": 22305,
+   "hub": "USDT",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xd8ca34fd379d9ca3c6ee3b3905678320f5b45195",
+   "symbol": "gOHM",
+   "name": "Governance OHM",
+   "decimals": 18,
+   "priceUsd": 4184.423016475357,
+   "depthUsd": 22242,
+   "hub": "WETH",
+   "venues": [
+    "sushi"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x4eac4c4e9050464067d673102f8e24b2fcceb350",
+   "symbol": "ibBTC",
+   "name": "Interest-Bearing BTC",
+   "decimals": 18,
+   "priceUsd": 29421.035851219905,
+   "depthUsd": 22058,
+   "hub": "WBTC",
+   "venues": [
+    "sushi"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x44a2c6253bb48b33bff264b0d26c4246a46180af",
+   "symbol": "VOLLAR",
+   "name": "VDS",
+   "decimals": 8,
+   "priceUsd": 0.26304108614368094,
+   "depthUsd": 21629,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x182f1d39df9460d7aef29afbc80bbd68ed0a41d5",
+   "symbol": "RUUF",
+   "name": "RuufCoin",
+   "decimals": 18,
+   "priceUsd": 0.005163711294367056,
+   "depthUsd": 20988,
+   "hub": "WETH",
+   "venues": [
+    "sushi"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x33b6d77c607ea499ab5db7e2201c5a516a78a5db",
+   "symbol": "AIMX",
+   "name": "Aimedis",
+   "decimals": 18,
+   "priceUsd": 0.0002203373445438866,
+   "depthUsd": 20893,
+   "hub": "WETH",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x1cf19b5c198b1fb229c1db51ee5fcecc28981f4e",
+   "symbol": "MOONI",
+   "name": "0xMooniverse",
+   "decimals": 9,
+   "priceUsd": 6.912285984059082e-8,
+   "depthUsd": 20681,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xdd1061aa306dfaa0ecf6156ab0d7be554c5fd712",
+   "symbol": "BLOSP",
+   "name": "BlockSphere",
+   "decimals": 18,
+   "priceUsd": 0.19957361599957305,
+   "depthUsd": 20631,
+   "hub": "USDT",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x773131295d49d2a759d230c030a116068719306f",
+   "symbol": "ANGT",
+   "name": "FlyANGT",
+   "decimals": 18,
+   "priceUsd": 0.006996330102680359,
+   "depthUsd": 20471,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xab5f7a0e20b0d056aed4aa4528c78da45be7308b",
+   "symbol": "GBYTE",
+   "name": "Imported GBYTE",
+   "decimals": 18,
+   "priceUsd": 4.773556206404967,
+   "depthUsd": 20468,
+   "hub": "USDT",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xb0b195aefa3650a6908f15cdac7d92f8a5791b0b",
+   "symbol": "BOB",
+   "name": "BOB",
+   "decimals": 18,
+   "priceUsd": 0.9996946340874858,
+   "depthUsd": 20378,
+   "hub": "USDC.e",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xa81c2e72dbbfe9f113355b2a5f55c352d615d79e",
+   "symbol": "CRTC",
+   "name": "Carrot Coin",
+   "decimals": 18,
+   "priceUsd": 0.00010297188560959965,
+   "depthUsd": 20369,
+   "hub": "USDC.e",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x35c3c8096cde3c13a565b68d17b9bf1f9836b9eb",
+   "symbol": "UCC",
+   "name": "Universal Coffee Coin",
+   "decimals": 9,
+   "priceUsd": 0.007443073327697836,
+   "depthUsd": 20227,
+   "hub": "DAI",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x4d870ae52e61d4fb6e125f4380cc0c0f9f15a575",
+   "symbol": "RUS",
+   "name": "RuCoin",
+   "decimals": 18,
+   "priceUsd": 0.044194851621326824,
+   "depthUsd": 20195,
+   "hub": "USDT",
+   "venues": [
+    "quickswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xaec815ae1e9ab58f49692aec2840ffc82c56f7e5",
+   "symbol": "IDOL",
+   "name": "IDOL",
+   "decimals": 18,
+   "priceUsd": 0.0021506523780583085,
+   "depthUsd": 20135,
+   "hub": "USDC.e",
+   "venues": [
+    "sushi"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xc011a7e12a19f7b1f670d46f03b03f3342e82dfb",
+   "symbol": "pUSD",
+   "name": "Polymarket USD",
+   "decimals": 6,
+   "priceUsd": 1.002715579750222,
+   "depthUsd": 20014,
+   "hub": "USDC.e",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x8930568b98e48aa02cc660992a9223e596c528b8",
+   "symbol": "CNGT",
+   "name": "CryptoNinja Governance Token",
+   "decimals": 18,
+   "priceUsd": 0.11845959336418219,
+   "depthUsd": 19997,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x1d1498166ddceee616a6d99868e1e0677300056f",
+   "symbol": "xSPACE",
+   "name": "xSpace Token",
+   "decimals": 18,
+   "priceUsd": 0.0012656182497528,
+   "depthUsd": 19881,
+   "hub": "WPOL",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x78b1aa5c9b37c52695c93448ad0c64560edb9c4d",
+   "symbol": "FOOD",
+   "name": "Food Coin",
+   "decimals": 18,
+   "priceUsd": 0.0038846185214024705,
+   "depthUsd": 19699,
+   "hub": "USDC",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xd44caebbf5c5a3848357ec05e24220bebef41d40",
+   "symbol": "XBR",
+   "name": "X BULL RUN",
+   "decimals": 18,
+   "priceUsd": 28.028156445105992,
+   "depthUsd": 19609,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x6a284bf3e568aea2c28010f061a85e107efdb6b6",
+   "symbol": "TAG",
+   "name": "TAGBOND (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.02833997546375696,
+   "depthUsd": 19489,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x2e2d851f1882227863aa92c4b6a31f74827c9656",
+   "symbol": "OC",
+   "name": "OxChange",
+   "decimals": 18,
+   "priceUsd": 0.06382714984777751,
+   "depthUsd": 19236,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x4b6544aabb0bbd87b865b624867e7de9a4d69562",
+   "symbol": "ZBC",
+   "name": "ZBC",
+   "decimals": 18,
+   "priceUsd": 0.015106625828583237,
+   "depthUsd": 18844,
+   "hub": "WPOL",
+   "venues": [
+    "sushi"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.2544
+  },
+  {
+   "address": "0x231878d973c09fbcc0ca2239fffb717795402cb4",
+   "symbol": "RUSK",
+   "name": "RUSK",
+   "decimals": 18,
+   "priceUsd": 0.00011342844125672375,
+   "depthUsd": 18744,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xffffff9936bd58a008855b0812b44d2c8dffe2aa",
+   "symbol": "GGUSD",
+   "name": "GGUSD",
+   "decimals": 6,
+   "priceUsd": 0.9989954302824184,
+   "depthUsd": 18422,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x35b937583f04a24963eb685f728a542240f28dd8",
+   "symbol": "SFI",
+   "name": "Spice (PoS)",
+   "decimals": 18,
+   "priceUsd": 76.74253793884432,
+   "depthUsd": 18257,
+   "hub": "WETH",
+   "venues": [
+    "sushi"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x9ff62d1fc52a907b6dcba8077c2ddca6e6a9d3e1",
+   "symbol": "FORT",
+   "name": "Forta",
+   "decimals": 18,
+   "priceUsd": 0.01949199067533659,
+   "depthUsd": 18145,
+   "hub": "WPOL",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xf8d9cb7d8ce7d7bedd8ceacf087f7adf1c9937ad",
+   "symbol": "VTNX V2",
+   "name": "Votonx",
+   "decimals": 18,
+   "priceUsd": 0.000003772345692594559,
+   "depthUsd": 18112,
+   "hub": "WPOL",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x4b47ea2555d2867f6dff9efc14927d48a2e3106a",
+   "symbol": "DAXE",
+   "name": "DAXE",
+   "decimals": 18,
+   "priceUsd": 7.59009193847624e-8,
+   "depthUsd": 18047,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xe45d5dc8d2591c61a0b6497ae67a6cc539aa1329",
+   "symbol": "STORAGE",
+   "name": "STORAGE",
+   "decimals": 18,
+   "priceUsd": 0.02865996483853582,
+   "depthUsd": 17797,
+   "hub": "USDC",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x681d3e1b54b3e1a338feb5b076cebf53a697d51f",
+   "symbol": "COVO",
+   "name": "COVO",
+   "decimals": 18,
+   "priceUsd": 0.001086953963213551,
+   "depthUsd": 17512,
+   "hub": "USDC.e",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xa8bf0b92be0338794d2e3b180b9643a1f0eb2914",
+   "symbol": "$ERA",
+   "name": "$ERA token",
+   "decimals": 18,
+   "priceUsd": 0.00035448664606435804,
+   "depthUsd": 17510,
+   "hub": "USDC",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0036
+  },
+  {
+   "address": "0x03f61137bfb86be07394f0fd07a33984020f96d8",
+   "symbol": "XPND",
+   "name": "XpndToken",
+   "decimals": 18,
+   "priceUsd": 0.000031773716267939866,
+   "depthUsd": 16961,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x53df32548214f51821cf1fe4368109ac5ddea1ff",
+   "symbol": "SPONGE",
+   "name": "Sponge",
+   "decimals": 18,
+   "priceUsd": 0.000001879003764139751,
+   "depthUsd": 16903,
+   "hub": "WPOL",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x90f3edc7d5298918f7bb51694134b07356f7d0c7",
+   "symbol": "DDAO",
+   "name": "DEFI HUNTERS DAO Token",
+   "decimals": 18,
+   "priceUsd": 0.005432370437688661,
+   "depthUsd": 16572,
+   "hub": "WETH",
+   "venues": [
+    "sushi"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xe1b3eb06806601828976e491914e3de18b5d6b28",
+   "symbol": "ZERC",
+   "name": "zkRace",
+   "decimals": 18,
+   "priceUsd": 0.002481684860268851,
+   "depthUsd": 16515,
+   "hub": "USDC",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x27f6c8289550fce67f6b50bed1f519966afe5287",
+   "symbol": "tGBP",
+   "name": "tGBP",
+   "decimals": 18,
+   "priceUsd": 1.3206103098083788,
+   "depthUsd": 16325,
+   "hub": "USDC",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x538d47d142f6993038a667e9d6210d3735749b36",
+   "symbol": "BURP",
+   "name": "Burp (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.00010288597788827054,
+   "depthUsd": 16051,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x6ccb663dad597058da28b58974e8bdb81323dd09",
+   "symbol": "BLOC",
+   "name": "BlockCentral Token",
+   "decimals": 18,
+   "priceUsd": 0.0004318128624905044,
+   "depthUsd": 15992,
+   "hub": "WETH",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xadaf0aed648a122f7b60cd4a1138524653f8cf41",
+   "symbol": "ODIN",
+   "name": "ODIN",
+   "decimals": 18,
+   "priceUsd": 0.01268791112838756,
+   "depthUsd": 15956,
+   "hub": "DAI",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x4e1581f01046efdd7a1a2cdb0f82cdd7f71f2e59",
+   "symbol": "ICE",
+   "name": "IceToken",
+   "decimals": 18,
+   "priceUsd": 0.07906608031039775,
+   "depthUsd": 15901,
+   "hub": "WETH",
+   "venues": [
+    "sushi"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xe7c3d8c9a439fede00d2600032d5db0be71c3c29",
+   "symbol": "JPYC",
+   "name": "JPY Coin",
+   "decimals": 18,
+   "priceUsd": 0.006241753129311652,
+   "depthUsd": 15705,
+   "hub": "USDC",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xaa3717090cddc9b227e49d0d84a28ac0a996e6ff",
+   "symbol": "ASK",
+   "name": "Permission Token",
+   "decimals": 18,
+   "priceUsd": 0.00008482242254632853,
+   "depthUsd": 15685,
+   "hub": "WETH",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x18ec0a6e18e5bc3784fdd3a3634b31245ab704f6",
+   "symbol": "EURe",
+   "name": "Monerium EUR emoney",
+   "decimals": 18,
+   "priceUsd": 1.098028665814717,
+   "depthUsd": 15577,
+   "hub": "USDC.e",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0012
+  },
+  {
+   "address": "0xfe1a200637464fbc9b60bc7aecb9b86c0e1d486e",
+   "symbol": "LITHIUM",
+   "name": "LITHIUM",
+   "decimals": 18,
+   "priceUsd": 0.08562830458583208,
+   "depthUsd": 15260,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x76e63a3e7ba1e2e61d3da86a87479f983de89a7e",
+   "symbol": "OMEN",
+   "name": "Augury Finance",
+   "decimals": 18,
+   "priceUsd": 0.0007160289248254812,
+   "depthUsd": 15191,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2",
+    "sushi"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.003
+  },
+  {
+   "address": "0x5714b76b3d69f797bede08409e027e1a280c2530",
+   "symbol": "CHECK",
+   "name": "Check Token",
+   "decimals": 18,
+   "priceUsd": 0.000005406262715890642,
+   "depthUsd": 15168,
+   "hub": "WPOL",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x91c5a5488c0decde1eacd8a4f10e0942fb925067",
+   "symbol": "AUDT",
+   "name": "Auditchain",
+   "decimals": 18,
+   "priceUsd": 0.024883529299942156,
+   "depthUsd": 15051,
+   "hub": "USDT",
+   "venues": [
+    "quickswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x7e7737c40878e720b32e7bc9cd096259f876d69f",
+   "symbol": "CATHEON",
+   "name": "Catheon Gaming",
+   "decimals": 9,
+   "priceUsd": 0.00002006108124031602,
+   "depthUsd": 15024,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xffa4d863c96e743a2e1513824ea006b8d0353c57",
+   "symbol": "USDD",
+   "name": "Decentralized USD (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.9976860816826911,
+   "depthUsd": 15020,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x5198e7cc1640049de37d1bd10b03fa5a3afda120",
+   "symbol": "KABY",
+   "name": "Kaby Arena",
+   "decimals": 18,
+   "priceUsd": 0.00016970910076061227,
+   "depthUsd": 15015,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x94615302bcb36309371ea7454f3e99a4002105de",
+   "symbol": "NRS",
+   "name": "Nereus Token",
+   "decimals": 18,
+   "priceUsd": 0.06367588713108045,
+   "depthUsd": 14968,
+   "hub": "USDT",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x1ed02954d60ba14e26c230eec40cbac55fa3aeea",
+   "symbol": "MAKERX",
+   "name": "MAKERX",
+   "decimals": 18,
+   "priceUsd": 0.0027752698418553193,
+   "depthUsd": 14963,
+   "hub": "WPOL",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xe1b3d3f9302fb84c8d5b9e13cd8160fee67ea239",
+   "symbol": "PCT",
+   "name": "Pinecone Token",
+   "decimals": 18,
+   "priceUsd": 0.002238358159608018,
+   "depthUsd": 14921,
+   "hub": "WPOL",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xebbc38ee80a6ed8410ce3102d3fc3e90cf8b14e6",
+   "symbol": "TET",
+   "name": "Team Elite Token",
+   "decimals": 18,
+   "priceUsd": 0.04699407760086799,
+   "depthUsd": 14803,
+   "hub": "WPOL",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xf9d3d8b25b95bcda979025b74fdfa7ac3f380f9f",
+   "symbol": "CP",
+   "name": "Cookies Protocol",
+   "decimals": 18,
+   "priceUsd": 1.466994093831093e-9,
+   "depthUsd": 14784,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x0e9b89007eee9c958c0eda24ef70723c2c93dd58",
+   "symbol": "ankrMATIC",
+   "name": "Ankr Staked MATIC",
+   "decimals": 18,
+   "priceUsd": 2.70510882383932e+37,
+   "depthUsd": 14718,
+   "hub": "WPOL",
+   "venues": [
+    "quickswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x043fc2649b1a91623b158a072de4ce9801af06a1",
+   "symbol": "DINA",
+   "name": "Dinastia Holding",
+   "decimals": 18,
+   "priceUsd": 0.601539513195929,
+   "depthUsd": 14570,
+   "hub": "WPOL",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x972999c58bbce63a2e398d4ed3bde414b8349eb3",
+   "symbol": "PRPS",
+   "name": "Purpose",
+   "decimals": 18,
+   "priceUsd": 0.044691400804915994,
+   "depthUsd": 14455,
+   "hub": "USDC",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x658cda444ac43b0a7da13d638700931319b64014",
+   "symbol": "SMT",
+   "name": "SMARTMALL TOKEN",
+   "decimals": 18,
+   "priceUsd": 0.0007227087962892559,
+   "depthUsd": 14339,
+   "hub": "WPOL",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xa37ea959b76fed62516ca21d6aac20635a4f5431",
+   "symbol": "BERM",
+   "name": "BERMToken",
+   "decimals": 18,
+   "priceUsd": 2.4982609995413804e-8,
+   "depthUsd": 14328,
+   "hub": "WETH",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x6ae7dfc73e0dde2aa99ac063dcf7e8a63265108c",
+   "symbol": "JPYC",
+   "name": "JPY Coin (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.007844443026618337,
+   "depthUsd": 14321,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2",
+    "sushi"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0044
+  },
+  {
+   "address": "0x1adcef5c780d8895ac77e6ee9239b4b3ecb76da2",
+   "symbol": "TOTEM",
+   "name": "TOTEM",
+   "decimals": 6,
+   "priceUsd": 0.00005522651779299073,
+   "depthUsd": 14267,
+   "hub": "WETH",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x784665471bb8b945b57a76a9200b109ee214e789",
+   "symbol": "KC",
+   "name": "Krasnalcoin",
+   "decimals": 6,
+   "priceUsd": 0.00004453568528296042,
+   "depthUsd": 14260,
+   "hub": "WPOL",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x4ed141110f6eeeaba9a1df36d8c26f684d2475dc",
+   "symbol": "BRZ",
+   "name": "BRZ Token",
+   "decimals": 18,
+   "priceUsd": 0.17110966998609622,
+   "depthUsd": 14239,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x2b9e7ccdf0f4e5b24757c1e1a80e311e34cb10c7",
+   "symbol": "MASK",
+   "name": "Mask Network (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.3040151322028552,
+   "depthUsd": 14163,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xd8c597ca314b2dbbd04cf072e3dd6b3a43da993e",
+   "symbol": "HIME",
+   "name": "Hime Token",
+   "decimals": 18,
+   "priceUsd": 0.011039220890905749,
+   "depthUsd": 14073,
+   "hub": "WPOL",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x0cfc9a713a5c17bc8a5ff0379467f6558bacd0e0",
+   "symbol": "GLQ",
+   "name": "GraphLinq (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.0004783422600277734,
+   "depthUsd": 14059,
+   "hub": "WETH",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xa1c57f48f0deb89f569dfbe6e2b7f46d33606fd4",
+   "symbol": "MANA",
+   "name": "(PoS) Decentraland MANA",
+   "decimals": 18,
+   "priceUsd": 0.061176327194476965,
+   "depthUsd": 14017,
+   "hub": "WETH",
+   "venues": [
+    "sushi",
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0023
+  },
+  {
+   "address": "0x1f9e378ec2059e34dd326d4721f9e896aea088ca",
+   "symbol": "CLIMB",
+   "name": "CLIMB",
+   "decimals": 6,
+   "priceUsd": 0.00003811502015773706,
+   "depthUsd": 13858,
+   "hub": "USDT",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xd1f9c58e33933a993a3891f8acfe05a68e1afc05",
+   "symbol": "SFL",
+   "name": "Sunflower Land",
+   "decimals": 18,
+   "priceUsd": 0.04533277271822767,
+   "depthUsd": 13436,
+   "hub": "WPOL",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x431d5dff03120afa4bdf332c61a6e1766ef37bdb",
+   "symbol": "JPYC",
+   "name": "JPY Coin",
+   "decimals": 18,
+   "priceUsd": 0.007662085428470161,
+   "depthUsd": 13116,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xdcff29b7bd211aaef6e4a3989e4d3f732cf5b4b6",
+   "symbol": "MART",
+   "name": "ArtMeta",
+   "decimals": 18,
+   "priceUsd": 0.0006344438030540294,
+   "depthUsd": 12983,
+   "hub": "WETH",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x5a3064cbdccf428ae907796cf6ad5a664cd7f3d8",
+   "symbol": "PYQ",
+   "name": "PYQ",
+   "decimals": 18,
+   "priceUsd": 0.00007286108359962228,
+   "depthUsd": 12982,
+   "hub": "USDC.e",
+   "venues": [
+    "sushi"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xe752dc227bb16000cf8acb314bf4b3b522223d87",
+   "symbol": "EGG",
+   "name": "FunkyEgg",
+   "decimals": 18,
+   "priceUsd": 0.17703343214316966,
+   "depthUsd": 12949,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x2ab445c24c96db13383bb34678adae50c43b4baa",
+   "symbol": "CLAY",
+   "name": "Clay",
+   "decimals": 18,
+   "priceUsd": 0.00004649726187184633,
+   "depthUsd": 12941,
+   "hub": "WETH",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x01fa5b3a5d77bcf705dd505bbcbb34bce310e7fe",
+   "symbol": "AXI",
+   "name": "Axioms (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.0026694729911528004,
+   "depthUsd": 12936,
+   "hub": "WETH",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x77719eaa4b9c24425bfcd39ac84f1e2e9c88568f",
+   "symbol": "RW",
+   "name": "RWA Coin",
+   "decimals": 18,
+   "priceUsd": 0.12378497151831688,
+   "depthUsd": 12916,
+   "hub": "AS",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x99a57e6c8558bc6689f894e068733adf83c19725",
+   "symbol": "sLGNS",
+   "name": "Staked Longinus",
+   "decimals": 9,
+   "priceUsd": 0.15938167212663992,
+   "depthUsd": 12807,
+   "hub": "DAI",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xeb53db175de6d456fea8238e81ae4bf07d433225",
+   "symbol": "PARZ",
+   "name": "Parzava",
+   "decimals": 18,
+   "priceUsd": 0.009507340531905094,
+   "depthUsd": 12696,
+   "hub": "WPOL",
+   "venues": [
+    "quickswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x51de72b17c7bd12e9e6d69eb506a669eb6b5249e",
+   "symbol": "EGG",
+   "name": "Waves Ducks",
+   "decimals": 18,
+   "priceUsd": 2.488447775383254,
+   "depthUsd": 12663,
+   "hub": "USDT",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xffbf21632d4ad2b1f85031b418a8f69638118364",
+   "symbol": "FAST",
+   "name": "Edge Video AI",
+   "decimals": 24,
+   "priceUsd": 0.0007013668338357957,
+   "depthUsd": 12538,
+   "hub": "USDT",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x301595f6fd5f69fad7a488dacb8971e7c0c2f559",
+   "symbol": "wtPOKT",
+   "name": "Wrapped ThunderPOKT",
+   "decimals": 12,
+   "priceUsd": 0.24488384024619425,
+   "depthUsd": 12182,
+   "hub": "USDC.e",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x2c89bbc92bd86f8075d1decc58c7f4e0107f286b",
+   "symbol": "AVAX",
+   "name": "Avalanche Token",
+   "decimals": 18,
+   "priceUsd": 4.786809500540348,
+   "depthUsd": 12162,
+   "hub": "WPOL",
+   "venues": [
+    "quickswap-v2",
+    "sushi"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0015
+  },
+  {
+   "address": "0xb77e62709e39ad1cbeebe77cf493745aec0f453a",
+   "symbol": "WISE",
+   "name": "Wise Token (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.10017398283329883,
+   "depthUsd": 12137,
+   "hub": "WETH",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x5fe2b58c013d7601147dcdd68c143a77499f5531",
+   "symbol": "GRT",
+   "name": "Graph Token (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.01675526677307914,
+   "depthUsd": 12082,
+   "hub": "WETH",
+   "venues": [
+    "sushi"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x5647fe4281f8f6f01e84bce775ad4b828a7b8927",
+   "symbol": "MM",
+   "name": "Million (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.9669274073414977,
+   "depthUsd": 12046,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x040f6b41d36f8c8e81f05ae156cd6605abf60662",
+   "symbol": "GEMG",
+   "name": "GemGuardian",
+   "decimals": 18,
+   "priceUsd": 0.005070761883070107,
+   "depthUsd": 11911,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xd33fd95fc17bc808b35e98458e078330f35dbfa3",
+   "symbol": "NIGHT",
+   "name": "Midnight",
+   "decimals": 9,
+   "priceUsd": 0.000005200873876515419,
+   "depthUsd": 11800,
+   "hub": "WPOL",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xe6f0523b9dd59ca6166ececc3ae7e7cedf77a731",
+   "symbol": "PFT",
+   "name": "Pest Free Token",
+   "decimals": 18,
+   "priceUsd": 0.04150218800794588,
+   "depthUsd": 11770,
+   "hub": "WPOL",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x695fc8b80f344411f34bdbcb4e621aa69ada384b",
+   "symbol": "NITRO",
+   "name": "Nitro (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.00005323800543184846,
+   "depthUsd": 11664,
+   "hub": "WPOL",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x428360b02c1269bc1c79fbc399ad31d58c1e8fda",
+   "symbol": "DEFIT",
+   "name": "Digital Fitness",
+   "decimals": 18,
+   "priceUsd": 0.0004709411828727431,
+   "depthUsd": 11622,
+   "hub": "WETH",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xf4c3fac9c98aa62474998e299495b699dfdb00eb",
+   "symbol": "HANDL",
+   "name": "HandlPay",
+   "decimals": 18,
+   "priceUsd": 0.0018747035372346328,
+   "depthUsd": 11309,
+   "hub": "USDC",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xcc44674022a792794d219847362bb95c661937a9",
+   "symbol": "ROU",
+   "name": "ROUTINE COIN",
+   "decimals": 18,
+   "priceUsd": 0.00009939337013704574,
+   "depthUsd": 11210,
+   "hub": "USDT",
+   "venues": [
+    "quickswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x38e5bb8bb7cdc7734c053ff1e03c0203d0edc57e",
+   "symbol": "BLOCKS",
+   "name": "BLOCKS",
+   "decimals": 18,
+   "priceUsd": 0.0000017454816093098598,
+   "depthUsd": 11098,
+   "hub": "WPOL",
+   "venues": [
+    "sushi"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x380df89d883776ba04f65569f1d1a6e218bfc2df",
+   "symbol": "AWK",
+   "name": "Awakeborn Token",
+   "decimals": 18,
+   "priceUsd": 0.0000029405311184469806,
+   "depthUsd": 10986,
+   "hub": "WPOL",
+   "venues": [
+    "quickswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x41b3966b4ff7b427969ddf5da3627d6aeae9a48e",
+   "symbol": "NEXO",
+   "name": "Nexo (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.6707556407949299,
+   "depthUsd": 10954,
+   "hub": "WETH",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x9c9e5fd8bbc25984b178fdce6117defa39d2db39",
+   "symbol": "BUSD",
+   "name": "BUSD Token",
+   "decimals": 18,
+   "priceUsd": 0.9998409909194809,
+   "depthUsd": 10939,
+   "hub": "USDC.e",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xd4423795fd904d9b87554940a95fb7016f172773",
+   "symbol": "AIN",
+   "name": "AI Network",
+   "decimals": 18,
+   "priceUsd": 0.00993261152121799,
+   "depthUsd": 10791,
+   "hub": "USDT",
+   "venues": [
+    "quickswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xf0949dd87d2531d665010d6274f06a357669457a",
+   "symbol": "RMV",
+   "name": "RealityMetaverse(PoS)",
+   "decimals": 18,
+   "priceUsd": 0.0014849881128110134,
+   "depthUsd": 10753,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x7075cab6bcca06613e2d071bd918d1a0241379e2",
+   "symbol": "GFARM2",
+   "name": "Gains V2",
+   "decimals": 18,
+   "priceUsd": 289.8890572876421,
+   "depthUsd": 10734,
+   "hub": "WETH",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0038
+  },
+  {
+   "address": "0x9a4eb698e5de3d3df0a68f681789072de1e50222",
+   "symbol": "FID",
+   "name": "Fidira",
+   "decimals": 18,
+   "priceUsd": 0.0003048251138587075,
+   "depthUsd": 10573,
+   "hub": "WETH",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x6fb54ffe60386ac33b722be13d2549dd87bf63af",
+   "symbol": "POLI",
+   "name": "Polinate (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.0001917694862997356,
+   "depthUsd": 10568,
+   "hub": "WETH",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x1ef5bb23e0b91c2e8480a4a2b71feb4607cb32f1",
+   "symbol": "SGT",
+   "name": "SGT (PoS)",
+   "decimals": 8,
+   "priceUsd": 0.004130726576046077,
+   "depthUsd": 10522,
+   "hub": "WPOL",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0.0021
+  },
+  {
+   "address": "0x95f9b9beceb273815f7f22a5729924acf88050a6",
+   "symbol": "TPT",
+   "name": "TPT",
+   "decimals": 18,
+   "priceUsd": 0.005071212398178355,
+   "depthUsd": 10468,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x51c065005b11e4bb1d9ea7831d45f65e0fbb7351",
+   "symbol": "TT",
+   "name": "TT",
+   "decimals": 18,
+   "priceUsd": 17.143243147658094,
+   "depthUsd": 10458,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xba3cb8329d442e6f9eb70fafe1e214251df3d275",
+   "symbol": "SWASH",
+   "name": "Swash Token",
+   "decimals": 18,
+   "priceUsd": 0.0003083289778097739,
+   "depthUsd": 10431,
+   "hub": "USDT",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x16dfb898cf7029303c2376031392cb9bac450f94",
+   "symbol": "DMA",
+   "name": "Dragoma",
+   "decimals": 18,
+   "priceUsd": 0.00020181645134494678,
+   "depthUsd": 10412,
+   "hub": "USDT",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x60ed6acef3a96f8cdaf0c0d207bbafa66e751af2",
+   "symbol": "EP",
+   "name": "Elemental Particles",
+   "decimals": 18,
+   "priceUsd": 43.93184385113879,
+   "depthUsd": 10353,
+   "hub": "WETH",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xd4945a3d0de9923035521687d4bf18cc9b0c7c2a",
+   "symbol": "LUXY",
+   "name": "LUXY",
+   "decimals": 18,
+   "priceUsd": 0.0023808460808636147,
+   "depthUsd": 10249,
+   "hub": "USDC.e",
+   "venues": [
+    "sushi"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xe979926c0bf5af833a98a0c2e9818e8b637f6d0a",
+   "symbol": "SPUSD",
+   "name": "Spark USD",
+   "decimals": 6,
+   "priceUsd": 0.9987182617721031,
+   "depthUsd": 10181,
+   "hub": "USDT",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x04f177fcacf6fb4d2f95d41d7d3fee8e565ca1d0",
+   "symbol": "DMT",
+   "name": "Dragon Master Token (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.0004900483308980879,
+   "depthUsd": 10165,
+   "hub": "WETH",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xa1428174f516f527fafdd146b883bb4428682737",
+   "symbol": "SUPER",
+   "name": "SuperFarm (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.13570295882419822,
+   "depthUsd": 10031,
+   "hub": "WETH",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0xf8ab848448ed2250fa914567bcdbb553240ef8a1",
+   "symbol": "QNQ",
+   "name": "Quaniq",
+   "decimals": 18,
+   "priceUsd": 0.00025251783167225256,
+   "depthUsd": 10022,
+   "hub": "USDC",
+   "venues": [
+    "uniswap-v3"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x8a953cfe442c5e8855cc6c61b1293fa648bae472",
+   "symbol": "PolyDoge",
+   "name": "PolyDoge",
+   "decimals": 18,
+   "priceUsd": 1.8054172828399134e-10,
+   "depthUsd": 10003,
+   "hub": "WPOL",
+   "venues": [
+    "quickswap-v2"
+   ],
+   "liquid": true,
+   "pinned": false,
+   "dispersion": 0
+  },
+  {
+   "address": "0x462d8d82c2b2d2ddabf7f8a93928de09d47a5807",
+   "symbol": "BzB",
+   "name": "BlazarBits (PoS)",
+   "decimals": 18,
+   "priceUsd": 0.006202723078863723,
+   "depthUsd": 1623,
+   "hub": "WPOL",
+   "venues": [
+    "quickswap-v2",
+    "uniswap-v3",
+    "blazar"
+   ],
+   "liquid": false,
+   "pinned": true,
+   "dispersion": 0
+  },
+  {
+   "address": "0xb837f0e111596348a27e424e43938eb01753cf34",
+   "symbol": "BBY",
+   "name": "BlazarByte",
+   "decimals": 9,
+   "priceUsd": 2.4540464828982786e-9,
+   "depthUsd": 112,
+   "hub": "USDC.e",
+   "venues": [
+    "quickswap-v2",
+    "quickswap-v3"
+   ],
+   "liquid": false,
+   "pinned": true,
+   "dispersion": 0
+  }
+ ]
+}

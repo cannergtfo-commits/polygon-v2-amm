@@ -1,0 +1,316 @@
+{
+  "cacheBlock": 97443587,
+  "cacheAt": "2026-11-16T23:14:11.130Z",
+  "rows": [
+    {
+      "symbol": "WPOL",
+      "address": "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270",
+      "onchainUsd": 0.079375,
+      "dexscreenerUsd": 0.07947,
+      "diffPct": -0.12,
+      "ourDepthUsd": 541180,
+      "dsLiquidityUsd": 1472734,
+      "dsDex": "uniswap"
+    },
+    {
+      "symbol": "WETH",
+      "address": "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619",
+      "onchainUsd": 1826.47,
+      "dexscreenerUsd": 1828.93,
+      "diffPct": -0.13,
+      "ourDepthUsd": 1950268,
+      "dsLiquidityUsd": 371057,
+      "dsDex": "uniswap"
+    },
+    {
+      "symbol": "WBTC",
+      "address": "0x1bfd67037b42cf73acf2047067bd4f2c47d9bfd6",
+      "onchainUsd": 65206.1,
+      "dexscreenerUsd": 65318.49,
+      "diffPct": -0.17,
+      "ourDepthUsd": 357456,
+      "dsLiquidityUsd": 544299,
+      "dsDex": "uniswap"
+    },
+    {
+      "symbol": "USDT",
+      "address": "0xc2132d05d31c914a87c6611c10748aeb04b58e8f",
+      "onchainUsd": 0.99907,
+      "dexscreenerUsd": null,
+      "diffPct": null,
+      "ourDepthUsd": 620982,
+      "dsLiquidityUsd": null,
+      "dsDex": null
+    },
+    {
+      "symbol": "DAI",
+      "address": "0x8f3cf7ad23cd3cadbd9735aff958023239c6a063",
+      "onchainUsd": 0.999653,
+      "dexscreenerUsd": 1.00058,
+      "diffPct": -0.09,
+      "ourDepthUsd": 412408,
+      "dsLiquidityUsd": 162397,
+      "dsDex": "uniswap"
+    },
+    {
+      "symbol": "LINK",
+      "address": "0x53e0bca35ec356bd5dddfebbd1fc0fd03fabad39",
+      "onchainUsd": 9.14853,
+      "dexscreenerUsd": 9.14,
+      "diffPct": 0.09,
+      "ourDepthUsd": 372956,
+      "dsLiquidityUsd": 385174,
+      "dsDex": "uniswap"
+    },
+    {
+      "symbol": "AAVE",
+      "address": "0xd6df932a45c0f255f85145f286ea0b292b21c90b",
+      "onchainUsd": 107.924,
+      "dexscreenerUsd": 108.1,
+      "diffPct": -0.16,
+      "ourDepthUsd": 322899,
+      "dsLiquidityUsd": 230744,
+      "dsDex": "uniswap"
+    },
+    {
+      "symbol": "QUICK",
+      "address": "0xb5c064f955d8e7f38fe0460c556a72987494ee17",
+      "onchainUsd": 0.00320257,
+      "dexscreenerUsd": 0.003202,
+      "diffPct": 0.02,
+      "ourDepthUsd": 119857,
+      "dsLiquidityUsd": 120931,
+      "dsDex": "quickswap v3"
+    },
+    {
+      "symbol": "MYST",
+      "address": "0x1379e8886a944d2d9d440b3d88df536aea08d9f3",
+      "onchainUsd": 0.120575,
+      "dexscreenerUsd": 0.1205,
+      "diffPct": 0.06,
+      "ourDepthUsd": 158350,
+      "dsLiquidityUsd": 158382,
+      "dsDex": "quickswap v2"
+    },
+    {
+      "symbol": "GEOD",
+      "address": "0xac0f66379a6d7801d7726d5a943356a172549adb",
+      "onchainUsd": 0.200364,
+      "dexscreenerUsd": 0.2005,
+      "diffPct": -0.07,
+      "ourDepthUsd": 132617,
+      "dsLiquidityUsd": 258348,
+      "dsDex": "uniswap"
+    },
+    {
+      "symbol": "sPOL",
+      "address": "0xd1cd49a08aef3af93457aec17c786c2b7f48ecd7",
+      "onchainUsd": 0.0811118,
+      "dexscreenerUsd": 0.0811,
+      "diffPct": 0.01,
+      "ourDepthUsd": 289972,
+      "dsLiquidityUsd": 704748,
+      "dsDex": "uniswap"
+    },
+    {
+      "symbol": "SAND",
+      "address": "0xbbba073c31bf03b8acf7c28ef0738decf3695683",
+      "onchainUsd": 0.0356691,
+      "dexscreenerUsd": 0.03568,
+      "diffPct": -0.03,
+      "ourDepthUsd": 155899,
+      "dsLiquidityUsd": 155961,
+      "dsDex": "quickswap v2"
+    },
+    {
+      "symbol": "miMATIC",
+      "address": "0xa3fa99a148fa48d14ed51d610c367c61876997f1",
+      "onchainUsd": 0.994851,
+      "dexscreenerUsd": 0.9984,
+      "diffPct": -0.36,
+      "ourDepthUsd": 631461,
+      "dsLiquidityUsd": 50026,
+      "dsDex": "balancer"
+    },
+    {
+      "symbol": "LGNS",
+      "address": "0xeb51d9a39ad5eef215dc0bf39a8821ff804a0f01",
+      "onchainUsd": 0.163231,
+      "dexscreenerUsd": 0.1632,
+      "diffPct": 0.02,
+      "ourDepthUsd": 15588701,
+      "dsLiquidityUsd": 15594120,
+      "dsDex": "quickswap v2"
+    },
+    {
+      "symbol": "AS",
+      "address": "0x6a92b1e99de09f71cd96bc91f934826d96b8b26e",
+      "onchainUsd": 0.130261,
+      "dexscreenerUsd": 0.1303,
+      "diffPct": -0.03,
+      "ourDepthUsd": 5619418,
+      "dsLiquidityUsd": 5621368,
+      "dsDex": "quickswap v2"
+    },
+    {
+      "symbol": "RNT",
+      "address": "0x27ab6e82f3458edbc0703db2756391b899ce6324",
+      "onchainUsd": 0.356705,
+      "dexscreenerUsd": 0.357,
+      "diffPct": -0.08,
+      "ourDepthUsd": 4871059,
+      "dsLiquidityUsd": 4875593,
+      "dsDex": "sushiswap"
+    },
+    {
+      "symbol": "BzB",
+      "address": "0x462d8d82c2b2d2ddabf7f8a93928de09d47a5807",
+      "onchainUsd": 0.00619282,
+      "dexscreenerUsd": 0.006225,
+      "diffPct": -0.52,
+      "ourDepthUsd": 1620,
+      "dsLiquidityUsd": 1629,
+      "dsDex": "quickswap v2"
+    },
+    {
+      "symbol": "QUICK",
+      "address": "0xb5c064f955d8e7f38fe0460c556a72987494ee17",
+      "onchainUsd": 0.00320257,
+      "dexscreenerUsd": 0.003202,
+      "diffPct": 0.02,
+      "ourDepthUsd": 119857,
+      "dsLiquidityUsd": 120931,
+      "dsDex": "quickswap v3"
+    },
+    {
+      "symbol": "UVM",
+      "address": "0x6966fec28ae7f598bd29c788def80f56ffa12de9",
+      "onchainUsd": 0.355136,
+      "dexscreenerUsd": 0.3554,
+      "diffPct": -0.07,
+      "ourDepthUsd": 411050,
+      "dsLiquidityUsd": 411509,
+      "dsDex": "uniswap"
+    },
+    {
+      "symbol": "INST",
+      "address": "0xf50d05a1402d0adafa880d36050736f9f6ee7dee",
+      "onchainUsd": 1.79244,
+      "dexscreenerUsd": 1.77,
+      "diffPct": 1.27,
+      "ourDepthUsd": 364283,
+      "dsLiquidityUsd": 668818,
+      "dsDex": "uniswap"
+    },
+    {
+      "symbol": "ORBS",
+      "address": "0x614389eaae0a6821dc49062d56bda3d9d45fa2ff",
+      "onchainUsd": 0.00614555,
+      "dexscreenerUsd": 0.006146,
+      "diffPct": -0.01,
+      "ourDepthUsd": 312646,
+      "dsLiquidityUsd": 312710,
+      "dsDex": "quickswap v2"
+    },
+    {
+      "symbol": "ZRP",
+      "address": "0x1a245896827450e9a8150ec470d551f4bc3c70c4",
+      "onchainUsd": 0.269506,
+      "dexscreenerUsd": 0.2697,
+      "diffPct": -0.07,
+      "ourDepthUsd": 305375,
+      "dsLiquidityUsd": 305660,
+      "dsDex": "quickswap v2"
+    },
+    {
+      "symbol": "XSGD",
+      "address": "0xdc3326e71d45186f113a2f448984ca0e8d201995",
+      "onchainUsd": 0.777128,
+      "dexscreenerUsd": 0.7772,
+      "diffPct": -0.01,
+      "ourDepthUsd": 149751,
+      "dsLiquidityUsd": 168195,
+      "dsDex": "uniswap"
+    },
+    {
+      "symbol": "OSG",
+      "address": "0xba05176748347944cc26900c821abfebebc57415",
+      "onchainUsd": 0.777784,
+      "dexscreenerUsd": 0.7838,
+      "diffPct": -0.77,
+      "ourDepthUsd": 276845,
+      "dsLiquidityUsd": 278995,
+      "dsDex": "quickswap v2"
+    },
+    {
+      "symbol": "FELY",
+      "address": "0xee997788f625809332baabb3110bcf1ba7400824",
+      "onchainUsd": 0.452911,
+      "dexscreenerUsd": 0.4533,
+      "diffPct": -0.09,
+      "ourDepthUsd": 1331139,
+      "dsLiquidityUsd": 1332463,
+      "dsDex": "uniswap"
+    },
+    {
+      "symbol": "NODAL",
+      "address": "0x1bf6634969eb3877759d31eefe60b974e57a8b28",
+      "onchainUsd": 0.00190185,
+      "dexscreenerUsd": 0.001903,
+      "diffPct": -0.06,
+      "ourDepthUsd": 378174,
+      "dsLiquidityUsd": 380123,
+      "dsDex": "uniswap"
+    },
+    {
+      "symbol": "EFI",
+      "address": "0xae840deab9916d80fadf42e218119a6051468169",
+      "onchainUsd": 6.88588,
+      "dexscreenerUsd": 6.88,
+      "diffPct": 0.09,
+      "ourDepthUsd": 189833,
+      "dsLiquidityUsd": 189899,
+      "dsDex": "quickswap v2"
+    },
+    {
+      "symbol": "CRV",
+      "address": "0x172370d5cd63279efa6d502dab29171933a610af",
+      "onchainUsd": 0.207922,
+      "dexscreenerUsd": 0.2084,
+      "diffPct": -0.23,
+      "ourDepthUsd": 33385,
+      "dsLiquidityUsd": 33470,
+      "dsDex": "sushiswap"
+    },
+    {
+      "symbol": "GHST",
+      "address": "0x385eeac5cb85a38a9a07a70c73e0a3271cfb54a7",
+      "onchainUsd": 0.0471618,
+      "dexscreenerUsd": 0.04717,
+      "diffPct": -0.02,
+      "ourDepthUsd": 67117,
+      "dsLiquidityUsd": 67130,
+      "dsDex": "quickswap v2"
+    },
+    {
+      "symbol": "UNI",
+      "address": "0xb33eaad8d922b1083446dc23f610c2567fb5180f",
+      "onchainUsd": 5.15071,
+      "dexscreenerUsd": 5.16,
+      "diffPct": -0.18,
+      "ourDepthUsd": 95945,
+      "dsLiquidityUsd": 129295,
+      "dsDex": "uniswap"
+    },
+    {
+      "symbol": "TEL",
+      "address": "0xdf7837de1f2fa4631d716cf2502f8b230f1dcc32",
+      "onchainUsd": 0.00152484,
+      "dexscreenerUsd": 0.001525,
+      "diffPct": -0.01,
+      "ourDepthUsd": 73931,
+      "dsLiquidityUsd": 76972,
+      "dsDex": "balancer"
+    }
+  ]
+}

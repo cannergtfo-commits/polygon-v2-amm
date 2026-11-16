@@ -1,0 +1,4 @@
+data/*.json
+data/*.tmp
+!data/liquid-tokens.snapshot.json
+node_modules/

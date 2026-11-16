@@ -1,0 +1,18 @@
+{
+  "name": "blazar-polygon-plugin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Polygon pool discovery, USD pricing and BlazarFeeRouter quotes for agents. Read-only; builds unsigned txs only.",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "refresh": "node scripts/refresh.mjs",
+    "quote": "node scripts/quote.mjs",
+    "fork-dryrun": "node scripts/fork-dryrun.mjs",
+    "compare": "node scripts/compare-dexscreener.mjs"
+  },
+  "dependencies": {
+    "viem": "^2.57.20"
+  },
+  "license": "GPL-3.0-or-later"
+}

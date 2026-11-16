@@ -1,0 +1,117 @@
+{
+  "forkBlock": "97443511",
+  "results": [
+    {
+      "pair": "POL->USDC",
+      "amount": "100",
+      "route": "Uniswap v3 0.05%",
+      "quotedOut": "7933333",
+      "receivedOut": "7933333",
+      "diffBps": 0,
+      "minAmountOut": "7853999",
+      "wrapperFeeQuoted": [
+        "50000000000000000"
+      ],
+      "wrapperFeeReceived": "50000000000000000",
+      "gasUsed": 251668,
+      "gasHint": 474500,
+      "ms": 8366
+    },
+    {
+      "pair": "POL->BzB",
+      "amount": "5",
+      "route": "QuickSwap v2",
+      "quotedOut": "63830985283700485885",
+      "receivedOut": "63830985283700485885",
+      "diffBps": 0,
+      "minAmountOut": "63192675430863481026",
+      "wrapperFeeQuoted": [
+        "2500000000000000"
+      ],
+      "wrapperFeeReceived": "2500000000000000",
+      "gasUsed": 221396,
+      "gasHint": 403000,
+      "ms": 7517
+    },
+    {
+      "pair": "POL->LINK",
+      "amount": "500",
+      "route": "Uniswap v3 0.05%",
+      "quotedOut": "4331609213353729009",
+      "receivedOut": "4331609213353729009",
+      "diffBps": 0,
+      "minAmountOut": "4288293121220191718",
+      "wrapperFeeQuoted": [
+        "250000000000000000"
+      ],
+      "wrapperFeeReceived": "250000000000000000",
+      "gasUsed": 265155,
+      "gasHint": 474500,
+      "ms": 8913
+    },
+    {
+      "pair": "USDC->AAVE",
+      "amount": "50",
+      "route": "Uniswap v3 0.30%",
+      "quotedOut": "461177591345776326",
+      "receivedOut": "461177591345776326",
+      "diffBps": 0,
+      "minAmountOut": "456565815432318562",
+      "wrapperFeeQuoted": [
+        "25000"
+      ],
+      "wrapperFeeReceived": "25000",
+      "gasUsed": 290517,
+      "gasHint": 474500,
+      "ms": 10440
+    },
+    {
+      "pair": "USDC.e->USDC",
+      "amount": "20",
+      "route": "QuickSwap v4",
+      "quotedOut": "19988804",
+      "receivedOut": "19988804",
+      "diffBps": 0,
+      "minAmountOut": "19788915",
+      "wrapperFeeQuoted": [
+        "10000"
+      ],
+      "wrapperFeeReceived": "10000",
+      "gasUsed": 464638,
+      "gasHint": 799500,
+      "ms": 16744
+    },
+    {
+      "pair": "LINK->POL",
+      "amount": "2",
+      "route": "QuickSwap v3 → Uniswap v3 0.05%",
+      "quotedOut": "230402582887200621470",
+      "receivedOut": "230402582887200621470",
+      "diffBps": 0,
+      "minAmountOut": "228098557058328615255",
+      "wrapperFeeQuoted": [
+        "1000000000000000"
+      ],
+      "wrapperFeeReceived": "1000000000000000",
+      "gasUsed": 483687,
+      "gasHint": 702000,
+      "ms": 18141
+    },
+    {
+      "pair": "LINK->WPOL",
+      "amount": "2",
+      "route": "QuickSwap v3 → Uniswap v3 0.05%",
+      "quotedOut": "230402582887200621470",
+      "receivedOut": "230402582887200621470",
+      "diffBps": 0,
+      "minAmountOut": "228098557058328615255",
+      "wrapperFeeQuoted": [
+        "1000000000000000"
+      ],
+      "wrapperFeeReceived": "1000000000000000",
+      "gasUsed": 494352,
+      "gasHint": 702000,
+      "ms": 18661
+    }
+  ]
+}
