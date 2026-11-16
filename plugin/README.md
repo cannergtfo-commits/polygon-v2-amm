@@ -81,3 +81,18 @@ symbols are duplicated on Polygon: QUICK old/new, JPYC, FUN, …); agents should
   passes `deployer = 0`.
 * Native POL output to a recipient with code (contract or EIP-7702-delegated wallet) can revert
   the router's recipient-balance check; `buildSwapTx` refuses and asks for WPOL output.
+
+## Facade safety rules (`src/plugin.mjs`)
+
+- Token symbols and names are untrusted on-chain text. `src/text.mjs` NFKC-normalizes them, strips
+  control, zero-width and bidi characters, caps the length and flags `nonAscii`, `changed` or
+  `impersonates` (a non-canonical token whose symbol matches POL, USDC, WETH, BZB and so on).
+- Read calls accept a symbol, pick the deepest match and list every other token with the same
+  symbol under `ambiguous`. Builders accept only 0x addresses or the canonical table
+  (`CANONICAL`: POL, WPOL, USDC, USDC.e, USDT, WETH, WBTC, DAI, BZB).
+- `buildSwap` re-quotes at build time, reads the latest block for a fresh deadline
+  (`deadlineSeconds` 30..170, default 120), checks the existing allowance, emits an exact-amount
+  approval (with a reset to 0 when an allowance exists), refuses native POL output to a recipient
+  with code, refuses the router or a token as the recipient, and returns UNSIGNED txs only.
+- Quotes and `findPools` add live factory lookups (`src/lookup.mjs`: getPair, getPool over
+  4 fee tiers, poolByPair) to the cached registry, so they work without the 32 MB pool cache.

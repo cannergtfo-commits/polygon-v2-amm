@@ -104,6 +104,11 @@ export async function refresh({ dataDir, full = false, rpc = createRpc(), log = 
   const t0 = Date.now();
   const cache = loadCache(dataDir);
   const { registry, state } = cache;
+  // v3 meta carries sanitized text + flags; drop older entries so they are re-read once
+  if (state.metaVersion !== 3) {
+    state.meta = {};
+    state.metaVersion = 3;
+  }
   state.meta = { ...anchorMeta(), ...state.meta };
   const latest = await rpc.blockNumber();
   const before = new Set(registry.pools.map((r) => r[1]));
@@ -165,6 +170,7 @@ export async function refresh({ dataDir, full = false, rpc = createRpc(), log = 
       pools: entry.candidates.map((c) => ({ pool: c.pool, venue: c.venue, hub: c.hub, depthUsd: Math.round(c.depthUsd), priceUsd: c.priceUsd })),
       liquid,
       pinned,
+      ...(m.flags ? { textFlags: m.flags } : {}),
     });
   }
   for (const [a, v] of Object.entries(anchors)) {

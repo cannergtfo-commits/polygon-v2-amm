@@ -1,7 +1,8 @@
 /** Live state reads, all batched through Multicall3. */
 import { decodeFunctionResult, encodeFunctionData, hexToString } from "viem";
 import { ALGEBRA_GLOBAL_STATE_SELECTOR, ERC20, FEED, V2_PAIR, V3_POOL } from "./abis.mjs";
-import { ANCHORS } from "./config.mjs";
+import { ANCHORS, BZB } from "./config.mjs";
+import { textFlags } from "./text.mjs";
 import { lower } from "./pricing.mjs";
 
 const RESERVES = encodeFunctionData({ abi: V2_PAIR, functionName: "getReserves" });
@@ -99,8 +100,9 @@ export async function readTokenMeta(rpc, addresses, meta) {
       meta[a] = { bad: true };
       return;
     }
-    const clean = (x) => (x ? String(x).replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 64) : null);
-    meta[a] = { decimals, symbol: clean(s?.ok ? decodeSymbol(s.data) : null) || "?", name: clean(n?.ok ? decodeSymbol(n.data) : null) || "" };
+    const canonical = !!ANCHORS[a] || a === BZB.toLowerCase();
+    const t = textFlags(s?.ok ? decodeSymbol(s.data) : null, n?.ok ? decodeSymbol(n.data) : null, { canonical });
+    meta[a] = { decimals, symbol: t.symbol || "?", name: t.name, ...(t.flags.length ? { flags: t.flags } : {}) };
   });
   return meta;
 }
