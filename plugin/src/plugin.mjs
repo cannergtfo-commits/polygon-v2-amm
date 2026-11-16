@@ -54,6 +54,13 @@ export function parseAmount(raw, decimals) {
   return v;
 }
 
+/**
+ * Default ceiling on output below the cached mid price (impact + pool fees + wrapper fee), in bps.
+ * Slippage only covers moves after the quote; against an already-manipulated pool this check is the only guard,
+ * so it defaults tight (3%). Larger values are an explicit opt-in per call (maxCostVsMidBps, max 10000).
+ */
+export const DEFAULT_MAX_COST_VS_MID_BPS = 300;
+
 const isAddr = (s) => /^0x[0-9a-fA-F]{40}$/.test(String(s || ""));
 
 export function createPlugin({ dataDir = process.env.BLAZAR_POLYGON_DATA_DIR || path.join(here, "..", "data"), seedFile = null, rpc = createRpc(), routerTtlMs = 60_000 } = {}) {
@@ -343,11 +350,12 @@ export function createPlugin({ dataDir = process.env.BLAZAR_POLYGON_DATA_DIR || 
      * Fresh quote + unsigned txs. Addresses or canonical symbols only. Returns kit-style
      * { action, summary, txs[], warnings[], guards, details } plus the raw swap for simulation.
      */
-    async buildSwap({ tokenIn, tokenOut, amount, amountIsBaseUnits = false, from, recipient, slippageBps = 50, deadlineSeconds = 120, maxCostVsMidBps = 3000 }) {
+    async buildSwap({ tokenIn, tokenOut, amount, amountIsBaseUnits = false, from, recipient, slippageBps = 50, deadlineSeconds = 120, maxCostVsMidBps = DEFAULT_MAX_COST_VS_MID_BPS }) {
       if (!isAddr(from)) throw new PluginError("BAD_ADDRESS", "from must be a 0x address");
       const to = recipient ?? from;
       if (!isAddr(to)) throw new PluginError("BAD_ADDRESS", "recipient must be a 0x address");
       if (!Number.isInteger(slippageBps) || slippageBps < 1 || slippageBps > 300) throw new PluginError("BAD_SLIPPAGE", "slippageBps must be 1..300");
+      if (!Number.isInteger(maxCostVsMidBps) || maxCostVsMidBps < 1 || maxCostVsMidBps > 10_000) throw new PluginError("BAD_INPUT", "maxCostVsMidBps must be an integer 1..10000", `Default ${DEFAULT_MAX_COST_VS_MID_BPS} (3%).`);
       if (!Number.isInteger(deadlineSeconds) || deadlineSeconds < 30 || deadlineSeconds > 170) throw new PluginError("BAD_DEADLINE", "deadlineSeconds must be 30..170", "The router rejects deadlines more than 180 s past the block it runs in.");
       const forbidden = new Set([lower(FEE_ROUTER), lower(WPOL)]);
       if (forbidden.has(lower(to))) throw new PluginError("BAD_RECIPIENT", "recipient cannot be the fee router or the WPOL contract");
@@ -356,7 +364,7 @@ export function createPlugin({ dataDir = process.env.BLAZAR_POLYGON_DATA_DIR || 
       if (q.wrap) throw new PluginError("WRAP_NOT_SWAP", "POL <-> WPOL is a 1:1 wrap at the WPOL contract, not a router swap", "Call WPOL deposit()/withdraw(amount) directly.");
       if (!q.steps) throw new PluginError("NO_ROUTE", q.note || "No route on the fee-router allowlist", "Check polygon_find_pools; the token may only trade on venues the router cannot reach.");
       if (forbidden.has(lower(to)) || lower(to) === lower(q.tokenOut) || lower(to) === lower(q.tokenIn)) throw new PluginError("BAD_RECIPIENT", "recipient cannot be a token contract or the router");
-      if (q.costVsMidBps !== null && q.costVsMidBps > maxCostVsMidBps) throw new PluginError("PRICE_IMPACT_TOO_HIGH", `Output is ${(q.costVsMidBps / 100).toFixed(2)}% below the mid price`, "Trade smaller, or raise maxCostVsMidBps if intended.");
+      if (q.costVsMidBps !== null && q.costVsMidBps > maxCostVsMidBps) throw new PluginError("PRICE_IMPACT_TOO_HIGH", `Output is ${(q.costVsMidBps / 100).toFixed(2)}% below the mid price (limit ${(maxCostVsMidBps / 100).toFixed(2)}%)`, "Trade smaller, check the pool is not being manipulated, or pass a larger maxCostVsMidBps only if the cost is intended.", { costVsMidBps: q.costVsMidBps, maxCostVsMidBps });
       const warnings = [...a.warnings, ...b.warnings];
       const code = await rpc.request("eth_getCode", [to, "latest"]);
       const recipientHasCode = !!code && code !== "0x";

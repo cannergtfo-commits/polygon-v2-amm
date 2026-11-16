@@ -6,7 +6,7 @@ import { test } from "node:test";
 import { decodeFunctionData, encodeAbiParameters } from "viem";
 import { ERC20 } from "../src/abis.mjs";
 import { FEE_ROUTER, USDT } from "../src/config.mjs";
-import { CANONICAL, createPlugin, parseAmount } from "../src/plugin.mjs";
+import { CANONICAL, createPlugin, DEFAULT_MAX_COST_VS_MID_BPS, parseAmount } from "../src/plugin.mjs";
 import { sanitizeText, symbolKey, textFlags } from "../src/text.mjs";
 
 const OWNER = "0x1111111111111111111111111111111111111111";
@@ -128,7 +128,22 @@ test("buildSwap input validation happens before any network call", async () => {
   await assert.rejects(plugin.buildSwap({ tokenIn: USDT, tokenOut: FAKE_A, amount: "1", from: OWNER, recipient: FEE_ROUTER }), (e) => e.code === "BAD_RECIPIENT");
 });
 
+test("price-impact ceiling defaults to 300 bps and is validated", async () => {
+  assert.equal(DEFAULT_MAX_COST_VS_MID_BPS, 300);
+  const { plugin } = fixture();
+  for (const bad of [0, 10_001, 1.5, -1]) {
+    await assert.rejects(plugin.buildSwap({ tokenIn: USDT, tokenOut: FAKE_A, amount: "1", from: OWNER, maxCostVsMidBps: bad }), (e) => e.code === "BAD_INPUT");
+  }
+});
+
 const LIVE = process.env.POLYGON_LIVE === "1";
+test("live: a 60k USDC -> LINK swap (~7% below mid) is refused by default, allowed with an explicit opt-in", { skip: !LIVE }, async () => {
+  const p = createPlugin();
+  const LINK = "0x53e0bca35ec356bd5dddfebbd1fc0fd03fabad39";
+  await assert.rejects(p.buildSwap({ tokenIn: "USDC", tokenOut: LINK, amount: "60000", from: OWNER }), (e) => e.code === "PRICE_IMPACT_TOO_HIGH" && e.details.maxCostVsMidBps === 300);
+  const ok = await p.buildSwap({ tokenIn: "USDC", tokenOut: LINK, amount: "60000", from: OWNER, maxCostVsMidBps: 1500 });
+  assert.ok(ok.txs.length >= 1);
+});
 test("live: native output to a recipient with code is refused; fresh deadline", { skip: !LIVE }, async () => {
   const p = createPlugin();
   const LINK = "0x53e0bca35ec356bd5dddfebbd1fc0fd03fabad39";

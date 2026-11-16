@@ -90,6 +90,7 @@ symbols are duplicated on Polygon: QUICK old/new, JPYC, FUN, …); agents should
 - Read calls accept a symbol, pick the deepest match and list every other token with the same
   symbol under `ambiguous`. Builders accept only 0x addresses or the canonical table
   (`CANONICAL`: POL, WPOL, USDC, USDC.e, USDT, WETH, WBTC, DAI, BZB).
+- `buildSwap` refuses with `PRICE_IMPACT_TOO_HIGH` when the output is more than `maxCostVsMidBps` below the cached mid price (default **300 bps**; larger values are an explicit per-call opt-in, max 10000). Slippage only covers moves after the quote, so against an already-manipulated pool this is the guard.
 - `buildSwap` re-quotes at build time, reads the latest block for a fresh deadline
   (`deadlineSeconds` 30..170, default 120), checks the existing allowance, emits an exact-amount
   approval (with a reset to 0 when an allowance exists), refuses native POL output to a recipient
