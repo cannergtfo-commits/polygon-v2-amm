@@ -4,10 +4,10 @@ pragma solidity ^0.8.20;
 import {Script, console2} from "forge-std/Script.sol";
 import {BlazarMultiRewardStaking} from "../src/BlazarMultiRewardStaking.sol";
 
-/// @notice Deploys BlazarMultiRewardStaking (stake BZB, earn up to 10 reward tokens). NOT RUN.
+/// @notice Deploys BlazarMultiRewardStaking (stake BZB, earn up to 5 reward tokens). NOT RUN.
 ///         Mirrors Deploy.s.sol safety: no key in this file, refuses chain 137 unless
-///         ALLOW_POLYGON_MAINNET=1, deployer must be PixelForge on 137, ownership goes to the
-///         operator via Ownable2Step (operator must call acceptOwnership). Adds no reward tokens and
+///         ALLOW_POLYGON_MAINNET=1, deployer must be PixelForge on 137. Ownership goes to OWNER
+///         (default operator 0x6F47…dB14, or a Safe) via Ownable2Step; OWNER must call acceptOwnership. Adds no reward tokens and
 ///         funds nothing; the owner does that after accepting ownership.
 ///
 ///         Dry run (simulation only):
@@ -24,15 +24,17 @@ contract DeployMultiRewardStaking is Script {
         }
         address deployer = vm.envOr("DEPLOYER", PIXELFORGE);
         uint256 key = vm.envOr("DEPLOYER_KEY", uint256(0));
+        // Owner is a parameter. Default: the user's wallet 0x6F47…dB14 (the user's accepted choice for launch).
+        // A Safe can be passed via OWNER now, or ownership moved to a Safe later with Ownable2Step.
         address owner = vm.envOr("OWNER", OPERATOR);
+        if (owner == address(0)) revert("OWNER is zero");
         address stakeToken = vm.envOr("STAKE_TOKEN", BZB);
         // 0.001 BZB minimum position (BZB has 18 decimals). Bounds reward-per-token growth.
         uint256 minStake = vm.envOr("MIN_STAKE", uint256(1e15));
         if (chainId == 137) {
             if (deployer != PIXELFORGE) revert("refusing chain 137: deployer must be the PixelForge address");
-            if (owner != OPERATOR) revert("refusing chain 137: pending owner must be the operator wallet");
             if (stakeToken != BZB) revert("refusing chain 137: stake token must be BZB");
-            if (minStake < 1e12 || minStake > 1e18) revert("refusing chain 137: MIN_STAKE out of range");
+            if (minStake < 1e15 || minStake > 1e18) revert("refusing chain 137: MIN_STAKE out of range");
         }
 
         if (key != 0) {

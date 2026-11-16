@@ -49,6 +49,7 @@ contract MultiRewardHandler is Test {
 
     function stake(uint256 seed, uint256 amount) external {
         calls++;
+        if (s.paused()) return;
         amount = bound(amount, MIN, 1e27);
         address a = _actor(seed);
         bzb.mint(a, amount);
@@ -119,7 +120,8 @@ contract MultiRewardHandler is Test {
         wE = bound(wE, 0, 10_000);
         if (wS + wE == 0) wE = 1;
         delay = bound(delay, 0, 30 days);
-        uint256 start = delay == 0 || future(t) != 0 ? 0 : vm.getBlockTimestamp() + delay;
+        if (s.paused() || s.activeRunCount(t) == s.MAX_RUNS_PER_TOKEN()) return;
+        uint256 start = delay == 0 ? 0 : vm.getBlockTimestamp() + delay;
         MockERC20(t).mint(owner, amount);
         uint256 before = MockERC20(t).balanceOf(address(s));
         vm.startPrank(owner);
@@ -161,6 +163,46 @@ contract MultiRewardHandler is Test {
         s.recover(t, amount, owner);
     }
 
+    /// Owner toggles pause. Withdraw/emergencyWithdraw/claim handlers do not skip when paused, so any
+    /// pause-induced revert would surface as a failed call (fail_on_revert is set for this suite).
+    function ownerTogglePause() external {
+        calls++;
+        vm.startPrank(owner);
+        if (s.paused()) s.unpause();
+        else s.pause();
+        vm.stopPrank();
+    }
+
+    /// Owner tries to take more than the surplus of any token, including BZB. Must always revert.
+    function ownerTryOverRecover(uint256 tseed, uint256 extra) external {
+        calls++;
+        address t = tseed % 2 == 0 ? address(bzb) : _token(tseed);
+        uint256 bal = MockERC20(t).balanceOf(address(s));
+        uint256 free = s.recoverable(t);
+        if (free >= bal) return;
+        uint256 amount = free + bound(extra, 1, bal - free);
+        vm.prank(owner);
+        try s.recover(t, amount, owner) {
+            revert("owner over-recovered");
+        } catch {}
+    }
+
+    /// Snapshot, withdraw an actor's full principal, check exact amount, roll back. Proves principal is
+    /// withdrawable at every step of every sequence.
+    function probeWithdrawAll(uint256 seed, bool emergency) external {
+        calls++;
+        address a = _actor(seed);
+        uint256 bal = s.balanceOf(a);
+        if (bal == 0) return;
+        uint256 snap = vm.snapshotState();
+        uint256 before = bzb.balanceOf(a);
+        vm.prank(a);
+        if (emergency) s.emergencyWithdraw();
+        else s.withdraw(bal);
+        assertEq(bzb.balanceOf(a) - before, bal, "probe: principal withdrawable");
+        vm.revertToState(snap);
+    }
+
     // ---- views for invariants
 
     function sumPrincipal() external view returns (uint256 sum) {
@@ -176,11 +218,7 @@ contract MultiRewardHandler is Test {
     }
 
     function future(address t) public view returns (uint256) {
-        M.Run memory r = s.getRun(t);
-        uint256 nowTs = vm.getBlockTimestamp();
-        uint256 e =
-            nowTs <= r.start ? 0 : s.curveEmitted(r.amount, r.duration, r.startWeight, r.endWeight, nowTs - r.start);
-        return uint256(r.amount) - e;
+        return s.unemitted(t);
     }
 
     /// Withdraw every actor's principal and claim every token; used by afterInvariant.
@@ -206,6 +244,7 @@ contract MultiRewardHandler is Test {
 
 /// forge-config: default.invariant.runs = 128
 /// forge-config: default.invariant.depth = 60
+/// forge-config: default.invariant.fail_on_revert = true
 contract MultiRewardSolvencyInvariant is Test {
     uint256 internal constant MIN = 1e15;
     MultiRewardHandler internal h;
@@ -227,7 +266,7 @@ contract MultiRewardSolvencyInvariant is Test {
         vm.stopPrank();
         h = new MultiRewardHandler(s, bzb, owner, tokens);
         targetContract(address(h));
-        bytes4[] memory sel = new bytes4[](10);
+        bytes4[] memory sel = new bytes4[](13);
         sel[0] = h.stake.selector;
         sel[1] = h.withdraw.selector;
         sel[2] = h.emergencyWithdraw.selector;
@@ -238,6 +277,9 @@ contract MultiRewardSolvencyInvariant is Test {
         sel[7] = h.donate.selector;
         sel[8] = h.recover.selector;
         sel[9] = h.warp.selector;
+        sel[10] = h.ownerTogglePause.selector;
+        sel[11] = h.ownerTryOverRecover.selector;
+        sel[12] = h.probeWithdrawAll.selector;
         targetSelector(FuzzSelector({addr: address(h), selectors: sel}));
     }
 
@@ -275,6 +317,32 @@ contract MultiRewardSolvencyInvariant is Test {
         }
     }
 
+    /// Owner actions (pause, recover attempts, new runs) can never push BZB below principal + owed + unemitted.
+    function invariant_principalUndrainable() public view {
+        assertGe(
+            bzb.balanceOf(address(s)),
+            s.totalStaked() + s.owedStored(address(bzb)) + s.unemitted(address(bzb)),
+            "bzb >= principal + owed + unemitted"
+        );
+        assertLe(
+            s.recoverable(address(bzb)) + s.totalStaked(), bzb.balanceOf(address(s)), "recoverable excludes principal"
+        );
+    }
+
+    /// P-1 guard: `owed` (incl. pending while staked) tracks Σ earned up to rounding dust. Catches
+    /// over-reservation (rewards stranded in `owed`), which the <= invariants cannot.
+    function invariant_owedMatchesEarned() public view {
+        for (uint256 i; i < tokens.length; ++i) {
+            address t = tokens[i];
+            uint256 principalPart = t == address(bzb) ? s.totalStaked() : 0;
+            uint256 owedNow = s.reserved(t) - s.unemitted(t) - principalPart;
+            uint256 sum = h.sumEarned(t);
+            assertLe(sum, owedNow, "earned <= owed");
+            assertLe(owedNow - sum, 8 * h.calls() + 8, "owed - earned is only dust");
+        }
+    }
+
+    /// Drains while possibly paused: proves pause never blocks exits or claims.
     function afterInvariant() public {
         h.drainAll();
         assertEq(s.totalStaked(), 0);

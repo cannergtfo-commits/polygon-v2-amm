@@ -10,81 +10,101 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 /// @title BlazarMultiRewardStaking
-/// @notice Stake one immutable token (BZB). Earn up to `MAX_REWARD_TOKENS` ERC20 reward tokens at once.
+/// @notice Stake one immutable token (BZB). Earn up to `MAX_REWARD_TOKENS` ERC20 reward tokens.
 ///
-///         Every reward token has its own independent run: amount, start, duration and emission curve.
-///         The curve is linear in time. The owner picks a start weight and an end weight (0..10_000 each,
-///         not both zero). Equal weights give a flat stream; a higher end weight ramps emissions up; a higher
-///         start weight ramps them down. The instantaneous rate is proportional to
-///             w(x) = startWeight + (endWeight - startWeight) * x / D        (x = seconds since start, D = duration)
-///         and the cumulative amount emitted after x seconds is the exact closed-form integral
-///             E(x) = amount * (startWeight * x * (2D - x) + endWeight * x^2) / (D^2 * (startWeight + endWeight))
-///         rounded down. E(0) = 0, E(D) = amount exactly, and E is non-decreasing, so the sum of the
-///         per-checkpoint deltas E(b) - E(a) telescopes to exactly `amount` regardless of how often anyone
-///         checkpoints. Total emission can never exceed the funded amount.
+///         RUNS. Every funding call (`notifyRewardAmount`) creates a NEW, independent run for one reward token
+///         with its own amount, start, duration and emission curve. A run is never modified after it is
+///         created: top-ups do not touch existing runs. Each token can have up to `MAX_RUNS_PER_TOKEN`
+///         unfinished runs at once (overlapping or scheduled). A run that has fully emitted is settled and
+///         its slot is freed, so the per-token loop is bounded at 5 runs.
 ///
-///         Accounting is Synthetix-style reward-per-token (scaled by 1e36 for low-decimal reward tokens and a
-///         large staked supply). For each reward token the contract tracks:
-///           - `owed`:      emitted while someone was staked and not yet paid out (covers every user's credit)
-///           - future:      `run.amount - run.emitted` (not yet emitted from the current run)
-///         `reserved(token) = owed + future (+ totalStaked if token is the staking token)`. Every funding call
-///         checks `balance >= reserved`, and `recover` can only take `balance - reserved`. Staked principal is
-///         tracked separately and is never counted as reward funding, even when BZB is also a reward token.
+///         CURVE. Per run, rate ∝ w(x) = startWeight + (endWeight - startWeight)·x/D (weights 0..10_000, not
+///         both zero). Cumulative emission after x seconds is the exact closed-form integral
+///             E(x) = amount·(startWeight·x·(2D − x) + endWeight·x²) / (D²·(startWeight + endWeight))
+///         rounded down. E(0)=0, E(D)=amount exactly, E non-decreasing, so per-run checkpoint deltas
+///         telescope to exactly `amount`; a run can never emit more than it was funded with.
 ///
-///         Emission that happens while nobody is staked is not credited to anyone. It leaves `reserved` and
-///         becomes recoverable surplus (see `recoverable`), so it is never lost and never double-counted.
+///         ACCOUNTING. Each checkpoint sums the deltas of all of a token's runs and adds them to one
+///         reward-per-token accumulator for that token (1e36 scale). Every staker shares every run pro rata to
+///         stake, so per-token aggregation gives each user exactly what per-run accounting would, with bounded
+///         gas. Users claim per token (`claim`, `claimMany`, `claimAll`); per-run views exist for UIs.
+///         Per token:
+///             owed     = emitted while someone was staked − paid out (covers every user's credit)
+///             unemitted = Σ over unfinished runs (amount − emitted)
+///             reserved = owed + unemitted (+ totalStaked if the token is the staking token)
+///         Funding checks `balance >= reserved`. `recover` can only move `balance − reserved`.
+///         Emission while nobody is staked is credited to nobody and becomes recoverable surplus.
 ///
-///         Safety properties:
-///           - `withdraw` and `emergencyWithdraw` never call a reward token and work while paused.
-///           - Claims are per token (`claim`, `claimMany`, `claimAll`); a reverting or blacklisting reward
-///             token can only block its own claims.
-///           - Unclaimed rewards survive new runs, top-ups, new reward tokens and pausing.
-///           - Fee-on-transfer funding and staking are measured by balance delta. Rebasing tokens are NOT
-///             supported as reward or staking tokens (a negative rebase can break solvency).
-///           - Reward tokens cannot be removed (keeps every user's accounting exact); the list is capped.
+///         PRINCIPAL. Staked principal (`totalStaked`) is never usable by any owner function: `recover` of the
+///         staking token is limited to `balance − (totalStaked + owed + unemitted)`; `notify` only adds
+///         tokens; `pause` only blocks `stake` and `notify`. `withdraw` and `emergencyWithdraw` have no owner
+///         gate, no pause gate, and never call a reward token. No upgradeability, no delegatecall, no
+///         selfdestruct, staking token is immutable.
+///
+///         Unsupported: rebasing / balance-reducing tokens (owner must vet reward tokens). Fee-on-transfer
+///         funding and staking are credited with the measured balance delta.
+///
+///         STAKING-TOKEN TRUST. BZB on Polygon is an upgradeable PoS-bridge proxy controlled by Polygon's
+///         multisig, not by this contract's owner. A future BZB implementation with sender-side fees,
+///         rebasing or blacklisting could make withdrawals fail; this contract cannot defend against that.
 contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
-    uint256 public constant MAX_REWARD_TOKENS = 10;
+    uint256 public constant MAX_REWARD_TOKENS = 5;
+    uint256 public constant MAX_RUNS_PER_TOKEN = 5;
     uint256 public constant MIN_DURATION = 1 days;
     uint256 public constant MAX_DURATION = 365 days;
     uint256 public constant MAX_START_DELAY = 30 days;
     uint256 public constant MAX_WEIGHT = 10_000;
-    /// @notice Upper bound on a run's total amount. Keeps `delta * PRECISION` inside 256 bits so the
-    ///         checkpoint math (used by withdraw) can never overflow.
+    /// @notice Upper bound on one run's amount. With `minStake`, keeps the accumulator far from overflow.
     uint256 public constant MAX_RUN_AMOUNT = type(uint128).max;
     uint256 public constant PRECISION = 1e36;
+    /// @notice Constructor floor for `minStake` (0.001 of an 18-decimal stake token). Keeps the per-checkpoint
+    ///         accumulator increment <= 5·2^128·1e36/1e15 ≈ 2^201, so overflow is unreachable.
+    uint256 public constant MIN_STAKE_FLOOR = 1e15;
 
     struct Run {
-        uint128 amount; // total amount scheduled for this run (rolled-over remainder + new funding)
-        uint128 emitted; // E(elapsed) at the last checkpoint, within this run
+        uint128 amount; // 0 = empty slot
+        uint128 emitted; // E(elapsed) at the last checkpoint
         uint64 start;
         uint64 duration;
         uint16 startWeight;
         uint16 endWeight;
+        uint64 id; // per-token sequential id, starts at 1
     }
 
     struct RewardState {
         bool listed;
+        uint64 nextRunId;
         uint256 rewardPerTokenStored;
-        uint256 owed; // emitted while staked, not yet paid
-        Run run;
+        uint256 owed;
+        Run[MAX_RUNS_PER_TOKEN] runs;
     }
 
     struct RunConfig {
         address token;
-        uint256 amount; // requested transfer amount; the run is credited with what actually arrives
+        uint256 amount; // requested transfer; the run is credited with what actually arrives
         uint64 duration;
         uint64 startTime; // 0 = now; otherwise now <= startTime <= now + MAX_START_DELAY
         uint16 startWeight;
         uint16 endWeight;
     }
 
+    struct RunView {
+        uint256 slot;
+        uint256 id;
+        uint256 amount;
+        uint256 emittedNow; // emitted by this run as of now (stored + pending)
+        uint256 start;
+        uint256 end;
+        uint256 startWeight;
+        uint256 endWeight;
+        uint256 ratePerSecond; // instantaneous, rounded down
+    }
+
     IERC20 public immutable stakingToken;
-    /// @notice Smallest non-zero position. Every balance is 0 or >= minStake, so `totalStaked` is 0 or
-    ///         >= minStake. This bounds the per-checkpoint reward-per-token increment
-    ///         (<= MAX_RUN_AMOUNT * PRECISION / minStake), so the accumulator can never overflow and the
-    ///         checkpoint that `withdraw` runs can never revert.
+    /// @notice Every position is 0 or >= minStake, so totalStaked is 0 or >= minStake. Bounds the
+    ///         accumulator increment per checkpoint (<= 5·MAX_RUN_AMOUNT·PRECISION / minStake).
     uint256 public immutable minStake;
 
     uint256 public totalStaked;
@@ -98,18 +118,19 @@ contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
     event Staked(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
     event EmergencyWithdrawn(address indexed user, uint256 amount);
-    event RewardPaid(address indexed user, address indexed token, uint256 amount);
+    event RewardPaid(address indexed user, address indexed token, address to, uint256 amount);
     event RewardTokenAdded(address indexed token);
     event RunStarted(
         address indexed token,
-        uint256 received,
-        uint256 rolledOver,
+        uint256 indexed runId,
+        uint256 slot,
         uint256 amount,
         uint256 start,
         uint256 duration,
         uint16 startWeight,
         uint16 endWeight
     );
+    event RunFinished(address indexed token, uint256 indexed runId, uint256 slot);
     event Recovered(address indexed token, address indexed to, uint256 amount);
 
     error ZeroAddress();
@@ -118,6 +139,7 @@ contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
     error AlreadyListed();
     error NotListed();
     error TooManyRewardTokens();
+    error TooManyRuns();
     error BadDuration();
     error BadWeights();
     error BadStart();
@@ -130,7 +152,7 @@ contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
     constructor(address initialOwner, address stakingToken_, uint256 minStake_) Ownable(initialOwner) {
         if (stakingToken_ == address(0)) revert ZeroAddress();
         if (stakingToken_.code.length == 0) revert NotContract();
-        if (minStake_ == 0) revert ZeroAmount();
+        if (minStake_ < MIN_STAKE_FLOOR) revert BelowMinStake();
         stakingToken = IERC20(stakingToken_);
         minStake = minStake_;
     }
@@ -139,13 +161,12 @@ contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
     // Owner
     // ------------------------------------------------------------------
 
-    /// @notice Ownership can only move by the two-step transfer. Renouncing would strand surplus and
-    ///         make further runs impossible, so it is disabled. Users can always withdraw and claim anyway.
+    /// @notice Disabled. Ownership moves only by the two-step transfer (e.g. to a Safe).
     function renounceOwnership() public view override onlyOwner {
         revert RenounceDisabled();
     }
 
-    /// @notice Pauses new stakes and new runs. Withdraw, emergencyWithdraw and claims stay open.
+    /// @notice Pauses `stake` and new runs only. Withdraw, emergencyWithdraw and claims stay open.
     function pause() external onlyOwner {
         _pause();
     }
@@ -154,7 +175,7 @@ contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
         _unpause();
     }
 
-    /// @notice List a reward token. Listing is permanent (see contract notes). Capped at MAX_REWARD_TOKENS.
+    /// @notice List a reward token. Permanent (no removal). Capped at MAX_REWARD_TOKENS.
     function addRewardToken(address token) external onlyOwner {
         _addRewardToken(token);
     }
@@ -165,14 +186,12 @@ contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
         }
     }
 
-    /// @notice Fund one run. If the token has a live (or scheduled) run, its not-yet-emitted remainder is
-    ///         rolled into the new run, which then follows the new duration and curve. Rewards already
-    ///         emitted are checkpointed first and stay owed to stakers.
+    /// @notice Create a new independent run. Existing runs are never changed.
     function notifyRewardAmount(RunConfig calldata cfg) external nonReentrant onlyOwner whenNotPaused {
         _notify(cfg);
     }
 
-    /// @notice Fund several runs (one per entry) in one transaction.
+    /// @notice Create several new runs (one per entry) in one transaction.
     function notifyRewardAmounts(RunConfig[] calldata cfgs) external nonReentrant onlyOwner whenNotPaused {
         if (cfgs.length == 0) revert ZeroAmount();
         for (uint256 i; i < cfgs.length; ++i) {
@@ -180,8 +199,8 @@ contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
         }
     }
 
-    /// @notice Send out tokens that are not staked principal, not owed to stakers and not scheduled for a
-    ///         current or future run. Covers donations, stranded zero-stake emission and rounding dust.
+    /// @notice Move tokens that are not principal, not owed, and not scheduled in any unfinished run.
+    ///         For the staking token this is strictly `balance − (totalStaked + owed + unemitted)`.
     function recover(address token, uint256 amount, address to) external nonReentrant onlyOwner {
         if (to == address(0)) revert ZeroAddress();
         if (amount == 0) revert ZeroAmount();
@@ -210,56 +229,85 @@ contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
         emit Staked(msg.sender, received);
     }
 
-    /// @notice Withdraw staked principal. Never touches reward tokens. Works while paused.
+    /// @notice Withdraw principal. No owner/pause gate; never calls a reward token.
     function withdraw(uint256 amount) external nonReentrant {
         _updateAll(msg.sender);
         _withdraw(msg.sender, amount);
     }
 
-    /// @notice Last-resort exit. Returns all principal without running any reward math.
-    ///         Rewards already credited in `rewards` stay claimable; only accrual since the user's last
-    ///         checkpoint is forfeited (it is shared by the remaining stakers). Works while paused.
+    /// @notice Last-resort exit: all principal back without running any run/curve math and without calling
+    ///         any reward token. The user's share of everything already settled into `rewardPerTokenStored`
+    ///         is credited to `rewards` (pure storage math, cannot revert) and stays claimable. Only emission
+    ///         since the token's last global checkpoint is not credited to the user: it is shared by the
+    ///         remaining stakers at the next checkpoint, or, if this was the last staker, becomes owner-
+    ///         recoverable surplus like any zero-stake emission.
     function emergencyWithdraw() external nonReentrant {
         uint256 bal = balanceOf[msg.sender];
         if (bal == 0) revert ZeroAmount();
+        uint256 n = _rewardTokens.length;
+        for (uint256 i; i < n; ++i) {
+            address token = _rewardTokens[i];
+            uint256 rpt = _rewards[token].rewardPerTokenStored;
+            uint256 paid = userRewardPerTokenPaid[msg.sender][token];
+            if (rpt != paid) {
+                rewards[msg.sender][token] += Math.mulDiv(bal, rpt - paid, PRECISION);
+                userRewardPerTokenPaid[msg.sender][token] = rpt;
+            }
+        }
         balanceOf[msg.sender] = 0;
         totalStaked -= bal;
         emit EmergencyWithdrawn(msg.sender, bal);
         stakingToken.safeTransfer(msg.sender, bal);
     }
 
-    /// @notice Claim one reward token.
+    /// @notice Claim one token. Settles only that token (balance is unchanged, so other tokens' accounting
+    ///         stays exact and they are settled whenever they are next touched).
     function claim(address token) external nonReentrant {
-        _updateAll(msg.sender);
-        _pay(msg.sender, token);
+        _updateOne(msg.sender, token);
+        _pay(msg.sender, token, msg.sender);
     }
 
-    /// @notice Claim a chosen subset of reward tokens (lets users skip a token that is failing).
+    /// @notice Claim one token to another address (e.g. if the caller is blacklisted by that token).
+    function claimTo(address token, address to) external nonReentrant {
+        if (to == address(0) || to == address(this)) revert ZeroAddress();
+        _updateOne(msg.sender, token);
+        _pay(msg.sender, token, to);
+    }
+
+    /// @notice Claim a chosen subset (lets users skip a failing token).
     function claimMany(address[] calldata tokens) external nonReentrant {
-        _updateAll(msg.sender);
         for (uint256 i; i < tokens.length; ++i) {
-            _pay(msg.sender, tokens[i]);
+            _updateOne(msg.sender, tokens[i]);
+            _pay(msg.sender, tokens[i], msg.sender);
         }
     }
 
-    /// @notice Claim every reward token. Reverts if any single token transfer reverts; use `claim` or
-    ///         `claimMany` to skip it.
+    /// @notice Claim a chosen subset to another address.
+    function claimManyTo(address[] calldata tokens, address to) external nonReentrant {
+        if (to == address(0) || to == address(this)) revert ZeroAddress();
+        for (uint256 i; i < tokens.length; ++i) {
+            _updateOne(msg.sender, tokens[i]);
+            _pay(msg.sender, tokens[i], to);
+        }
+    }
+
+    /// @notice Claim every token. Reverts if any one token transfer reverts; use `claim`/`claimMany`.
     function claimAll() external nonReentrant {
         _updateAll(msg.sender);
         uint256 n = _rewardTokens.length;
         for (uint256 i; i < n; ++i) {
-            _pay(msg.sender, _rewardTokens[i]);
+            _pay(msg.sender, _rewardTokens[i], msg.sender);
         }
     }
 
-    /// @notice Withdraw everything and claim every reward token. Use `withdraw` if a reward token reverts.
+    /// @notice Withdraw everything and claim every token. Use `withdraw` if a reward token reverts.
     function exit() external nonReentrant {
         _updateAll(msg.sender);
         uint256 bal = balanceOf[msg.sender];
         if (bal > 0) _withdraw(msg.sender, bal);
         uint256 n = _rewardTokens.length;
         for (uint256 i; i < n; ++i) {
-            _pay(msg.sender, _rewardTokens[i]);
+            _pay(msg.sender, _rewardTokens[i], msg.sender);
         }
     }
 
@@ -279,18 +327,57 @@ contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
         return _rewards[token].listed;
     }
 
-    function getRun(address token) external view returns (Run memory) {
-        return _rewards[token].run;
+    /// @notice Raw stored run in `slot` (amount == 0 means empty).
+    function getRun(address token, uint256 slot) external view returns (Run memory) {
+        return _rewards[token].runs[slot];
     }
 
-    /// @notice Emitted while someone was staked and not yet paid (stored value, as of the last checkpoint).
+    /// @notice Unfinished runs of a token with live numbers. Finished-but-not-yet-pruned runs are omitted.
+    function getRuns(address token) external view returns (RunView[] memory out) {
+        RewardState storage s = _rewards[token];
+        uint256 n = 0;
+        RunView[MAX_RUNS_PER_TOKEN] memory tmp; // zero-initialised scratch, only the first n entries are used
+        for (uint256 i; i < MAX_RUNS_PER_TOKEN; ++i) {
+            Run memory r = s.runs[i];
+            if (r.amount == 0 || _finishedAt(r, block.timestamp)) continue;
+            tmp[n++] = RunView({
+                slot: i,
+                id: r.id,
+                amount: r.amount,
+                emittedNow: _emittedAt(r, block.timestamp),
+                start: r.start,
+                end: uint256(r.start) + r.duration,
+                startWeight: r.startWeight,
+                endWeight: r.endWeight,
+                ratePerSecond: _rateAt(r, block.timestamp)
+            });
+        }
+        out = new RunView[](n);
+        for (uint256 i; i < n; ++i) {
+            out[i] = tmp[i];
+        }
+    }
+
+    /// @notice Number of unfinished runs (the ones that occupy a slot for a new notify).
+    function activeRunCount(address token) public view returns (uint256 n) {
+        RewardState storage s = _rewards[token];
+        for (uint256 i; i < MAX_RUNS_PER_TOKEN; ++i) {
+            Run memory r = s.runs[i];
+            if (r.amount != 0 && !_finishedAt(r, block.timestamp)) ++n;
+        }
+    }
+
     function owedStored(address token) external view returns (uint256) {
         return _rewards[token].owed;
     }
 
-    function runEnd(address token) external view returns (uint256) {
-        Run memory r = _rewards[token].run;
-        return r.amount == 0 ? 0 : uint256(r.start) + r.duration;
+    /// @notice Σ (amount − E(now)) over the token's runs: scheduled but not yet emitted.
+    function unemitted(address token) public view returns (uint256 total) {
+        RewardState storage s = _rewards[token];
+        for (uint256 i; i < MAX_RUNS_PER_TOKEN; ++i) {
+            Run memory r = s.runs[i];
+            if (r.amount != 0) total += uint256(r.amount) - _emittedAt(r, block.timestamp);
+        }
     }
 
     function rewardPerToken(address token) public view returns (uint256 rpt) {
@@ -298,8 +385,7 @@ contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
         rpt = s.rewardPerTokenStored;
         uint256 ts = totalStaked;
         if (ts == 0) return rpt;
-        Run memory r = s.run;
-        uint256 delta = _emittedAt(r, block.timestamp) - r.emitted;
+        uint256 delta = _pendingDelta(s);
         if (delta > 0) rpt += Math.mulDiv(delta, PRECISION, ts);
     }
 
@@ -316,40 +402,34 @@ contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
         }
     }
 
-    /// @notice Instantaneous emission rate (token wei per second, rounded down) of the token's run.
-    function rewardRate(address token) external view returns (uint256) {
-        Run memory r = _rewards[token].run;
-        if (r.amount == 0 || block.timestamp < r.start) return 0;
-        uint256 x = block.timestamp - r.start;
-        uint256 d = r.duration;
-        if (x >= d) return 0;
-        uint256 wS = r.startWeight;
-        uint256 wE = r.endWeight;
-        return Math.mulDiv(r.amount, 2 * (wS * (d - x) + wE * x), d * d * (wS + wE));
+    /// @notice Sum of instantaneous rates of all runs of `token` (wei per second, rounded down per run).
+    function rewardRate(address token) external view returns (uint256 rate) {
+        RewardState storage s = _rewards[token];
+        for (uint256 i; i < MAX_RUNS_PER_TOKEN; ++i) {
+            Run memory r = s.runs[i];
+            if (r.amount != 0) rate += _rateAt(r, block.timestamp);
+        }
     }
 
-    /// @notice Amount of `token` the contract must keep: owed + not-yet-emitted (+ principal for the stake token).
+    /// @notice What the contract must keep of `token`: owed + unemitted (+ totalStaked for the stake token).
     function reserved(address token) public view returns (uint256 amount) {
         RewardState storage s = _rewards[token];
         if (s.listed) {
-            Run memory r = s.run;
-            uint256 nowE = _emittedAt(r, block.timestamp);
             uint256 owed = s.owed;
-            // Emission since the last checkpoint is owed only if someone is staked; otherwise it is surplus.
-            if (totalStaked > 0) owed += nowE - r.emitted;
-            amount = owed + (uint256(r.amount) - nowE);
+            // Pending emission is owed only if someone is staked; otherwise it is surplus.
+            if (totalStaked > 0) owed += _pendingDelta(s);
+            amount = owed + unemitted(token);
         }
         if (token == address(stakingToken)) amount += totalStaked;
     }
 
-    /// @notice Amount the owner may `recover` right now.
     function recoverable(address token) external view returns (uint256) {
         uint256 bal = IERC20(token).balanceOf(address(this));
         uint256 res = reserved(token);
         return bal > res ? bal - res : 0;
     }
 
-    /// @notice The curve's cumulative emission after `elapsed` seconds (exposed for UIs and tests).
+    /// @notice A run's cumulative emission after `elapsed` seconds (for UIs and tests).
     function curveEmitted(uint256 amount, uint256 duration, uint256 startWeight, uint256 endWeight, uint256 elapsed)
         public
         pure
@@ -387,8 +467,16 @@ contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
         uint256 start = cfg.startTime == 0 ? block.timestamp : cfg.startTime;
         if (start < block.timestamp || start > block.timestamp + MAX_START_DELAY) revert BadStart();
 
-        // Settle everything emitted so far into rewardPerToken / owed before the schedule changes.
+        // Settle all existing runs (and free finished slots). Existing schedules are not modified.
         _checkpoint(cfg.token);
+        uint256 slot = MAX_RUNS_PER_TOKEN;
+        for (uint256 i; i < MAX_RUNS_PER_TOKEN; ++i) {
+            if (s.runs[i].amount == 0) {
+                slot = i;
+                break;
+            }
+        }
+        if (slot == MAX_RUNS_PER_TOKEN) revert TooManyRuns();
 
         IERC20 token = IERC20(cfg.token);
         uint256 beforeBal = token.balanceOf(address(this));
@@ -396,77 +484,122 @@ contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
         uint256 afterBal = token.balanceOf(address(this));
         if (afterBal <= beforeBal) revert ZeroAmount();
         uint256 received = afterBal - beforeBal;
+        if (received > MAX_RUN_AMOUNT) revert AmountTooLarge();
 
-        Run memory old = s.run;
-        uint256 rolledOver = uint256(old.amount) - old.emitted;
-        // A delayed start may not pause emission of an existing remainder (owner cannot freeze a live run).
-        if (rolledOver != 0 && start != block.timestamp) revert BadStart();
-        uint256 total = rolledOver + received;
-        if (total > MAX_RUN_AMOUNT) revert AmountTooLarge();
-
-        // Casts are safe: total <= MAX_RUN_AMOUNT (uint128), start <= now + 30 days, duration is uint64.
-        s.run = Run({
+        uint64 id = ++s.nextRunId;
+        // Casts are safe: received <= MAX_RUN_AMOUNT (uint128), start <= now + 30 days.
+        s.runs[slot] = Run({
             // forge-lint: disable-next-line(unsafe-typecast)
-            amount: uint128(total),
+            amount: uint128(received),
             emitted: 0,
             // forge-lint: disable-next-line(unsafe-typecast)
             start: uint64(start),
             duration: cfg.duration,
             startWeight: cfg.startWeight,
-            endWeight: cfg.endWeight
+            endWeight: cfg.endWeight,
+            id: id
         });
 
         if (afterBal < _reservedStored(cfg.token)) revert Underfunded();
-        emit RunStarted(cfg.token, received, rolledOver, total, start, cfg.duration, cfg.startWeight, cfg.endWeight);
+        emit RunStarted(cfg.token, id, slot, received, start, cfg.duration, cfg.startWeight, cfg.endWeight);
     }
 
-    /// @dev Reserved amount using stored values. Only valid right after `_checkpoint(token)`.
+    /// @dev Reserved using stored values. Only valid right after `_checkpoint(token)`.
     function _reservedStored(address token) internal view returns (uint256 amount) {
         RewardState storage s = _rewards[token];
-        if (s.listed) amount = s.owed + (uint256(s.run.amount) - s.run.emitted);
+        if (s.listed) {
+            amount = s.owed;
+            for (uint256 i; i < MAX_RUNS_PER_TOKEN; ++i) {
+                Run storage r = s.runs[i];
+                amount += uint256(r.amount) - r.emitted;
+            }
+        }
         if (token == address(stakingToken)) amount += totalStaked;
     }
 
-    /// @dev Settle emission since the last checkpoint. Pure accounting: no external calls, cannot revert
-    ///      (amounts are bounded by MAX_RUN_AMOUNT, so `delta * PRECISION` fits in 256 bits).
+    /// @dev Emission of all runs since their last checkpoint.
+    function _pendingDelta(RewardState storage s) internal view returns (uint256 delta) {
+        for (uint256 i; i < MAX_RUNS_PER_TOKEN; ++i) {
+            Run memory r = s.runs[i];
+            if (r.amount != 0) delta += _emittedAt(r, block.timestamp) - r.emitted;
+        }
+    }
+
+    /// @dev Settle all runs of `token`. Pure accounting: no external calls, cannot revert
+    ///      (≤ 5 runs × MAX_RUN_AMOUNT per call, totalStaked is 0 or ≥ minStake). Frees finished slots.
     function _checkpoint(address token) internal returns (uint256 rpt) {
         RewardState storage s = _rewards[token];
         rpt = s.rewardPerTokenStored;
-        Run memory r = s.run;
-        uint256 nowE = _emittedAt(r, block.timestamp);
-        uint256 delta = nowE - r.emitted;
+        uint256 delta = 0;
+        for (uint256 i; i < MAX_RUNS_PER_TOKEN; ++i) {
+            Run storage sr = s.runs[i];
+            uint256 amount = sr.amount;
+            if (amount == 0) continue;
+            Run memory r = sr;
+            uint256 nowE = _emittedAt(r, block.timestamp);
+            uint256 d = nowE - r.emitted;
+            if (nowE == amount) {
+                // Fully emitted: its last delta is counted below; free the slot.
+                emit RunFinished(token, r.id, i);
+                delete s.runs[i];
+            } else if (d != 0) {
+                // nowE < amount <= MAX_RUN_AMOUNT, so the cast is lossless.
+                // forge-lint: disable-next-line(unsafe-typecast)
+                sr.emitted = uint128(nowE);
+            }
+            delta += d;
+        }
         if (delta == 0) return rpt;
-        // nowE <= run.amount <= MAX_RUN_AMOUNT, so the cast is lossless.
-        // forge-lint: disable-next-line(unsafe-typecast)
-        s.run.emitted = uint128(nowE);
         uint256 ts = totalStaked;
         if (ts > 0) {
             rpt += Math.mulDiv(delta, PRECISION, ts);
             s.rewardPerTokenStored = rpt;
             s.owed += delta;
         }
-        // ts == 0: nobody earns it. It leaves `reserved` and becomes recoverable surplus.
+        // ts == 0: nobody earns it; it leaves `reserved` and becomes recoverable surplus.
     }
 
+    /// @dev Must run before any change to `balanceOf[account]` (stake/withdraw/exit).
     function _updateAll(address account) internal {
         uint256 n = _rewardTokens.length;
         uint256 bal = balanceOf[account];
         for (uint256 i; i < n; ++i) {
-            address token = _rewardTokens[i];
-            uint256 rpt = _checkpoint(token);
-            if (account != address(0)) {
-                uint256 paid = userRewardPerTokenPaid[account][token];
-                if (rpt != paid) {
-                    if (bal > 0) rewards[account][token] += Math.mulDiv(bal, rpt - paid, PRECISION);
-                    userRewardPerTokenPaid[account][token] = rpt;
-                }
-            }
+            _settleUser(account, _rewardTokens[i], bal);
+        }
+    }
+
+    /// @dev Settle one token for one user. Valid only when the user's balance is not about to change.
+    function _updateOne(address account, address token) internal {
+        if (!_rewards[token].listed) return;
+        _settleUser(account, token, balanceOf[account]);
+    }
+
+    function _settleUser(address account, address token, uint256 bal) internal {
+        uint256 rpt = _checkpoint(token);
+        uint256 paid = userRewardPerTokenPaid[account][token];
+        if (rpt != paid) {
+            if (bal > 0) rewards[account][token] += Math.mulDiv(bal, rpt - paid, PRECISION);
+            userRewardPerTokenPaid[account][token] = rpt;
         }
     }
 
     function _emittedAt(Run memory r, uint256 ts) internal pure returns (uint256) {
         if (ts <= r.start) return 0;
         return curveEmitted(r.amount, r.duration, r.startWeight, r.endWeight, ts - r.start);
+    }
+
+    function _finishedAt(Run memory r, uint256 ts) internal pure returns (bool) {
+        return ts >= uint256(r.start) + r.duration;
+    }
+
+    function _rateAt(Run memory r, uint256 ts) internal pure returns (uint256) {
+        if (r.amount == 0 || ts < r.start) return 0;
+        uint256 x = ts - r.start;
+        uint256 d = r.duration;
+        if (x >= d) return 0;
+        uint256 wS = r.startWeight;
+        uint256 wE = r.endWeight;
+        return Math.mulDiv(r.amount, 2 * (wS * (d - x) + wE * x), d * d * (wS + wE));
     }
 
     function _withdraw(address account, uint256 amount) internal {
@@ -481,12 +614,12 @@ contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
         stakingToken.safeTransfer(account, amount);
     }
 
-    function _pay(address account, address token) internal {
+    function _pay(address account, address token, address to) internal {
         uint256 amount = rewards[account][token];
         if (amount == 0) return;
         rewards[account][token] = 0;
         _rewards[token].owed -= amount;
-        emit RewardPaid(account, token, amount);
-        IERC20(token).safeTransfer(account, amount);
+        emit RewardPaid(account, token, to, amount);
+        IERC20(token).safeTransfer(to, amount);
     }
 }

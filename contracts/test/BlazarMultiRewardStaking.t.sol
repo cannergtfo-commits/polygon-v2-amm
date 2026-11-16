@@ -78,7 +78,8 @@ contract BlazarMultiRewardStakingTest is Test {
     function test_constructorRejectsZeroAndEoa() public {
         _expectDeployRevert(address(0), MIN, M.ZeroAddress.selector);
         _expectDeployRevert(makeAddr("eoa"), MIN, M.NotContract.selector);
-        _expectDeployRevert(address(bzb), 0, M.ZeroAmount.selector);
+        _expectDeployRevert(address(bzb), 0, M.BelowMinStake.selector);
+        _expectDeployRevert(address(bzb), 1e15 - 1, M.BelowMinStake.selector);
         M ok = new M(owner, address(bzb), MIN);
         assertEq(address(ok.stakingToken()), address(bzb));
         assertEq(ok.minStake(), MIN);
@@ -112,10 +113,11 @@ contract BlazarMultiRewardStakingTest is Test {
         vm.expectRevert(M.AlreadyListed.selector);
         s.addRewardToken(address(usdc));
         s.addRewardToken(address(bzb));
-        for (uint256 i; i < 7; ++i) {
+        for (uint256 i; i < 2; ++i) {
             s.addRewardToken(address(new MockERC20("X", "X", 18)));
         }
-        assertEq(s.rewardTokensLength(), 10);
+        assertEq(s.rewardTokensLength(), 5);
+        assertEq(s.MAX_REWARD_TOKENS(), 5);
         address extra = address(new MockERC20("Y", "Y", 18));
         vm.expectRevert(M.TooManyRewardTokens.selector);
         s.addRewardToken(extra);
@@ -237,7 +239,6 @@ contract BlazarMultiRewardStakingTest is Test {
         assertEq(s.rewardRate(address(wpol)), 10 ether / uint256(1 days));
         _warp(1 days);
         assertApproxEqAbs(s.earned(alice, address(wpol)), 10 ether, 1e3);
-        assertEq(s.runEnd(address(wpol)), c.startTime + 1 days);
     }
 
     function test_flashStakeEarnsNothing() public {
@@ -308,31 +309,106 @@ contract BlazarMultiRewardStakingTest is Test {
         assertApproxEqAbs(s.earned(bob, address(wpol)), 30 ether, 1e3);
     }
 
-    function test_topUpMidRunRollsOverExactly() public {
+    function _assertRunEq(M.Run memory a, M.Run memory b) internal pure {
+        assertEq(a.amount, b.amount, "amount");
+        assertEq(a.start, b.start, "start");
+        assertEq(a.duration, b.duration, "duration");
+        assertEq(a.startWeight, b.startWeight, "wS");
+        assertEq(a.endWeight, b.endWeight, "wE");
+        assertEq(a.id, b.id, "id");
+    }
+
+    function test_topUpCreatesIndependentRunAndLeavesExistingUntouched() public {
         _stake(alice, 5 ether);
         _fund(address(wpol), 100 ether, 10 days, 1, 1);
+        M.Run memory before = s.getRun(address(wpol), 0);
         _warp(4 days);
-        _fund(address(wpol), 50 ether, 5 days, 3, 1); // 60 left + 50 new over 5 days, decreasing
-        M.Run memory r = s.getRun(address(wpol));
-        assertApproxEqAbs(uint256(r.amount), 110 ether, 1);
+        uint256 earnedBefore = s.earned(alice, address(wpol));
+        _fund(address(wpol), 50 ether, 5 days, 3, 1); // new run, decreasing curve
+        M.Run memory after_ = s.getRun(address(wpol), 0);
+        _assertRunEq(before, after_); // schedule identical (emitted is just the settled checkpoint)
+        assertApproxEqAbs(uint256(after_.emitted), 40 ether, 1);
+        M.Run memory second = s.getRun(address(wpol), 1);
+        assertEq(second.amount, 50 ether);
+        assertEq(second.id, 2);
+        assertEq(second.start, vm.getBlockTimestamp());
+        assertEq(s.activeRunCount(address(wpol)), 2);
+        assertEq(s.earned(alice, address(wpol)), earnedBefore); // top-up does not change accrued
+        // Run 1 alone would have paid 60 more over 6 days; run 2 pays 50 over its first 5.
         _warp(5 days);
+        assertApproxEqAbs(s.earned(alice, address(wpol)), 40 ether + 50 ether + 50 ether, 1e3);
+        _warp(1 days);
         assertApproxEqAbs(s.earned(alice, address(wpol)), 150 ether, 1e3);
         assertLe(s.earned(alice, address(wpol)), 150 ether);
     }
 
-    function test_topUpOfScheduledRunRollsAll() public {
+    function test_scheduledRunUntouchedByLaterRun() public {
         _stake(alice, 5 ether);
         wpol.mint(owner, 10 ether);
         vm.startPrank(owner);
         wpol.approve(address(s), 10 ether);
         M.RunConfig memory c = _cfg(address(wpol), 10 ether, 1 days, 1, 1);
-        c.startTime = uint64(block.timestamp + 1 days);
+        c.startTime = uint64(vm.getBlockTimestamp() + 1 days);
         s.notifyRewardAmount(c);
         vm.stopPrank();
+        M.Run memory sched = s.getRun(address(wpol), 0);
         _fund(address(wpol), 5 ether, 1 days, 1, 1);
-        assertEq(s.getRun(address(wpol)).amount, 15 ether);
+        _assertRunEq(sched, s.getRun(address(wpol), 0));
+        _warp(1 days);
+        assertApproxEqAbs(s.earned(alice, address(wpol)), 5 ether, 1e3); // only the immediate run so far
         _warp(1 days);
         assertApproxEqAbs(s.earned(alice, address(wpol)), 15 ether, 1e3);
+    }
+
+    function test_overlappingRunsDifferentCurvesSum() public {
+        _stake(alice, 1 ether);
+        _fund(address(wpol), 100 ether, 10 days, 0, 10_000); // increasing
+        _fund(address(wpol), 100 ether, 10 days, 10_000, 0); // decreasing
+        _warp(5 days);
+        // 25% + 75% of 100 each
+        assertApproxEqAbs(s.earned(alice, address(wpol)), 100 ether, 1e3);
+        assertApproxEqAbs(s.rewardRate(address(wpol)), 2 * 100 ether / uint256(10 days), 2);
+        M.RunView[] memory v = s.getRuns(address(wpol));
+        assertEq(v.length, 2);
+        assertApproxEqAbs(v[0].emittedNow, 25 ether, 1);
+        assertApproxEqAbs(v[1].emittedNow, 75 ether, 1);
+        assertEq(v[0].end, v[0].start + 10 days);
+        _warp(5 days);
+        assertApproxEqAbs(s.earned(alice, address(wpol)), 200 ether, 1e3);
+    }
+
+    function test_maxRunsPerTokenAndFinishedRunsFreeSlots() public {
+        _stake(alice, 1 ether);
+        for (uint256 i; i < 5; ++i) {
+            _fund(address(wpol), 1 ether, uint64(1 days + i * 1 days), 1, 1);
+        }
+        assertEq(s.activeRunCount(address(wpol)), 5);
+        wpol.mint(owner, 1 ether);
+        vm.startPrank(owner);
+        wpol.approve(address(s), 1 ether);
+        vm.expectRevert(M.TooManyRuns.selector);
+        s.notifyRewardAmount(_cfg(address(wpol), 1 ether, 1 days, 1, 1));
+        vm.stopPrank();
+        // other tokens are unaffected by wpol's run cap
+        _fund(address(usdc), 1e6, 1 days, 1, 1);
+        _warp(1 days); // run id 1 is finished
+        assertEq(s.activeRunCount(address(wpol)), 4);
+        vm.startPrank(owner);
+        s.notifyRewardAmount(_cfg(address(wpol), 1 ether, 1 days, 1, 1)); // reuses the freed slot 0
+        vm.stopPrank();
+        M.Run memory r0 = s.getRun(address(wpol), 0);
+        assertEq(r0.id, 6);
+        assertEq(r0.emitted, 0);
+        _warp(10 days);
+        vm.prank(alice);
+        s.claim(address(wpol));
+        assertApproxEqAbs(wpol.balanceOf(alice), 6 ether, 1e3);
+        assertLe(wpol.balanceOf(alice), 6 ether);
+        assertEq(s.activeRunCount(address(wpol)), 0);
+        for (uint256 i; i < 5; ++i) {
+            assertEq(s.getRun(address(wpol), i).amount, 0); // all pruned after the claim checkpoint
+        }
+        assertEq(s.unemitted(address(wpol)), 0);
     }
 
     // ---------------------------------------------------------------- zero supply, recover
@@ -432,7 +508,7 @@ contract BlazarMultiRewardStakingTest is Test {
         tax.approve(address(s), 100 ether);
         s.notifyRewardAmount(_cfg(address(tax), 100 ether, 1 days, 1, 1));
         vm.stopPrank();
-        assertEq(s.getRun(address(tax)).amount, 90 ether);
+        assertEq(s.getRun(address(tax), 0).amount, 90 ether);
         _warp(1 days);
         vm.prank(alice);
         s.claim(address(tax));
@@ -587,7 +663,7 @@ contract BlazarMultiRewardStakingTest is Test {
         assertEq(s.balanceOf(alice), 0);
     }
 
-    function test_noDelayedStartWhenRemainderExists() public {
+    function test_delayedRunAlongsideLiveRunAllowed() public {
         _stake(alice, 1 ether);
         _fund(address(wpol), 10 ether, 2 days, 1, 1);
         _warp(1 days);
@@ -595,18 +671,13 @@ contract BlazarMultiRewardStakingTest is Test {
         vm.startPrank(owner);
         wpol.approve(address(s), 1 ether);
         M.RunConfig memory c = _cfg(address(wpol), 1 ether, 2 days, 1, 1);
-        c.startTime = uint64(vm.getBlockTimestamp() + 1 days);
-        vm.expectRevert(M.BadStart.selector);
+        c.startTime = uint64(vm.getBlockTimestamp() + 1 days); // starts when run 1 ends
         s.notifyRewardAmount(c);
         vm.stopPrank();
-        // After the run ends (nothing left to roll over), a delayed start is allowed again.
         _warp(1 days);
-        wpol.mint(owner, 1 ether);
-        vm.startPrank(owner);
-        wpol.approve(address(s), 1 ether);
-        c.startTime = uint64(vm.getBlockTimestamp() + 1 days);
-        s.notifyRewardAmount(c);
-        vm.stopPrank();
+        assertApproxEqAbs(s.earned(alice, address(wpol)), 10 ether, 1e3);
+        _warp(2 days);
+        assertApproxEqAbs(s.earned(alice, address(wpol)), 11 ether, 1e3);
     }
 
     function test_emergencyWithdrawZeroReverts() public {
@@ -615,11 +686,11 @@ contract BlazarMultiRewardStakingTest is Test {
         s.emergencyWithdraw();
     }
 
-    function test_gasWorstCaseWithdrawAndClaimAllTenTokens() public {
+    function test_gasWorstCaseFiveTokensFiveRunsEach() public {
         vm.startPrank(owner);
         s.addRewardToken(address(bzb));
-        address[] memory extra = new address[](7);
-        for (uint256 i; i < 7; ++i) {
+        address[] memory extra = new address[](2);
+        for (uint256 i; i < 2; ++i) {
             extra[i] = address(new MockERC20("X", "X", 18));
         }
         s.addRewardTokens(extra);
@@ -627,34 +698,300 @@ contract BlazarMultiRewardStakingTest is Test {
         _stake(alice, 10 ether);
         _stake(bob, 10 ether);
         address[] memory all = s.rewardTokens();
+        assertEq(all.length, 5);
         for (uint256 i; i < all.length; ++i) {
-            _fund(all[i], 100 ether, 30 days, 1, 2);
+            for (uint256 j; j < 5; ++j) {
+                _fund(all[i], 100 ether, uint64(30 days + j * 1 days), uint16(1 + j), uint16(5 - j));
+            }
         }
         _warp(3 days);
         vm.prank(alice);
         uint256 g = gasleft();
         s.withdraw(1 ether);
         uint256 used = g - gasleft();
-        emit log_named_uint("withdraw gas, 10 live reward tokens, first checkpoint", used);
-        assertLt(used, 1_500_000);
+        emit log_named_uint("withdraw gas, 5 tokens x 5 live runs, first checkpoint", used);
+        assertLt(used, 1_000_000);
         _warp(1 hours);
         vm.prank(alice);
         g = gasleft();
         s.withdraw(1 ether);
         used = g - gasleft();
-        emit log_named_uint("withdraw gas, 10 live reward tokens, steady state", used);
-        assertLt(used, 1_000_000);
+        emit log_named_uint("withdraw gas, 5 tokens x 5 live runs, steady state", used);
+        assertLt(used, 700_000);
         _warp(1 days);
         vm.prank(alice);
         g = gasleft();
         s.claimAll();
         used = g - gasleft();
-        emit log_named_uint("claimAll gas, 10 tokens", used);
-        assertLt(used, 1_500_000);
+        emit log_named_uint("claimAll gas, 5 tokens x 5 runs", used);
+        assertLt(used, 900_000);
+        _warp(40 days); // all 25 runs finish; next checkpoint prunes them all
+        vm.prank(alice);
+        g = gasleft();
+        s.withdraw(1 ether);
+        used = g - gasleft();
+        emit log_named_uint("withdraw gas, pruning 25 finished runs", used);
+        assertLt(used, 700_000);
         vm.prank(bob);
         g = gasleft();
         s.emergencyWithdraw();
-        assertLt(g - gasleft(), 100_000);
+        used = g - gasleft();
+        // Bob never checkpointed: crediting 5 tokens writes 10 fresh slots (P-1 fix). Still O(tokens), no run math.
+        emit log_named_uint("emergencyWithdraw gas, 5 tokens, first credit", used);
+        assertLt(used, 400_000);
+    }
+
+    // ---------------------------------------------------------------- reviewer findings (prelim 9c74471)
+
+    /// P-1 regression: emergencyWithdraw credits the user's already-settled share instead of stranding it in `owed`.
+    function test_P1_emergencyWithdrawCreditsCheckpointedShare() public {
+        _stake(alice, 10 ether);
+        _stake(bob, 10 ether);
+        _fund(address(wpol), 100 ether, 10 days, 1, 1);
+        _warp(10 days);
+        vm.prank(bob);
+        s.claim(address(wpol)); // global checkpoint; alice's 50 is settled into rpt but not credited to her
+        vm.prank(alice);
+        s.emergencyWithdraw();
+        assertApproxEqAbs(s.rewards(alice, address(wpol)), 50 ether, 1e3);
+        assertApproxEqAbs(s.earned(alice, address(wpol)), 50 ether, 1e3);
+        vm.prank(bob);
+        s.withdraw(10 ether);
+        vm.prank(alice);
+        s.claim(address(wpol));
+        assertApproxEqAbs(wpol.balanceOf(alice), 50 ether, 1e3);
+        assertLe(s.owedStored(address(wpol)), 10); // only rounding dust remains reserved
+        wpol.mint(address(s), 1 ether);
+        vm.prank(owner);
+        s.recover(address(wpol), 1 ether, owner); // no longer Underfunded
+    }
+
+    /// P-2 (documented behaviour): if the LAST staker emergency-exits, emission since the last global checkpoint
+    /// had no recipient and becomes recoverable surplus. Settled share is still credited (P-1 fix).
+    function test_P2_lastEmergencyExitPendingBecomesSurplus() public {
+        _stake(alice, 10 ether);
+        _fund(address(wpol), 100 ether, 10 days, 1, 1);
+        _warp(4 days);
+        vm.prank(alice);
+        s.claim(address(wpol)); // settles 40
+        _warp(1 days); // 10 pending, never checkpointed
+        vm.prank(alice);
+        s.emergencyWithdraw();
+        assertEq(s.earned(alice, address(wpol)), 0);
+        assertApproxEqAbs(s.recoverable(address(wpol)), 10 ether, 1e3);
+        assertApproxEqAbs(s.unemitted(address(wpol)), 50 ether, 1);
+    }
+
+    /// P-3: claim(token) settles only that token.
+    function test_P3_claimSettlesOnlyThatToken() public {
+        _stake(alice, 10 ether);
+        _fund(address(wpol), 10 ether, 1 days, 1, 1);
+        _fund(address(usdc), 10e6, 1 days, 1, 1);
+        _warp(1 days);
+        vm.prank(alice);
+        s.claim(address(usdc));
+        assertEq(s.userRewardPerTokenPaid(alice, address(wpol)), 0);
+        assertGt(s.userRewardPerTokenPaid(alice, address(usdc)), 0);
+        assertApproxEqAbs(s.earned(alice, address(wpol)), 10 ether, 1e3); // still exact
+        vm.prank(alice);
+        s.claim(address(wpol));
+        assertApproxEqAbs(wpol.balanceOf(alice), 10 ether, 1e3);
+        // unlisted token: no-op, no revert
+        vm.prank(alice);
+        s.claim(address(0xdead));
+    }
+
+    /// P-4: a blacklisted user can redirect a payout.
+    function test_P4_claimToRedirectsBlacklistedUser() public {
+        BlacklistToken blk = new BlacklistToken();
+        vm.prank(owner);
+        s.addRewardToken(address(blk));
+        _stake(alice, 10 ether);
+        blk.mint(owner, 10 ether);
+        vm.startPrank(owner);
+        blk.approve(address(s), 10 ether);
+        s.notifyRewardAmount(_cfg(address(blk), 10 ether, 1 days, 1, 1));
+        vm.stopPrank();
+        _fund(address(wpol), 4 ether, 1 days, 1, 1);
+        _warp(1 days);
+        blk.setBlocked(alice, true);
+        address carol = makeAddr("carol");
+        vm.startPrank(alice);
+        vm.expectRevert(bytes("blocked"));
+        s.claim(address(blk));
+        vm.expectRevert(M.ZeroAddress.selector);
+        s.claimTo(address(blk), address(0));
+        vm.expectRevert(M.ZeroAddress.selector);
+        s.claimTo(address(blk), address(s));
+        s.claimTo(address(blk), carol);
+        address[] memory list = new address[](2);
+        list[0] = address(wpol);
+        list[1] = address(blk); // already paid -> zero, skipped
+        s.claimManyTo(list, carol);
+        vm.expectRevert(M.ZeroAddress.selector);
+        s.claimManyTo(list, address(0));
+        vm.stopPrank();
+        assertApproxEqAbs(blk.balanceOf(carol), 10 ether, 1e3);
+        assertApproxEqAbs(wpol.balanceOf(carol), 4 ether, 1e3);
+        assertEq(s.earned(alice, address(blk)), 0);
+    }
+
+    // ---------------------------------------------------------------- principal is owner-proof
+
+    function test_ownerCannotDrainOrFreezePrincipal() public {
+        vm.prank(owner);
+        s.addRewardToken(address(bzb));
+        _stake(alice, 100 ether);
+        _stake(bob, 100 ether);
+        _fund(address(bzb), 10 ether, 2 days, 1, 1);
+        bzb.mint(address(s), 3 ether); // donation = the only surplus
+        _warp(1 days);
+
+        vm.startPrank(owner);
+        uint256 free = s.recoverable(address(bzb));
+        assertApproxEqAbs(free, 3 ether, 1);
+        vm.expectRevert(M.Underfunded.selector);
+        s.recover(address(bzb), free + 1, owner);
+        vm.expectRevert(M.Underfunded.selector);
+        s.recover(address(bzb), 200 ether, owner);
+        s.recover(address(bzb), free, owner);
+        vm.expectRevert(M.Underfunded.selector);
+        s.recover(address(bzb), 1, owner);
+        s.pause();
+        vm.stopPrank();
+
+        assertGe(bzb.balanceOf(address(s)), s.totalStaked() + s.owedStored(address(bzb)) + s.unemitted(address(bzb)));
+        // Paused: both exits still work and return exact principal.
+        vm.prank(alice);
+        s.withdraw(100 ether);
+        assertEq(bzb.balanceOf(alice), 100 ether);
+        vm.prank(bob);
+        s.emergencyWithdraw();
+        assertEq(bzb.balanceOf(bob), 100 ether);
+        // Rewards also still claimable while paused.
+        vm.prank(alice);
+        s.claim(address(bzb));
+        assertGt(bzb.balanceOf(alice), 100 ether);
+    }
+
+    function test_newOwnerHasSameLimits() public {
+        _stake(alice, 50 ether);
+        vm.prank(owner);
+        s.transferOwnership(bob);
+        vm.prank(bob);
+        s.acceptOwnership();
+        vm.prank(bob);
+        vm.expectRevert(M.Underfunded.selector);
+        s.recover(address(bzb), 1, bob);
+        vm.prank(alice);
+        s.withdraw(50 ether);
+        assertEq(bzb.balanceOf(alice), 50 ether);
+    }
+
+    /// Runtime bytecode has no DELEGATECALL, CALLCODE or SELFDESTRUCT (opcode walk skips PUSH data and
+    /// the trailing CBOR metadata). There is also no setter for the staking token: it is `immutable`.
+    function test_noDelegatecallOrSelfdestruct() public view {
+        bytes memory code = address(s).code;
+        uint256 metaLen = (uint256(uint8(code[code.length - 2])) << 8) | uint256(uint8(code[code.length - 1]));
+        uint256 end = code.length - metaLen - 2;
+        for (uint256 i; i < end; ++i) {
+            uint8 op = uint8(code[i]);
+            assertTrue(op != 0xf4 && op != 0xf2 && op != 0xff, "forbidden opcode");
+            if (op >= 0x60 && op <= 0x7f) i += op - 0x5f;
+        }
+    }
+
+    /// Any owner action sequence leaves every staker able to withdraw exact principal.
+    function testFuzz_ownerActionsNeverReducePrincipal(
+        uint256 stakeA,
+        uint256 stakeB,
+        uint256 fundAmt,
+        uint256 donation,
+        uint256 recoverAmt,
+        uint256 dt,
+        bool pauseIt
+    ) public {
+        stakeA = bound(stakeA, MIN, 1e27);
+        stakeB = bound(stakeB, MIN, 1e27);
+        fundAmt = bound(fundAmt, 1, 1e27);
+        donation = bound(donation, 0, 1e24);
+        dt = bound(dt, 0, 40 days);
+        vm.prank(owner);
+        s.addRewardToken(address(bzb));
+        _stake(alice, stakeA);
+        _stake(bob, stakeB);
+        _fund(address(bzb), fundAmt, 30 days, 1, 3);
+        if (donation > 0) bzb.mint(address(s), donation);
+        _warp(dt);
+        recoverAmt = bound(recoverAmt, 1, bzb.balanceOf(address(s)));
+        uint256 free = s.recoverable(address(bzb));
+        vm.startPrank(owner);
+        if (recoverAmt > free) vm.expectRevert(M.Underfunded.selector);
+        s.recover(address(bzb), recoverAmt, owner);
+        if (pauseIt) s.pause();
+        vm.stopPrank();
+        assertGe(
+            bzb.balanceOf(address(s)), s.totalStaked() + s.earned(alice, address(bzb)) + s.earned(bob, address(bzb))
+        );
+        vm.prank(alice);
+        s.withdraw(stakeA);
+        vm.prank(bob);
+        s.emergencyWithdraw();
+        assertEq(bzb.balanceOf(alice), stakeA);
+        assertEq(bzb.balanceOf(bob), stakeB);
+        vm.prank(alice);
+        s.claim(address(bzb));
+    }
+
+    /// Up to five overlapping runs with random curves, starts and durations: payouts never exceed funding and
+    /// match it (minus dust) when someone is staked the whole time.
+    function testFuzz_overlappingRunsSumToFunded(
+        uint96[5] memory amounts,
+        uint64[5] memory durations,
+        uint16[5] memory wS,
+        uint16[5] memory wE,
+        uint64[5] memory delays,
+        uint256[6] memory steps,
+        uint256 stakeA,
+        uint256 stakeB
+    ) public {
+        stakeA = bound(stakeA, MIN, 1e30);
+        stakeB = bound(stakeB, MIN, 1e30);
+        _stake(alice, stakeA);
+        _stake(bob, stakeB);
+        uint256 funded;
+        for (uint256 i; i < 5; ++i) {
+            uint256 amt = bound(amounts[i], 1, type(uint96).max);
+            uint16 a = uint16(bound(wS[i], 0, 10_000));
+            uint16 b = uint16(bound(wE[i], 0, 10_000));
+            if (uint256(a) + b == 0) b = 1;
+            M.RunConfig memory c = _cfg(address(wpol), amt, uint64(bound(durations[i], 1 days, 365 days)), a, b);
+            uint256 d = bound(delays[i], 0, 30 days);
+            if (d > 0) c.startTime = uint64(vm.getBlockTimestamp() + d);
+            wpol.mint(owner, amt);
+            vm.startPrank(owner);
+            wpol.approve(address(s), amt);
+            s.notifyRewardAmount(c);
+            vm.stopPrank();
+            funded += amt;
+        }
+        for (uint256 i; i < steps.length; ++i) {
+            _warp(bound(steps[i], 0, 60 days));
+            vm.prank(alice);
+            s.claim(address(wpol));
+            assertLe(wpol.balanceOf(alice) + s.earned(bob, address(wpol)), funded);
+            assertGe(wpol.balanceOf(address(s)), s.reserved(address(wpol)));
+        }
+        _warp(400 days);
+        vm.prank(alice);
+        s.claim(address(wpol));
+        vm.prank(bob);
+        s.claim(address(wpol));
+        uint256 paid = wpol.balanceOf(alice) + wpol.balanceOf(bob);
+        assertLe(paid, funded);
+        assertGe(paid + 40, funded);
+        assertEq(s.activeRunCount(address(wpol)), 0);
+        assertEq(s.unemitted(address(wpol)), 0);
     }
 
     // ---------------------------------------------------------------- fuzz
