@@ -10,6 +10,9 @@ window.BLAZARSWAP = {
   router: "0x5C0cCC397A5B222B06815C3c23959dd83F42aA86",
   feeRouter: "0x014AC678c96dd5dFAEc78BfffD8E00EEbf117E9b",
   staking: "0x3Aa4a59deC4F677A138857a828220eEd259b2469",
+  // BlazarMultiRewardStaking. Empty = the new Stake tab stays hidden and only legacy staking shows.
+  // Set this ONLY after the contract is deployed and verified on Polygon.
+  multiStaking: "",
   dailyRewards: "0x323DCb75A4f265D26dd3f5F203e12e7625d49951",
   oracle: "0x7d022EB5b18a79b585601326d87964C87F948892",
   baseToken: "0x462D8d82C2B2D2DDabf7f8a93928De09d47A5807",

@@ -70,6 +70,7 @@ import {
   v2ShareAndAmounts,
 } from "./lp-positions.mjs?v=desk22";
 import { initProfile, loadProfile, profileAccountChanged } from "./profile.mjs?v=desk23";
+import { initMultiStake, loadMultiStake, multiStakeEnabled } from "./stake-multi.mjs?v=desk25";
 
 const $ = (id) => document.getElementById(id);
 const ethers = window.ethers;
@@ -1356,6 +1357,8 @@ function approxApr(daily, supply) {
 }
 
 async function loadStake() {
+  // The multi-reward contract (if configured) loads on its own; this function keeps the legacy contract.
+  loadMultiStake().catch(() => {});
   try {
     const rpc = await provider();
     const stake = new ethers.Contract(STAKING, stakeIface.fragments, rpc);
@@ -1385,7 +1388,8 @@ async function loadStake() {
     const left = live ? Number(BigInt(finish) - BigInt(now)) : 0;
     $("stakePeriod").textContent = live ? `${Math.ceil(left / 3600)}h left · ${Number(duration) / 86400}d duration` : "Not streaming";
     $("stakeFloat").textContent = formatUnits(supply, 18, 4);
-    setStatus("stakeStatus", paused ? "Staking is paused. Withdraw and claim stay open." : "Staked BZB excludes the reward pot. APR is BZB earned per BZB staked if this daily rate ran a year.");
+    if (multiStakeEnabled()) setStatus("stakeStatus", "Withdraw and claim only. Stake new BZB in the multi-reward contract above.");
+    else setStatus("stakeStatus", paused ? "Staking is paused. Withdraw and claim stay open." : "Staked BZB excludes the reward pot. APR is BZB earned per BZB staked if this daily rate ran a year.");
     log("stakeLog", "");
   } catch (err) {
     setStatus("stakeStatus", "Could not read the staking contract.");
@@ -1403,6 +1407,7 @@ async function stakeAction(kind) {
   try {
     await assertChain();
     const code = await withReadProvider((rpc) => rpc.getCode(STAKING));
+    if (kind === "stake" && multiStakeEnabled()) throw new Error("New stakes go to the multi-reward contract above. Legacy staking is withdraw and claim only.");
     if (kind === "stake" && state.stakePaused) throw new Error("That contract is paused.");
     let data;
     if (kind === "claim") data = stakeIface.encodeFunctionData("getReward", []);
@@ -2831,6 +2836,12 @@ function boot() {
   $("claimStakeBtn").addEventListener("click", () => { stakeAction("claim"); });
   $("maxStake").addEventListener("click", async () => {
     if (!state.account) return;
+    if (multiStakeEnabled()) {
+      // Legacy section is exit-only: fill the full staked balance so Withdraw takes all of it.
+      const raw = await call(STAKING, stakeIface.encodeFunctionData("balanceOf", [state.account]));
+      $("stakeAmount").value = formatUnits(BigInt(stakeIface.decodeFunctionResult("balanceOf", raw)[0]), 18, 18);
+      return;
+    }
     const amount = await balanceOf(tokenByAddress(BZB), state.account);
     $("stakeAmount").value = formatUnits(amount, 18, 6);
   });
@@ -2886,6 +2897,25 @@ function boot() {
     reservePrice,
     wpolUsd,
     showTab,
+  });
+  initMultiStake({
+    state,
+    BZB,
+    call,
+    multicall,
+    withReadProvider,
+    send,
+    assertChain,
+    ensureAllowance,
+    explainError,
+    log,
+    setStatus,
+    formatUnits,
+    parseUnits,
+    tokenByAddress,
+    reservePrice,
+    wpolUsd,
+    paintBalances,
   });
   if (profileFromHash) showTab("profile");
   announcedWallets();
