@@ -1,25 +1,27 @@
 /**
  * BlazarMultiRewardStaking contract layer for the Stake tab: ABI, interfaces, revert decoding and the
- * feature switches. Matches the contract at commit 7a82a23 (branch multireward-staking).
+ * feature switches. Everything that knows the contract's function list lives here.
  *
- * Everything that knows the contract's function list lives here so a newer ABI can be dropped in.
- * TODO(multireward-agent): that branch adds getPosition and other views, stakeFor, compound(),
- * stakeWithPermit2, exitSkipping / claimAllSkipping, and extra fields on Staked / Withdrawn. When it is
- * the deployed version:
- *   1. Add those fragments to MULTI_STAKING_ABI (and replace the Staked / Withdrawn event fragments).
- *   2. Flip the matching FEATURES flags below. stake-multi.mjs already has hidden UI hooks for them
- *      (#msCompoundBtn and #msSkipBroken), wired through FEATURES.
- *   3. Add their gas rules to GAS_FLOORS in stake-multi-core.mjs. exitSkipping is an exit path, so give it
- *      the same 1.1M floor as withdraw unless SECURITY.md says otherwise.
+ * The UI targets the contract at 7a82a23 (branch multireward-staking). The multireward-agent ABI
+ * (aeaf3e6) is included below as MULTI_STAKING_ABI_AGENT but is only used when FEATURES.agentAbi is on.
+ * To switch once that contract is the one deployed and configured in config.js:
+ *   1. Set FEATURES.agentAbi = true (swaps the Staked / Withdrawn / EmergencyWithdrawn event shapes and
+ *      adds getPosition, stakeFor, stakeWithPermit2, compound, claimAllSkipping, exitSkipping).
+ *   2. Flip FEATURES.compound and/or FEATURES.claimAllSkipping to show their UI hooks.
+ *   3. Gas rules for the new calls are already in GAS_FLOORS (stake-multi-core.mjs).
+ * TODO(multireward-agent): loadMultiStake could read getPosition() in one call instead of the multicall,
+ * and the More menu could offer exitSkipping. stakeFor / stakeWithPermit2 have no UI yet.
  */
 const ethers = window.ethers;
 
-/** Off until the contract that has these functions is the one configured in config.js. */
+/** All off: the configured contract (when there is one) is the 7a82a23 version. Don't switch on early. */
 export const FEATURES = Object.freeze({
-  // TODO(multireward-agent): compound() restakes BZB rewards. Shows #msCompoundBtn when true.
+  // Use the multireward-agent (aeaf3e6) ABI. Required by the two flags below.
+  agentAbi: false,
+  // compound() restakes BZB rewards. Shows #msCompoundBtn when true.
   compound: false,
-  // TODO(multireward-agent): claimAllSkipping() / exitSkipping() pay every token except ones whose transfer
-  // reverts. Shows the "skip broken tokens" option next to Claim all when true.
+  // claimAllSkipping() pays every token except ones whose transfer fails. Shows the "skip broken tokens"
+  // option next to Claim all when true.
   claimAllSkipping: false,
 });
 
@@ -90,6 +92,31 @@ export const MULTI_STAKING_ABI = [
   "error SafeERC20FailedOperation(address token)",
 ];
 
+/** multireward-agent at aeaf3e6: same functions as above plus the new ones, with the new event shapes. */
+const AGENT_REPLACED = /^event (Staked|Withdrawn|EmergencyWithdrawn)\(/;
+export const MULTI_STAKING_ABI_AGENT = [
+  ...MULTI_STAKING_ABI.filter((f) => !AGENT_REPLACED.test(f)),
+  "function totalSupply() view returns (uint256)",
+  "function getPosition(address account) view returns ((uint256 staked, uint256 totalStaked, uint256 minStake, bool paused, uint256 timestamp, address[] tokens, uint256[] earned, uint256[] ratePerSecond, uint256[] rewardsEnd) p)",
+  "function earnedAll(address account) view returns (address[] tokens, uint256[] amounts)",
+  "function rewardsEnd(address token) view returns (uint256)",
+  "function emissionBetween(address token, uint256 t0, uint256 t1) view returns (uint256 total)",
+  "function stakeFor(address beneficiary, uint256 amount)",
+  "function stakeWithPermit2(address owner_, ((address token, uint256 amount) permitted, uint256 nonce, uint256 deadline) permit, bytes signature)",
+  "function compound() returns (uint256 amount)",
+  "function claimAllSkipping() returns (address[] skipped)",
+  "function exitSkipping() returns (address[] skipped)",
+  "event Staked(address indexed user, address indexed payer, uint256 amount, uint256 balanceAfter, uint256 totalStakedAfter)",
+  "event Withdrawn(address indexed user, uint256 amount, uint256 balanceAfter, uint256 totalStakedAfter)",
+  "event EmergencyWithdrawn(address indexed user, uint256 amount, uint256 balanceAfter, uint256 totalStakedAfter)",
+  "event Compounded(address indexed user, uint256 amount)",
+  "event RewardSkipped(address indexed user, address indexed token, uint256 amount)",
+  "error WrongToken()",
+  "error BadWindow()",
+  "error OnlySelf()",
+  "error InsufficientGas()",
+];
+
 export const ERROR_TEXT = {
   ZeroAddress: "That address can't be used.",
   ZeroAmount: "Nothing to do: the amount is zero.",
@@ -108,10 +135,14 @@ export const ERROR_TEXT = {
   CannotListSelf: "The staking contract can't list itself.",
   EnforcedPause: "Staking is paused. Withdraw and claims still work.",
   OwnableUnauthorizedAccount: "Only the owner can do that.",
+  WrongToken: "That signature is for a different token than BZB.",
+  BadWindow: "That time window isn't valid.",
+  InsufficientGas: "Not enough gas was sent for a full try. Retry; the tab sends at least 2.2M.",
   SafeERC20FailedOperation: "The token transfer failed. If one reward token is failing, claim the others one at a time, and use Withdraw for your stake.",
 };
 
-export const iface = new ethers.Interface(MULTI_STAKING_ABI);
+export const ACTIVE_ABI = FEATURES.agentAbi ? MULTI_STAKING_ABI_AGENT : MULTI_STAKING_ABI;
+export const iface = new ethers.Interface(ACTIVE_ABI);
 export const erc20Iface = new ethers.Interface([
   "function balanceOf(address) view returns (uint256)",
   "function symbol() view returns (string)",

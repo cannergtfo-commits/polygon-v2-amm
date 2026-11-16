@@ -70,7 +70,7 @@ import {
   v2ShareAndAmounts,
 } from "./lp-positions.mjs?v=desk22";
 import { initProfile, loadProfile, profileAccountChanged } from "./profile.mjs?v=desk23";
-import { initMultiStake, loadMultiStake, multiStakeEnabled } from "./stake-multi.mjs?v=desk25";
+import { initMultiStake, loadMultiStake, multiStakeEnabled, paintLegacyRow } from "./stake-multi.mjs?v=desk26";
 
 const $ = (id) => document.getElementById(id);
 const ethers = window.ethers;
@@ -1378,6 +1378,7 @@ async function loadStake() {
       stake.totalSupply(),
     ]);
     state.stakePaused = paused;
+    paintLegacyRow(state.account ? staked : null, state.account ? earned : 0n);
     $("stakeWallet").textContent = wallet === null ? "Connect" : formatUnits(wallet, 18, 4);
     $("stakeStaked").textContent = state.account ? formatUnits(staked, 18, 4) : "Connect";
     $("stakeEarned").textContent = state.account ? formatUnits(earned, 18, 6) : "Connect";
@@ -2899,6 +2900,12 @@ function boot() {
     showTab,
   });
   initMultiStake({
+    legacyWithdrawAll: async () => {
+      if (!state.account) return;
+      const raw = await call(STAKING, stakeIface.encodeFunctionData("balanceOf", [state.account]));
+      $("stakeAmount").value = formatUnits(BigInt(stakeIface.decodeFunctionResult("balanceOf", raw)[0]), 18, 18);
+      await stakeAction("withdraw");
+    },
     state,
     BZB,
     call,

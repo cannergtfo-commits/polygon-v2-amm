@@ -25,14 +25,28 @@ export const CURVE_PRESETS = Object.freeze({
   down: Object.freeze({ label: "Ramping down", startWeight: 10_000, endWeight: 2_000 }),
 });
 
-/** Gas: estimate + 25%. SECURITY.md (RV-01) requires at least 1.1M for withdraw, emergencyWithdraw, checkpoint. */
+/**
+ * Gas: every write sends estimate + 25%, raised to a floor for the paths that must never run out of gas.
+ *  - withdraw, emergencyWithdraw, checkpoint: at least 1.1M (SECURITY.md RV-01).
+ *  - stake, stakeFor, stakeWithPermit2, compound: at least 1.2M (security review of aeaf3e6).
+ *  - exit, claimAll, claimAllSkipping, exitSkipping: at least 2.2M. They pay up to 5 reward tokens, and on
+ *    multireward-agent (aeaf3e6) the skipping variants revert InsufficientGas rather than skip on a short limit.
+ */
 export const GAS_FLOOR = 1_100_000n;
+export const GAS_FLOOR_STAKE = 1_200_000n;
+export const GAS_FLOOR_PAYOUT = 2_200_000n;
 export const GAS_FLOORS = Object.freeze({
   withdraw: GAS_FLOOR,
   emergencyWithdraw: GAS_FLOOR,
   checkpoint: GAS_FLOOR,
-  claimAll: 0n,
-  exit: 0n,
+  stake: GAS_FLOOR_STAKE,
+  stakeFor: GAS_FLOOR_STAKE,
+  stakeWithPermit2: GAS_FLOOR_STAKE,
+  compound: GAS_FLOOR_STAKE,
+  claimAll: GAS_FLOOR_PAYOUT,
+  exit: GAS_FLOOR_PAYOUT,
+  claimAllSkipping: GAS_FLOOR_PAYOUT,
+  exitSkipping: GAS_FLOOR_PAYOUT,
 });
 
 const big = (v) => BigInt(v ?? 0);

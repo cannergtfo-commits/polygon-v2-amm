@@ -1,7 +1,7 @@
 /**
  * Stake BZB tab for BlazarMultiRewardStaking: stake BZB, earn up to 5 reward tokens, each with up to
  * 5 independent runs. Hidden unless window.BLAZARSWAP.multiStaking is set to a deployed address.
- * Reads go through the desk's read RPC; every write is estimated (+25%, 1.1M floor on exits) and
+ * Reads go through the desk's read RPC; every write is estimated (+25%, 1.1M floor on withdraw/emergency/checkpoint, 1.2M on stake/compound, 2.2M on exit/claimAll) and
  * waits for the wallet's signature.
  */
 import {
@@ -26,10 +26,10 @@ import {
   validateNewTokens,
   validateRecover,
   validateRuns,
-} from "./stake-multi-core.mjs?v=desk25";
+} from "./stake-multi-core.mjs?v=desk26";
 import { DEXSCREENER_TOKENS, dexBatches, fmtUsd, pickDexPrice, priceKey } from "./profile-core.mjs?v=desk23";
 
-import { ERROR_TEXT, FEATURES, decodeRevert, erc20Iface, iface } from "./stake-multi-contract.mjs?v=desk25";
+import { ERROR_TEXT, FEATURES, decodeRevert, erc20Iface, iface } from "./stake-multi-contract.mjs?v=desk26";
 
 const ethers = window.ethers;
 const $ = (id) => document.getElementById(id);
@@ -48,6 +48,8 @@ const ms = {
   pricesAt: 0,
   drafts: [],
   draftSeq: 0,
+  mode: "stake",
+  expanded: new Set(),
   timer: null,
 };
 
@@ -311,8 +313,7 @@ export async function loadMultiStake() {
     loadPrices([deps.BZB, ...tokens]).then(() => { if (gen === ms.gen) paint(); }).catch(() => {});
   } catch (err) {
     if (gen !== ms.gen) return;
-    deps.setStatus("msStatus", "Could not read the multi-reward staking contract.");
-    deps.log("msLog", explain(err), "err");
+    deps.log("msLog", `Could not read the staking contract. ${explain(err)}`, "err");
   }
 }
 
@@ -321,13 +322,10 @@ export async function loadMultiStake() {
 function paintMode() {
   const on = ms.enabled;
   $("msStake").hidden = !on;
-  const legacy = $("legacyStake");
-  legacy.classList.toggle("ms-legacy", on);
-  $("legacyTitle").textContent = on ? "Legacy staking" : "Stake BZB";
-  $("legacyNote").hidden = !on;
-  // The old contract only offers exits once the new one is live.
+  // Once the new contract is live, the old one collapses into a single exit-only row (#legacyRow).
+  $("legacyStake").hidden = on;
   $("stakeBtn").hidden = on;
-  $("maxStake").textContent = on ? "Max staked" : "Max wallet";
+  if (!on) $("legacyRow").hidden = true;
 }
 
 /** Legacy section: hide Stake and point the amount helper at the staked balance once the new contract is live. */
@@ -335,17 +333,48 @@ export function legacyMaxIsStaked() {
   return ms.enabled;
 }
 
+/** Called by desk.js loadStake() with the old contract's numbers. Shows the row only if there's something to exit. */
+export function paintLegacyRow(staked, earned) {
+  const row = $("legacyRow");
+  if (!row) return;
+  if (!ms.enabled || staked == null || (BigInt(staked) === 0n && BigInt(earned || 0n) === 0n)) {
+    row.hidden = true;
+    return;
+  }
+  row.hidden = false;
+  $("legacyRowStaked").textContent = fmtNice(BigInt(staked), 18);
+  $("legacyRowEarned").textContent = fmtNice(BigInt(earned || 0n), 18);
+  $("legacyRowWithdraw").disabled = BigInt(staked) === 0n;
+  $("legacyRowClaim").disabled = BigInt(earned || 0n) === 0n;
+}
+
+function setMode(mode) {
+  ms.mode = mode === "withdraw" ? "withdraw" : "stake";
+  const stake = ms.mode === "stake";
+  $("msModeStake").classList.toggle("on", stake);
+  $("msModeWithdraw").classList.toggle("on", !stake);
+  $("msModeStake").setAttribute("aria-selected", String(stake));
+  $("msModeWithdraw").setAttribute("aria-selected", String(!stake));
+  paintAction();
+}
+
+function paintAction() {
+  const d = ms.data;
+  const stake = ms.mode !== "withdraw";
+  const acct = !!d?.account;
+  $("msActionBtn").textContent = !acct ? "Connect wallet" : stake ? "Stake" : "Withdraw";
+  $("msActionBtn").disabled = acct && stake && !!d?.paused;
+  $("msBalLabel").firstChild.textContent = stake ? "Wallet " : "Staked ";
+  $("msWallet").textContent = acct ? fmtNice(stake ? d.wallet : d.staked, 18) : "—";
+}
+
 function paint() {
   const d = ms.data;
   if (!d) return;
   const acct = !!d.account;
-  $("msWallet").textContent = acct ? fmtNice(d.wallet, 18) : "Connect";
-  $("msStaked").textContent = acct ? fmtNice(d.staked, 18) : "Connect";
+  $("msStaked").textContent = acct ? fmtNice(d.staked, 18) : "—";
   $("msTotal").textContent = fmtNice(d.totalStaked, 18);
-  $("msTokens").textContent = `${d.tokens.length} of ${LIMITS.MAX_REWARD_TOKENS}`;
-  $("msMin").textContent = fmt(d.minStake, 18, 6);
   $("msPausedTag").hidden = !d.paused;
-  $("msStakeBtn").disabled = d.paused;
   const bzbPrice = priceOf(deps.BZB);
   const aprs = [];
   for (const r of d.rewards) {
@@ -353,9 +382,10 @@ function paint() {
     aprs.push(r.apr);
   }
   $("msApr").textContent = formatApr(sumApr(aprs));
-  deps.setStatus("msStatus", d.paused
-    ? "Staking is paused. New stakes are blocked, but Withdraw, emergency withdraw, and claims all still work."
-    : "Stake BZB once and earn every listed reward token. No lock and no fee. Every action waits for your signature.");
+  $("msHint").textContent = d.paused
+    ? "Staking is paused. Withdraw and claims still work."
+    : `No lock, no fee. Min ${fmt(d.minStake, 18, 6)} BZB.`;
+  paintAction();
   paintEarned(d);
   paintRuns(d);
   paintClaimTo(d);
@@ -383,100 +413,88 @@ function tokenLogo(meta) {
 function paintEarned(d) {
   const box = $("msEarned");
   box.replaceChildren();
+  $("msClaimAllBtn").disabled = true;
   if (!d.account) {
-    box.append(el("p", "status", "Connect a wallet to see what you've earned."));
-    $("msClaimAllBtn").disabled = true;
+    box.append(el("div", "ms-empty", "Connect a wallet to see your rewards."));
     return;
   }
   if (!d.rewards.length) {
-    box.append(el("p", "status", "No reward tokens are listed yet."));
-    $("msClaimAllBtn").disabled = true;
+    box.append(el("div", "ms-empty", "No reward tokens yet."));
     return;
   }
   let any = false;
   for (const r of d.rewards) {
-    const row = el("div", "pf-row");
+    const row = el("div", "ms-tok");
     row.dataset.token = r.token;
-    const who = el("div", "pf-who");
-    const names = el("div", "pf-names");
-    names.append(el("b", "", r.meta.symbol), el("small", "", short(r.token)));
-    who.append(tokenLogo(r.meta), names);
-    const right = el("div", "ms-row");
-    right.style.margin = "0";
-    const nums = el("div", "pf-nums");
     const price = priceOf(r.token);
     const usd = price != null ? toFloatUnits(r.earned, r.meta.decimals) * price : null;
-    nums.append(el("b", "ms-earned", fmtNice(r.earned, r.meta.decimals)), el("small", "", usd != null ? `≈ ${fmtUsd(usd)}` : "No price"));
-    const btn = el("button", "ghost ms-sm", "Claim");
+    const amt = el("div", "ms-amt");
+    amt.append(el("b", "ms-earned", fmtNice(r.earned, r.meta.decimals)));
+    if (usd != null && r.earned > 0n) amt.append(el("small", "", `≈ ${fmtUsd(usd)}`));
+    const btn = el("button", "ms-link", "Claim");
     btn.type = "button";
     btn.dataset.claim = r.token;
     btn.disabled = r.earned === 0n;
     if (r.earned > 0n) any = true;
-    right.append(nums, btn);
-    row.append(who, right);
+    row.append(tokenLogo(r.meta), el("span", "ms-sym", r.meta.symbol), amt, btn);
     box.append(row);
   }
   $("msClaimAllBtn").disabled = !any;
 }
 
+function runDetail(r, run, d) {
+  const st = runStatus(run, d.now);
+  const box = el("div", "ms-run-detail");
+  const dur = run.end - run.start;
+  const pct = run.amount > 0n ? Number((run.emittedNow * 10_000n) / run.amount) / 100 : 0;
+  const apr = aprPercent({ ratePerSecond: run.ratePerSecond, rewardDecimals: r.meta.decimals, rewardPriceUsd: priceOf(r.token), totalStaked: d.totalStaked, stakePriceUsd: priceOf(deps.BZB) });
+  const kv = el("div", "ms-kv");
+  const cell = (label, value) => { const c = el("div", "", label); c.append(el("b", "", value)); kv.append(c); };
+  const startRate = curveRate(run.amount, dur, run.startWeight, run.endWeight, 0) * 86_400n;
+  const endRate = curveRate(run.amount, dur, run.startWeight, run.endWeight, dur - 1) * 86_400n;
+  cell("Total", `${fmtNice(run.amount, r.meta.decimals)} ${r.meta.symbol}`);
+  cell("Paid out", `${fmtNice(run.emittedNow, r.meta.decimals)} · ${pct.toFixed(1)}%`);
+  cell("Starts", when(run.start));
+  cell("Ends", when(run.end));
+  cell("Rate now", st === "live" ? `${fmtNice(run.ratePerSecond * 86_400n, r.meta.decimals)}/day` : "Not started");
+  cell("Est. APR", st === "live" ? formatApr(apr) : "—");
+  cell("Start → end rate", `${fmtNice(startRate, r.meta.decimals)} → ${fmtNice(endRate, r.meta.decimals)}`);
+  cell("Length", durationLabel(dur));
+  const cap = el("div", "ms-curve-cap", `Run #${run.id} · ${curveLabel(run.startWeight, run.endWeight)} · ${curveDetail(run.startWeight, run.endWeight)}`);
+  const nowFrac = dur > 0 ? Math.min(1, Math.max(0, (d.now - run.start) / dur)) : null;
+  box.append(kv, cap, svgCurve(run.startWeight, run.endWeight, { width: 280, height: 56, nowFrac: st === "live" ? nowFrac : null }), legend());
+  return box;
+}
+
 function paintRuns(d) {
   const box = $("msRuns");
   box.replaceChildren();
-  const total = d.rewards.reduce((n, r) => n + r.runs.length, 0);
-  $("msRunCount").textContent = `${total} active`;
-  if (!d.rewards.length) {
-    box.append(el("p", "status", "No reward tokens are listed yet. Runs will show here once the owner funds one."));
+  const all = d.rewards.flatMap((r) => r.runs.map((run) => ({ r, run })));
+  $("msRunCount").textContent = all.length ? `${all.length} run${all.length === 1 ? "" : "s"}` : "";
+  if (!all.length) {
+    box.append(el("div", "ms-empty", "No active reward runs right now."));
     return;
   }
-  const bzbPrice = priceOf(deps.BZB);
-  for (const r of d.rewards) {
-    const group = el("div", "pf-group");
-    group.dataset.token = r.token;
-    const head = el("div", "pf-group-head");
-    const who = el("div", "pf-who");
-    const names = el("div", "pf-names");
-    const dayRate = r.rate * 86_400n;
-    names.append(el("b", "", r.meta.symbol), el("small", "", `${fmtNice(dayRate, r.meta.decimals)} ${r.meta.symbol}/day now · APR ${formatApr(r.apr)}`));
-    who.append(tokenLogo(r.meta), names);
-    head.append(who, el("span", "pf-count", `${r.runs.length} of ${LIMITS.MAX_RUNS_PER_TOKEN} runs`));
-    group.append(head);
-    if (!r.runs.length) group.append(el("p", "status", "No active runs for this token right now."));
-    for (const run of r.runs) {
-      const st = runStatus(run, d.now);
-      const card = el("div", "ms-run");
-      card.dataset.runId = String(run.id);
-      const top = el("div", "ms-run-top");
-      const title = el("div", "");
-      title.append(el("b", "", `Run #${run.id} · ${curveLabel(run.startWeight, run.endWeight)}`));
-      title.append(el("div", "pf-sub", curveDetail(run.startWeight, run.endWeight)));
-      const tag = el("span", `pf-tag ${st === "live" ? "ms-live" : "ms-sched"}`, st === "live" ? "Live" : `Starts in ${durationLabel(run.start - d.now)}`);
-      top.append(title, tag);
-      const apr = aprPercent({ ratePerSecond: run.ratePerSecond, rewardDecimals: r.meta.decimals, rewardPriceUsd: priceOf(r.token), totalStaked: d.totalStaked, stakePriceUsd: bzbPrice });
-      const pct = run.amount > 0n ? Number((run.emittedNow * 10_000n) / run.amount) / 100 : 0;
-      const grid = el("div", "ms-run-grid");
-      const cell = (label, value) => { const c = el("div"); c.append(el("b", "", value), label); grid.append(c); };
-      cell("Amount", `${fmtNice(run.amount, r.meta.decimals)} ${r.meta.symbol}`);
-      cell("Emitted so far", `${fmtNice(run.emittedNow, r.meta.decimals)} (${pct.toFixed(2)}%)`);
-      cell("Rate now", st === "live" ? `${fmtNice(run.ratePerSecond * 86_400n, r.meta.decimals)}/day` : "Not started");
-      cell("Est. APR", st === "live" ? formatApr(apr) : "—");
-      cell("Start", when(run.start));
-      cell("End", when(run.end));
-      cell("Length", durationLabel(run.end - run.start));
-      const dur = run.end - run.start;
-      const endRate = curveRate(run.amount, dur, run.startWeight, run.endWeight, dur - 1) * 86_400n;
-      const startRate = curveRate(run.amount, dur, run.startWeight, run.endWeight, 0) * 86_400n;
-      cell("Rate start → end", `${fmtNice(startRate, r.meta.decimals)} → ${fmtNice(endRate, r.meta.decimals)}/day`);
-      const bar = el("div", "ms-bar");
-      const fill = el("i");
-      fill.style.width = `${Math.min(100, pct)}%`;
-      bar.append(fill);
-      const nowFrac = dur > 0 ? Math.min(1, Math.max(0, (d.now - run.start) / dur)) : null;
-      const chart = svgCurve(run.startWeight, run.endWeight, { width: 260, height: 56, nowFrac: st === "live" ? nowFrac : null });
-      chart.style.marginTop = "8px";
-      card.append(top, grid, bar, chart);
-      group.append(card);
-    }
-    box.append(group);
+  for (const { r, run } of all) {
+    const key = `${lower(r.token)}:${run.id}`;
+    const open = ms.expanded.has(key);
+    const st = runStatus(run, d.now);
+    const pct = run.amount > 0n ? Number((run.emittedNow * 10_000n) / run.amount) / 100 : 0;
+    const strip = el("button", "ms-strip");
+    strip.type = "button";
+    strip.dataset.runKey = key;
+    strip.dataset.runId = String(run.id);
+    strip.dataset.token = r.token;
+    strip.setAttribute("aria-expanded", String(open));
+    const mini = el("span", "ms-mini");
+    const fill = el("i");
+    fill.style.width = `${Math.min(100, pct)}%`;
+    mini.append(fill);
+    const rate = st === "live" ? `${fmtNice(run.ratePerSecond * 86_400n, r.meta.decimals)}/day` : `${fmtNice(run.amount, r.meta.decimals)} total`;
+    const state = el("span", `ms-state${st === "live" ? "" : " ms-sched"}`, st === "live" ? `${pct.toFixed(0)}%` : `in ${durationLabel(run.start - d.now)}`);
+    strip.append(tokenLogo(r.meta), el("span", "ms-sym", r.meta.symbol), el("span", "ms-rate", rate), mini, state, el("span", "ms-chev", "›"));
+    box.append(strip);
+    if (open) box.append(runDetail(r, run, d));
   }
 }
 
@@ -507,9 +525,9 @@ const QUICK = [
 ];
 
 function paintOwner(d) {
-  $("msPauseState").textContent = d.paused ? "Paused" : "Active";
+  $("msPauseState").textContent = d.paused ? "paused" : "active";
   $("msPauseBtn").textContent = d.paused ? "Unpause" : "Pause";
-  $("msTokenSlots").textContent = `${d.tokens.length} of ${LIMITS.MAX_REWARD_TOKENS} listed`;
+  $("msTokenSlots").textContent = `${d.tokens.length}/${LIMITS.MAX_REWARD_TOKENS}`;
   const full = d.tokens.length >= LIMITS.MAX_REWARD_TOKENS;
   $("msAddTokensBtn").disabled = full;
   $("msAddTokens").disabled = full;
@@ -538,13 +556,12 @@ function paintOwner(d) {
   sel.replaceChildren();
   for (const x of d.ownerExtra || []) {
     const meta = ms.meta.get(lower(x.token));
-    const row = el("div", "pf-row");
+    const row = el("div", "ms-surplus-row");
     row.dataset.token = x.token;
-    const names = el("div", "pf-names");
-    names.append(el("b", "", meta.symbol), el("small", "", `Held ${fmtNice(x.held, meta.decimals)} · reserved ${fmtNice(x.reserved, meta.decimals)}`));
-    const nums = el("div", "pf-nums");
-    nums.append(el("b", "ms-surplus", fmtNice(x.recoverable, meta.decimals)), el("small", "", "recoverable"));
-    row.append(names, nums);
+    row.title = `Held ${fmtNice(x.held, meta.decimals)} · reserved ${fmtNice(x.reserved, meta.decimals)}`;
+    const right = el("span", "", "");
+    right.append(el("b", "ms-surplus", fmtNice(x.recoverable, meta.decimals)), " recoverable");
+    row.append(el("span", "", meta.symbol), right);
     box.append(row);
     const o = el("option", "", meta.symbol);
     o.value = x.token;
@@ -676,7 +693,7 @@ function draftPreview(draft) {
   const sw = Number(draft.startWeight);
   const ew = Number(draft.endWeight);
   const ok = (w) => Number.isInteger(w) && w >= 0 && w <= LIMITS.MAX_WEIGHT;
-  if (ok(sw) && ok(ew) && sw + ew > 0) box.append(svgCurve(sw, ew, { width: 260, height: 90 }), legend());
+  if (ok(sw) && ok(ew) && sw + ew > 0) box.append(svgCurve(sw, ew, { width: 200, height: 64 }), legend());
   else box.append(el("p", "ms-sum", "Weights must be 0 to 10,000 and not both zero."));
   return box;
 }
@@ -762,6 +779,8 @@ function doStake() {
     if (d && d.wallet != null && amount > d.wallet) throw new Error("That's more BZB than this wallet holds.");
     if (d && (d.staked || 0n) + amount < d.minStake) throw new Error(`The minimum position is ${fmt(d.minStake, 18, 6)} BZB.`);
     await deps.assertChain();
+    // Approve is folded into the same button: exact-amount approval first (skipped if already enough).
+    deps.log("msLog", "Checking BZB approval…", "");
     await deps.ensureAllowance({ address: deps.BZB, symbol: "BZB", decimals: 18 }, ms.address, amount, "msLog");
     const receipt = await sendCall("stake", [amount], "stake", "msLog");
     $("msAmount").value = "";
@@ -801,19 +820,20 @@ function doClaim(token) {
 
 function doCompound() {
   return run("msLog", async () => {
-    // TODO(multireward-agent): add `function compound()` to MULTI_STAKING_ABI, set FEATURES.compound, give it
-    // a gas rule in GAS_FLOORS, then:  const receipt = await sendCall("compound", [], "compound", "msLog");
+    // multireward-agent (aeaf3e6) only; the button stays hidden until FEATURES.compound is switched on.
     if (!FEATURES.compound) throw new Error("Compound isn't available on this contract version.");
-    throw new Error("Compound is not wired yet.");
+    const receipt = await sendCall("compound", [], "compound", "msLog");
+    return `Restaked your BZB rewards in block ${receipt.blockNumber}.`;
   });
 }
 
 function doClaimAll() {
   return run("msLog", async () => {
     if (FEATURES.claimAllSkipping && $("msSkipBroken").checked) {
-      // TODO(multireward-agent): add `function claimAllSkipping()` to MULTI_STAKING_ABI, then:
-      //   const receipt = await sendCall("claimAllSkipping", [], "claimAll", "msLog");
-      throw new Error("Claim all (skip broken tokens) is not wired yet.");
+      // multireward-agent (aeaf3e6) only. Skipped tokens stay credited and can be claimed later.
+      const receipt = await sendCall("claimAllSkipping", [], "claimAllSkipping", "msLog");
+      const skipped = receipt.logs.filter((l) => lower(l.address) === lower(ms.address)).map((l) => { try { return iface.parseLog(l); } catch { return null; } }).filter((e) => e?.name === "RewardSkipped").length;
+      return `Claimed in block ${receipt.blockNumber}.${skipped ? ` ${skipped} token${skipped === 1 ? "" : "s"} skipped; still claimable later.` : ""}`;
     }
     const receipt = await sendCall("claimAll", [], "claimAll", "msLog");
     return `Claimed every reward token in block ${receipt.blockNumber}. If a claim-all ever fails, claim tokens one at a time.`;
@@ -967,8 +987,26 @@ function doRecover() {
 function wire() {
   if (ms.wired) return;
   ms.wired = true;
-  $("msStakeBtn").addEventListener("click", doStake);
-  $("msWithdrawBtn").addEventListener("click", doWithdraw);
+  $("msActionBtn").addEventListener("click", () => {
+    if (!deps.state.account) {
+      $("connectBtn").click();
+      return;
+    }
+    if (ms.mode === "withdraw") doWithdraw();
+    else doStake();
+  });
+  $("msModeStake").addEventListener("click", () => setMode("stake"));
+  $("msModeWithdraw").addEventListener("click", () => setMode("withdraw"));
+  $("msRuns").addEventListener("click", (e) => {
+    const strip = e.target.closest("button[data-run-key]");
+    if (!strip) return;
+    const key = strip.dataset.runKey;
+    if (ms.expanded.has(key)) ms.expanded.delete(key);
+    else ms.expanded.add(key);
+    if (ms.data) paintRuns(ms.data);
+  });
+  $("legacyRowWithdraw").addEventListener("click", () => deps.legacyWithdrawAll?.());
+  $("legacyRowClaim").addEventListener("click", () => $("claimStakeBtn").click());
   $("msExitBtn").addEventListener("click", doExit);
   $("msClaimAllBtn").addEventListener("click", doClaimAll);
   $("msCompoundBtn").addEventListener("click", doCompound);
@@ -982,8 +1020,10 @@ function wire() {
   $("msAddTokensBtn").addEventListener("click", doAddTokens);
   $("msCreateRunsBtn").addEventListener("click", doCreateRuns);
   $("msRecoverBtn").addEventListener("click", doRecover);
-  $("msMaxWallet").addEventListener("click", () => { if (ms.data?.wallet != null) $("msAmount").value = fmt(ms.data.wallet, 18, 18); });
-  $("msMaxStaked").addEventListener("click", () => { if (ms.data?.staked != null) $("msAmount").value = fmt(ms.data.staked, 18, 18); });
+  $("msMax").addEventListener("click", () => {
+    const v = ms.mode === "withdraw" ? ms.data?.staked : ms.data?.wallet;
+    if (v != null) $("msAmount").value = fmt(v, 18, 18);
+  });
   $("msRecoverMax").addEventListener("click", () => {
     const { x, meta } = recoverPick();
     if (x && meta) $("msRecoverAmount").value = fmt(x.recoverable, meta.decimals, meta.decimals);
@@ -1053,6 +1093,15 @@ function wire() {
 /** Called once from desk.js boot with the desk's RPC / wallet helpers. */
 export function initMultiStake(d) {
   deps = d;
+  // The legacy section is hidden once the new contract is live; mirror its log into the legacy row.
+  const src = $("stakeLog");
+  const dst = $("legacyRowLog");
+  if (src && dst && window.MutationObserver) {
+    new MutationObserver(() => {
+      dst.textContent = src.textContent;
+      dst.className = src.className;
+    }).observe(src, { childList: true, characterData: true, subtree: true, attributes: true });
+  }
   ms.address = configured();
   ms.enabled = !!ms.address;
   paintMode();

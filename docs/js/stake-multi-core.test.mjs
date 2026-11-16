@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import {
   CURVE_PRESETS,
   GAS_FLOOR,
+  GAS_FLOOR_PAYOUT,
+  GAS_FLOOR_STAKE,
   LIMITS,
   aprPercent,
   curveDetail,
@@ -142,14 +144,22 @@ test("APR math", () => {
   assert.equal(toFloatUnits(1_500_000n, 6), 1.5);
 });
 
-test("gas: estimate + 25% with the 1.1M exit floor", () => {
+test("gas: estimate + 25% with the 1.1M / 2.2M floors", () => {
   assert.equal(GAS_FLOOR, 1_100_000n);
   assert.equal(gasLimitFor(400_000n, "withdraw"), 1_100_000n);
   assert.equal(gasLimitFor(400_000n, "emergencyWithdraw"), 1_100_000n);
   assert.equal(gasLimitFor(400_000n, "checkpoint"), 1_100_000n);
   assert.equal(gasLimitFor(1_000_000n, "emergencyWithdraw"), 1_250_000n);
-  assert.equal(gasLimitFor(400_000n, "claimAll"), 500_000n);
-  assert.equal(gasLimitFor(400_001n, "exit"), 500_002n);
+  assert.equal(GAS_FLOOR_PAYOUT, 2_200_000n);
+  assert.equal(GAS_FLOOR_STAKE, 1_200_000n);
+  for (const a of ["stake", "stakeFor", "stakeWithPermit2", "compound"]) {
+    assert.equal(gasLimitFor(150_000n, a), 1_200_000n, a);
+    assert.equal(gasLimitFor(1_000_000n, a), 1_250_000n, a);
+  }
+  for (const a of ["claimAll", "exit", "claimAllSkipping", "exitSkipping"]) {
+    assert.equal(gasLimitFor(400_000n, a), 2_200_000n, a);
+    assert.equal(gasLimitFor(2_000_001n, a), 2_500_002n, a);
+  }
   assert.equal(gasLimitFor(100_000n, "claim"), 125_000n);
 });
 
