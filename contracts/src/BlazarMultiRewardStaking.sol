@@ -8,6 +8,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {ISignatureTransfer} from "./interfaces/ISignatureTransfer.sol";
 
 /// @title BlazarMultiRewardStaking
 /// @notice Stake one immutable token (BZB). Earn up to `MAX_REWARD_TOKENS` ERC20 reward tokens.
@@ -44,6 +45,13 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 ///         Unsupported: rebasing / balance-reducing tokens (owner must vet reward tokens). Fee-on-transfer
 ///         funding and staking are credited with the measured balance delta.
 ///
+///         ENTRY POINTS FOR BOTS AND INTEGRATORS. `stakeFor` (payer funds, beneficiary owns),
+///         `stakeWithPermit2` (one Permit2 signature, relayable; the signer is always the beneficiary),
+///         `compound` (own owed BZB rewards into own stake, no transfer), `claimAllSkipping` / `exitSkipping`
+///         (a reward token whose transfer fails is skipped and stays credited), and the views `totalSupply`,
+///         `getPosition`, `rewardsEnd`, `emissionBetween`. Every one of these can only ADD to a position;
+///         only the account itself can ever reduce its own balance (`withdraw`, `emergencyWithdraw`, `exit*`).
+///
 ///         STAKING-TOKEN TRUST. BZB on Polygon is an upgradeable PoS-bridge proxy controlled by Polygon's
 ///         multisig, not by this contract's owner. A future BZB implementation with sender-side fees,
 ///         rebasing or blacklisting could make withdrawals fail; this contract cannot defend against that.
@@ -68,6 +76,14 @@ contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
     /// @notice Constructor floor for `minStake` (0.001 of an 18-decimal stake token). Keeps the per-checkpoint
     ///         accumulator increment <= 5·2^128·1e36/1e15 ≈ 2^201, so overflow is unreachable.
     uint256 public constant MIN_STAKE_FLOOR = 1e15;
+    /// @notice Gas forwarded to each guarded reward transfer in `claimAllSkipping` / `exitSkipping`.
+    ///         A token that needs more (or reverts, or burns it) is skipped and stays credited.
+    uint256 public constant SKIP_PAY_GAS = 200_000;
+    /// @dev Gas the caller must still hold after forwarding SKIP_PAY_GAS (covers CALL overhead and the
+    ///      1/64 kept by EIP-150), so a skip is never caused by the caller sending too little gas.
+    uint256 internal constant SKIP_GAS_OVERHEAD = 10_000;
+    /// @notice Canonical Uniswap Permit2 (same address on Polygon PoS and every other chain). Not settable.
+    ISignatureTransfer public constant PERMIT2 = ISignatureTransfer(0x000000000022D473030F116dDEE9F6B43aC78BA3);
 
     struct Run {
         uint128 amount; // 0 = empty slot
@@ -82,6 +98,7 @@ contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
     struct RewardState {
         bool listed;
         uint64 nextRunId;
+        uint64 latestEnd; // max(start + duration) over every run ever created for this token
         uint256 rewardPerTokenStored;
         uint256 owed;
         Run[MAX_RUNS_PER_TOKEN] runs;
@@ -108,6 +125,19 @@ contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
         uint256 ratePerSecond; // instantaneous, rounded down
     }
 
+    /// @notice Everything a bot needs about one account in one call (see `getPosition`).
+    struct Position {
+        uint256 staked; // balanceOf(account)
+        uint256 totalStaked;
+        uint256 minStake;
+        bool paused; // true: stake/stakeFor/stakeWithPermit2/compound and new runs are blocked; exits never are
+        uint256 timestamp; // block.timestamp the numbers are valid for
+        address[] tokens; // listed reward tokens, in listing order
+        uint256[] earned; // earned(account, token) for each token
+        uint256[] ratePerSecond; // rewardRate(token): total emission per second across all runs, now
+        uint256[] rewardsEnd; // rewardsEnd(token)
+    }
+
     IERC20 public immutable stakingToken;
     /// @notice Every position is 0 or >= minStake, so totalStaked is 0 or >= minStake. Bounds the
     ///         accumulator increment per checkpoint (<= 5·MAX_RUN_AMOUNT·PRECISION / minStake).
@@ -121,9 +151,18 @@ contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
     mapping(address => mapping(address => uint256)) public userRewardPerTokenPaid; // user => token => rpt
     mapping(address => mapping(address => uint256)) public rewards; // user => token => credited, unpaid
 
-    event Staked(address indexed user, uint256 amount);
-    event Withdrawn(address indexed user, uint256 amount);
-    event EmergencyWithdrawn(address indexed user, uint256 amount);
+    /// @dev `payer` is who funded it: the user for `stake`/`stakeWithPermit2`, the caller for `stakeFor`,
+    ///      and this contract for `compound`. `balanceAfter`/`totalStakedAfter` let indexers rebuild
+    ///      positions from events alone.
+    event Staked(
+        address indexed user, address indexed payer, uint256 amount, uint256 balanceAfter, uint256 totalStakedAfter
+    );
+    event Withdrawn(address indexed user, uint256 amount, uint256 balanceAfter, uint256 totalStakedAfter);
+    event EmergencyWithdrawn(address indexed user, uint256 amount, uint256 balanceAfter, uint256 totalStakedAfter);
+    /// @notice `amount` of the user's owed BZB rewards moved into their stake (also emits `Staked`).
+    event Compounded(address indexed user, uint256 amount);
+    /// @notice A guarded reward transfer failed in a skipping exit; `amount` stays credited to `user`.
+    event RewardSkipped(address indexed user, address indexed token, uint256 amount);
     event RewardPaid(address indexed user, address indexed token, address indexed to, uint256 amount);
     event RewardTokenAdded(address indexed token);
     event RunStarted(
@@ -155,6 +194,10 @@ contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
     error RenounceDisabled();
     error BelowMinStake();
     error CannotListSelf();
+    error WrongToken();
+    error BadWindow();
+    error OnlySelf();
+    error InsufficientGas();
 
     constructor(address initialOwner, address stakingToken_, uint256 minStake_) Ownable(initialOwner) {
         if (stakingToken_ == address(0)) revert ZeroAddress();
@@ -225,15 +268,64 @@ contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
     function stake(uint256 amount) external nonReentrant whenNotPaused {
         if (amount == 0) revert ZeroAmount();
         _updateAll(msg.sender);
+        uint256 received = _pullStake(msg.sender, amount);
+        _credit(msg.sender, msg.sender, received, false);
+    }
+
+    /// @notice Stake `amount` from msg.sender into `beneficiary`'s position (zaps, vaults, payroll bots).
+    ///         Only `beneficiary` can ever withdraw it. A deposit for someone else must be >= minStake, so it
+    ///         can never leave a sub-minStake remainder that would make the beneficiary's own partial
+    ///         `withdraw` revert (front-run griefing). Same pause and minStake rules as `stake`.
+    function stakeFor(address beneficiary, uint256 amount) external nonReentrant whenNotPaused {
+        if (beneficiary == address(0) || beneficiary == address(this)) revert ZeroAddress();
+        if (amount == 0) revert ZeroAmount();
+        _updateAll(beneficiary);
+        uint256 received = _pullStake(msg.sender, amount);
+        _credit(beneficiary, msg.sender, received, beneficiary != msg.sender);
+    }
+
+    /// @notice Stake with one Permit2 SignatureTransfer signature instead of an approve tx to this contract.
+    ///         Needs a one-time `BZB.approve(PERMIT2, ...)` by `owner_` (or gasless via BZB's
+    ///         `executeMetaTransaction`). Anyone may submit the signature (relayers, agents); the signer
+    ///         `owner_` is always the beneficiary, and exactly `permit.permitted.amount` is staked, so a relayer
+    ///         can neither redirect nor shrink the deposit. Relayed deposits must be >= minStake.
+    function stakeWithPermit2(
+        address owner_,
+        ISignatureTransfer.PermitTransferFrom calldata permit,
+        bytes calldata signature
+    ) external nonReentrant whenNotPaused {
+        if (owner_ == address(0)) revert ZeroAddress();
+        if (permit.permitted.token != address(stakingToken)) revert WrongToken();
+        uint256 amount = permit.permitted.amount;
+        if (amount == 0) revert ZeroAmount();
+        _updateAll(owner_);
         uint256 beforeBal = stakingToken.balanceOf(address(this));
-        stakingToken.safeTransferFrom(msg.sender, address(this), amount);
+        PERMIT2.permitTransferFrom(
+            permit,
+            ISignatureTransfer.SignatureTransferDetails({to: address(this), requestedAmount: amount}),
+            owner_,
+            signature
+        );
         uint256 received = stakingToken.balanceOf(address(this)) - beforeBal;
         if (received == 0) revert ZeroAmount();
-        uint256 newBal = balanceOf[msg.sender] + received;
-        if (newBal < minStake) revert BelowMinStake();
-        totalStaked += received;
-        balanceOf[msg.sender] = newBal;
-        emit Staked(msg.sender, received);
+        _credit(owner_, owner_, received, msg.sender != owner_);
+    }
+
+    /// @notice Move all of the caller's owed BZB rewards into the caller's stake. No token transfer:
+    ///         `owed` falls and `totalStaked` rises by the same amount, so `reserved(BZB)` is unchanged.
+    ///         Own position only (no keeper path). Requires BZB to be a listed reward token. Blocked by
+    ///         pause like `stake`; `claim(BZB)` stays available while paused.
+    function compound() external nonReentrant whenNotPaused returns (uint256 amount) {
+        address bzb = address(stakingToken);
+        RewardState storage st = _rewards[bzb];
+        if (!st.listed) revert NotListed();
+        _updateAll(msg.sender);
+        amount = rewards[msg.sender][bzb];
+        if (amount == 0) revert ZeroAmount();
+        rewards[msg.sender][bzb] = 0;
+        st.owed -= amount;
+        emit Compounded(msg.sender, amount);
+        _credit(msg.sender, address(this), amount, false);
     }
 
     /// @notice Withdraw principal. No owner/pause gate; never calls a reward token.
@@ -251,8 +343,9 @@ contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
         if (bal == 0) revert ZeroAmount();
         _updateAll(msg.sender);
         balanceOf[msg.sender] = 0;
-        totalStaked -= bal;
-        emit EmergencyWithdrawn(msg.sender, bal);
+        uint256 newTotal = totalStaked - bal;
+        totalStaked = newTotal;
+        emit EmergencyWithdrawn(msg.sender, bal, 0, newTotal);
         stakingToken.safeTransfer(msg.sender, bal);
     }
 
@@ -315,9 +408,78 @@ contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
         }
     }
 
+    /// @notice Like `claimAll`, but a reward token whose transfer reverts, returns false, or needs more than
+    ///         SKIP_PAY_GAS is skipped: its amount stays credited (claim it later) and `RewardSkipped` is
+    ///         emitted. Returns the skipped tokens. Reverts `InsufficientGas` rather than skipping if the
+    ///         caller did not send enough gas for a full try.
+    function claimAllSkipping() external nonReentrant returns (address[] memory skipped) {
+        _updateAll(msg.sender);
+        skipped = _payAllSkipping(msg.sender);
+    }
+
+    /// @notice Like `exit`, but reward tokens are paid as in `claimAllSkipping`. Principal is withdrawn first
+    ///         and only touches the staking token, so no reward token can block it.
+    function exitSkipping() external nonReentrant returns (address[] memory skipped) {
+        _updateAll(msg.sender);
+        uint256 bal = balanceOf[msg.sender];
+        if (bal > 0) _withdraw(msg.sender, bal);
+        skipped = _payAllSkipping(msg.sender);
+    }
+
+    /// @notice Internal hook for the skipping exits; callable only by this contract (via CALL, never
+    ///         delegatecall). Runs in its own gas-capped frame so a failing token rolls back only this payment.
+    function payRewardSelf(address account, address token) external {
+        if (msg.sender != address(this)) revert OnlySelf();
+        _pay(account, token, account);
+    }
+
     // ------------------------------------------------------------------
     // Views
     // ------------------------------------------------------------------
+
+    /// @notice Synthetix-style alias of `totalStaked` for generic TVL readers.
+    function totalSupply() external view returns (uint256) {
+        return totalStaked;
+    }
+
+    /// @notice One-call snapshot of `account` (stake, global state, and per-token earned/rate/end).
+    function getPosition(address account) external view returns (Position memory p) {
+        p.staked = balanceOf[account];
+        p.totalStaked = totalStaked;
+        p.minStake = minStake;
+        p.paused = paused();
+        p.timestamp = block.timestamp;
+        address[] memory toks = _rewardTokens;
+        uint256 n = toks.length;
+        p.tokens = toks;
+        p.earned = new uint256[](n);
+        p.ratePerSecond = new uint256[](n);
+        p.rewardsEnd = new uint256[](n);
+        for (uint256 i; i < n; ++i) {
+            p.earned[i] = earned(account, toks[i]);
+            p.ratePerSecond[i] = rewardRate(toks[i]);
+            p.rewardsEnd[i] = _rewards[toks[i]].latestEnd;
+        }
+    }
+
+    /// @notice Latest end time of any run ever created for `token` (0 if none). Rewards for `token` stop
+    ///         at this time unless a new run is added. If it is <= block.timestamp, nothing is emitting.
+    function rewardsEnd(address token) external view returns (uint256) {
+        return _rewards[token].latestEnd;
+    }
+
+    /// @notice Total emission of `token` scheduled in [t0, t1] by the runs still stored (every unfinished
+    ///         run), using the same exact curve math as accrual. Runs that finished and were pruned at a
+    ///         checkpoint are not included, so use it for windows starting now or later (APR forecasts).
+    ///         Gross emission: it goes to stakers pro rata, and to nobody while totalStaked == 0.
+    function emissionBetween(address token, uint256 t0, uint256 t1) external view returns (uint256 total) {
+        if (t0 > t1) revert BadWindow();
+        RewardState storage s = _rewards[token];
+        for (uint256 i; i < MAX_RUNS_PER_TOKEN; ++i) {
+            Run memory r = s.runs[i];
+            if (r.amount != 0) total += _emittedAt(r, t1) - _emittedAt(r, t0);
+        }
+    }
 
     function rewardTokens() external view returns (address[] memory) {
         return _rewardTokens;
@@ -407,7 +569,7 @@ contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
     }
 
     /// @notice Sum of instantaneous rates of all runs of `token` (wei per second, rounded down per run).
-    function rewardRate(address token) external view returns (uint256 rate) {
+    function rewardRate(address token) public view returns (uint256 rate) {
         RewardState storage s = _rewards[token];
         for (uint256 i; i < MAX_RUNS_PER_TOKEN; ++i) {
             Run memory r = s.runs[i];
@@ -492,6 +654,9 @@ contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
         if (received > MAX_RUN_AMOUNT) revert AmountTooLarge();
 
         uint64 id = ++s.nextRunId;
+        // forge-lint: disable-next-line(unsafe-typecast)
+        uint64 end = uint64(start) + cfg.duration; // <= now + 30 days + 365 days, no overflow
+        if (end > s.latestEnd) s.latestEnd = end;
         // Casts are safe: received <= MAX_RUN_AMOUNT (uint128), start <= now + 30 days.
         s.runs[slot] = Run({
             // forge-lint: disable-next-line(unsafe-typecast)
@@ -614,9 +779,62 @@ contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
         uint256 left = bal - amount;
         if (left != 0 && left < minStake) revert BelowMinStake();
         balanceOf[account] = left;
-        totalStaked -= amount;
-        emit Withdrawn(account, amount);
+        uint256 newTotal = totalStaked - amount;
+        totalStaked = newTotal;
+        emit Withdrawn(account, amount, left, newTotal);
         stakingToken.safeTransfer(account, amount);
+    }
+
+    /// @dev Pull `amount` of the staking token from `payer`; returns what actually arrived.
+    function _pullStake(address payer, uint256 amount) internal returns (uint256 received) {
+        uint256 beforeBal = stakingToken.balanceOf(address(this));
+        stakingToken.safeTransferFrom(payer, address(this), amount);
+        received = stakingToken.balanceOf(address(this)) - beforeBal;
+        if (received == 0) revert ZeroAmount();
+    }
+
+    /// @dev Add `amount` to `account`'s position. Callers must run `_updateAll(account)` first.
+    ///      `thirdParty`: deposit initiated by someone other than `account`; must be >= minStake.
+    function _credit(address account, address payer, uint256 amount, bool thirdParty) internal {
+        if (thirdParty && amount < minStake) revert BelowMinStake();
+        uint256 newBal = balanceOf[account] + amount;
+        if (newBal < minStake) revert BelowMinStake();
+        uint256 newTotal = totalStaked + amount;
+        totalStaked = newTotal;
+        balanceOf[account] = newBal;
+        emit Staked(account, payer, amount, newBal, newTotal);
+    }
+
+    /// @dev Try to pay every listed token; skip (keep credited) any whose guarded payment fails.
+    function _payAllSkipping(address account) internal returns (address[] memory skipped) {
+        uint256 n = _rewardTokens.length;
+        skipped = new address[](n);
+        uint256 k;
+        for (uint256 i; i < n; ++i) {
+            address token = _rewardTokens[i];
+            uint256 amount = rewards[account][token];
+            if (amount == 0) continue;
+            if (!_tryPay(account, token)) {
+                skipped[k++] = token;
+                emit RewardSkipped(account, token, amount);
+            }
+        }
+        assembly ("memory-safe") {
+            mstore(skipped, k) // shrink to the k skipped entries
+        }
+    }
+
+    /// @dev Self-CALL into `payRewardSelf` with exactly SKIP_PAY_GAS. The inner frame zeroes the credit and
+    ///      transfers; if anything in it fails (revert, false return, out of gas) the whole frame rolls back,
+    ///      so the credit is untouched. No return data is copied (returnbomb-safe). The gas check makes sure
+    ///      the callee really receives SKIP_PAY_GAS despite the 63/64 rule.
+    function _tryPay(address account, address token) internal returns (bool ok) {
+        if (gasleft() < SKIP_PAY_GAS + SKIP_PAY_GAS / 63 + SKIP_GAS_OVERHEAD) revert InsufficientGas();
+        bytes memory data = abi.encodeCall(this.payRewardSelf, (account, token));
+        uint256 g = SKIP_PAY_GAS;
+        assembly ("memory-safe") {
+            ok := call(g, address(), 0, add(data, 0x20), mload(data), 0, 0)
+        }
     }
 
     function _pay(address account, address token, address to) internal {

@@ -4,8 +4,10 @@ pragma solidity ^0.8.20;
 import {Test} from "forge-std/Test.sol";
 import {BlazarMultiRewardStaking as M} from "../../src/BlazarMultiRewardStaking.sol";
 import {MockERC20, TaxToken} from "../Mocks.sol";
+import {Permit2Helper} from "../agent/Permit2Helper.sol";
+import {ISignatureTransfer} from "../../src/interfaces/ISignatureTransfer.sol";
 
-contract MultiRewardHandler is Test {
+contract MultiRewardHandler is Permit2Helper {
     uint256 internal constant MIN = 1e15;
     M public s;
     MockERC20 public bzb;
@@ -16,6 +18,9 @@ contract MultiRewardHandler is Test {
     mapping(address => uint256) public funded; // received by the contract for runs
     mapping(address => uint256) public paid; // credited amounts paid out
     uint256 public calls;
+    mapping(address => uint256) internal keyOf;
+    address internal zap = makeAddr("zap");
+    uint256 internal permitNonce;
 
     constructor(M s_, MockERC20 bzb_, address owner_, address[] memory tokens_) {
         s = s_;
@@ -23,7 +28,9 @@ contract MultiRewardHandler is Test {
         owner = owner_;
         tokens = tokens_;
         for (uint256 i; i < 4; ++i) {
-            actors.push(makeAddr(string(abi.encodePacked("actor", vm.toString(i)))));
+            (address a, uint256 k) = makeAddrAndKey(string(abi.encodePacked("actor", vm.toString(i))));
+            actors.push(a);
+            keyOf[a] = k;
         }
     }
 
@@ -232,6 +239,122 @@ contract MultiRewardHandler is Test {
         vm.revertToState(snap);
     }
 
+    // ---- agent features (stakeFor, compound, Permit2, skipping exits)
+
+    function _earnedAll(address a) internal view returns (uint256[] memory e) {
+        e = new uint256[](tokens.length);
+        for (uint256 i; i < tokens.length; ++i) {
+            e[i] = s.earned(a, tokens[i]);
+        }
+    }
+
+    /// Third-party deposit. Beneficiary is settled first (credit == earned() just before), payer gains nothing.
+    function stakeFor(uint256 payerSeed, uint256 seed, uint256 amount) external {
+        calls++;
+        if (s.paused()) return;
+        address b = _actor(seed);
+        address payer = payerSeed % 3 == 0 ? zap : _actor(payerSeed / 3);
+        amount = bound(amount, MIN, 1e27);
+        uint256[] memory e = _earnedAll(b);
+        uint256 payerStake = s.balanceOf(payer);
+        uint256 bBal = s.balanceOf(b);
+        bzb.mint(payer, amount);
+        vm.startPrank(payer);
+        bzb.approve(address(s), amount);
+        s.stakeFor(b, amount);
+        vm.stopPrank();
+        principal[b] += amount;
+        assertEq(s.balanceOf(b), bBal + amount, "stakeFor credits beneficiary");
+        if (payer != b) assertEq(s.balanceOf(payer), payerStake, "payer position unchanged");
+        for (uint256 i; i < tokens.length; ++i) {
+            assertEq(s.rewards(b, tokens[i]), e[i], "stakeFor settles beneficiary first");
+        }
+    }
+
+    /// Owed BZB -> stake, exact: reserved(BZB) and the contract's BZB balance are unchanged.
+    function compound(uint256 seed) external {
+        calls++;
+        if (s.paused()) return;
+        address a = _actor(seed);
+        uint256 e = s.earned(a, address(bzb));
+        uint256 bal = s.balanceOf(a);
+        if (e == 0 || bal + e < MIN) return;
+        uint256[] memory eAll = _earnedAll(a);
+        uint256 res = s.reserved(address(bzb));
+        uint256 cBal = bzb.balanceOf(address(s));
+        uint256 ts = s.totalStaked();
+        vm.prank(a);
+        uint256 got = s.compound();
+        assertEq(got, e, "compound amount == earned");
+        assertEq(s.balanceOf(a), bal + e, "compound stake");
+        assertEq(s.totalStaked(), ts + e, "compound total");
+        assertEq(s.rewards(a, address(bzb)), 0, "compound clears credit");
+        assertEq(s.reserved(address(bzb)), res, "compound keeps reserved exact");
+        assertEq(bzb.balanceOf(address(s)), cBal, "compound moves no tokens");
+        for (uint256 i; i < tokens.length; ++i) {
+            if (tokens[i] != address(bzb)) assertEq(s.rewards(a, tokens[i]), eAll[i], "others settled exactly");
+        }
+        principal[a] += e;
+        paid[address(bzb)] += e; // left the reward pool, now principal
+    }
+
+    function stakePermit2(uint256 seed, uint256 amount, bool relayed) external {
+        calls++;
+        if (s.paused()) return;
+        address a = _actor(seed);
+        amount = bound(amount, MIN, 1e27);
+        bzb.mint(a, amount);
+        vm.prank(a);
+        bzb.approve(PERMIT2, type(uint256).max);
+        ISignatureTransfer.PermitTransferFrom memory p =
+            _permit(address(bzb), amount, ++permitNonce, vm.getBlockTimestamp() + 1 hours);
+        bytes memory sig = _sign(keyOf[a], p, address(s));
+        uint256 bal = s.balanceOf(a);
+        vm.prank(relayed ? zap : a);
+        s.stakeWithPermit2(a, p, sig);
+        assertEq(s.balanceOf(a), bal + amount, "permit2 credits signer");
+        assertEq(s.balanceOf(zap), 0, "relayer gets nothing");
+        principal[a] += amount;
+    }
+
+    function claimAllSkipping(uint256 seed) external {
+        calls++;
+        address a = _actor(seed);
+        uint256[] memory e = _earnedAll(a);
+        uint256[] memory cb = new uint256[](tokens.length);
+        for (uint256 i; i < tokens.length; ++i) {
+            cb[i] = MockERC20(tokens[i]).balanceOf(address(s));
+        }
+        vm.prank(a);
+        address[] memory sk = s.claimAllSkipping();
+        assertEq(sk.length, 0, "well-behaved tokens are never skipped");
+        for (uint256 i; i < tokens.length; ++i) {
+            assertEq(cb[i] - MockERC20(tokens[i]).balanceOf(address(s)), e[i], "skipping claim pays earned");
+            assertEq(s.rewards(a, tokens[i]), 0);
+            paid[tokens[i]] += e[i];
+        }
+    }
+
+    function exitSkipping(uint256 seed) external {
+        calls++;
+        address a = _actor(seed);
+        uint256 bal = s.balanceOf(a);
+        uint256[] memory e = _earnedAll(a);
+        uint256 before = bzb.balanceOf(a);
+        vm.prank(a);
+        address[] memory sk = s.exitSkipping();
+        assertEq(sk.length, 0, "well-behaved tokens are never skipped");
+        uint256 bzbReward;
+        for (uint256 i; i < tokens.length; ++i) {
+            if (tokens[i] == address(bzb)) bzbReward = e[i];
+            assertEq(s.rewards(a, tokens[i]), 0);
+            paid[tokens[i]] += e[i];
+        }
+        assertEq(bzb.balanceOf(a) - before, bal + bzbReward, "exitSkipping principal + bzb reward");
+        assertEq(s.balanceOf(a), 0);
+        principal[a] = 0;
+    }
+
     // ---- views for invariants
 
     function sumPrincipal() external view returns (uint256 sum) {
@@ -274,7 +397,7 @@ contract MultiRewardHandler is Test {
 /// forge-config: default.invariant.runs = 256
 /// forge-config: default.invariant.depth = 128
 /// forge-config: default.invariant.fail_on_revert = true
-contract MultiRewardSolvencyInvariant is Test {
+contract MultiRewardSolvencyInvariant is Permit2Helper {
     uint256 internal constant MIN = 1e15;
     MultiRewardHandler internal h;
     M internal s;
@@ -283,6 +406,7 @@ contract MultiRewardSolvencyInvariant is Test {
 
     function setUp() public {
         vm.warp(1_700_000_000);
+        _etchPermit2();
         address owner = makeAddr("owner");
         bzb = new MockERC20("BlazarBits", "BZB", 18);
         s = new M(owner, address(bzb), MIN);
@@ -295,7 +419,7 @@ contract MultiRewardSolvencyInvariant is Test {
         vm.stopPrank();
         h = new MultiRewardHandler(s, bzb, owner, tokens);
         targetContract(address(h));
-        bytes4[] memory sel = new bytes4[](14);
+        bytes4[] memory sel = new bytes4[](19);
         sel[0] = h.stake.selector;
         sel[1] = h.withdraw.selector;
         sel[2] = h.emergencyWithdraw.selector;
@@ -310,6 +434,11 @@ contract MultiRewardSolvencyInvariant is Test {
         sel[11] = h.ownerTryOverRecover.selector;
         sel[12] = h.probeWithdrawAll.selector;
         sel[13] = h.rvCheckpoint.selector;
+        sel[14] = h.stakeFor.selector;
+        sel[15] = h.compound.selector;
+        sel[16] = h.stakePermit2.selector;
+        sel[17] = h.claimAllSkipping.selector;
+        sel[18] = h.exitSkipping.selector;
         targetSelector(FuzzSelector({addr: address(h), selectors: sel}));
     }
 

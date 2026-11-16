@@ -61,3 +61,48 @@ contract ReentrantToken is ERC20 {
         }
     }
 }
+
+/// @notice Reward token whose outgoing transfers can be switched into hostile modes, for the skipping exits.
+///         0 ok, 1 revert, 2 return false (no transfer), 3 burn all gas, 4 returnbomb revert,
+///         5 transfer THEN return false (lying), 6 burn `hungry` gas then transfer normally.
+contract FlakyToken is ERC20 {
+    uint8 public mode;
+    uint256 public hungry = 150_000;
+
+    constructor() ERC20("Flaky", "FLK") {}
+
+    function mint(address to, uint256 amount) external {
+        _mint(to, amount);
+    }
+
+    function setMode(uint8 m) external {
+        mode = m;
+    }
+
+    function setHungry(uint256 g) external {
+        hungry = g;
+    }
+
+    function transfer(address to, uint256 value) public override returns (bool) {
+        uint8 m = mode;
+        if (m == 1) revert("flaky: revert");
+        if (m == 2) return false;
+        if (m == 3) {
+            while (true) {}
+        }
+        if (m == 4) {
+            assembly {
+                revert(0, 200000) // large revert data; the caller must not copy it
+            }
+        }
+        if (m == 5) {
+            super.transfer(to, value);
+            return false;
+        }
+        if (m == 6) {
+            uint256 stop = gasleft() > hungry ? gasleft() - hungry : 0;
+            while (gasleft() > stop) {}
+        }
+        return super.transfer(to, value);
+    }
+}
