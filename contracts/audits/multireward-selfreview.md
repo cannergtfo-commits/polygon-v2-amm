@@ -9,6 +9,43 @@ This is the authoring bot's own review. It is not an independent audit. The firs
 
 ---
 
+## Changelog since 9b56694 (head-of-security full review, pass1 + pass2: no Critical/High/Medium)
+
+| ID | Sev | Change |
+|----|-----|--------|
+| L-1 (P1-01 / P2-01) | Low | `emergencyWithdraw` now runs `_updateAll(msg.sender)` before zeroing the balance. That settles every listed token (all runs) with pure storage math, so the user keeps their full share up to the exit block. Before this, only the share up to each token's last *global* checkpoint was credited, so a stale window was forfeited, and became owner-recoverable if it was the last staker. Added a public `checkpoint(address[] tokens)` that settles globally and for the caller with no transfer (unlisted entries are ignored). Adopted regression tests `test_P2_emergencyStaleWindowForfeitedToOwner` (now asserts the full window is credited and nothing is recoverable) and `test_P2_emergencyAfterAnyCheckpointKeepsShare`. Inverted to the fixed behavior: `test_P1_emergencyStaleLossGoesToRemainingStakers`, `test_P1_01_emergencyNoLongerForfeitsStaleTokenShare`. Own tests: `test_L1_lastEmergencyExitKeepsFullShare`, `test_checkpointWithoutTransfer` (a frozen reward token can block neither checkpoint nor emergencyWithdraw). This supersedes the P-2 and B-6 notes below: the only remaining zero-stake surplus is emission *after* the last staker has left. |
+| I-1 (P2-03) | Info | `_addRewardToken` rejects `address(this)` (`NotContract`). BZB as a reward is still allowed. Tests: `test_I1_cannotListSelf`, inverted `test_P2_listSelfBurnsSlotPermanently` and `test_P1_listingNonTokenContractWastesSlotOnly`. |
+| I-2, I-5/P-6, I-6, I-7 | Info | Added a `BlazarMultiRewardStaking` section to `SECURITY.md`. It covers the BZB proxy-admin risk, `recover` taking all surplus, the EOA owner at launch (the user's choice, Safe later), the `claimTo` destination notes, reward-token behavior, and UI requirements. |
+| P1-06 | Info | `RewardPaid.to` is now `indexed`; the event is `RewardPaid(user, token, to, amount)`. |
+| Tests | — | Adopted the reviewer's adversarial suites in `test/review/pass1` (hostile, lying, gas-bomb, false-returning and re-entering tokens; BZB sender-fee upgrade; principal invariant with claimTo, claimMany, exit and blacklisting handlers) and `test/review/pass2` (hostile/slashable tokens, a partial-claim differential fuzz, accumulator headroom, solvency and ghost invariants, gas table). All three invariant suites now run at 256 runs × depth 128 with fail_on_revert. Slither output regenerated. |
+
+### UI note (for later, site not touched)
+`withdraw` should be the default exit. The emergency button should be secondary and carry a warning ("use only if a normal withdraw fails"). After L-1 the two pay out identically, but `emergencyWithdraw` always takes the full balance. The indexer needs the new `RewardPaid` signature.
+
+### Gas after L-1 (cold, per transaction: `forge test --isolate`, reviewer harnesses, 5 tokens × 5 live runs)
+
+| Action | Gas |
+|---|---|
+| `stake`, first checkpoint, 25 live runs | ~763k–787k (max user path) |
+| `withdraw`, steady state | ~450k–599k |
+| `withdraw` full, all 25 runs need SSTORE | ~770k |
+| `emergencyWithdraw` | ~412k–519k typical, **~621k worst** (never-touched user, 5 × 5) |
+| `claim(one token)` | ~159k–172k |
+| `claimAll` / `claimMany(5)` | ~569k–762k |
+| `exit`, pruning 25 finished runs | ~695k |
+| `notify` | ~129k–189k |
+
+Everything is under 0.8M gas, far below Polygon's block limit. `emergencyWithdraw` still makes no reward-token call. Its only external call is the final BZB transfer, so a reward token cannot make it revert.
+
+### Quick self-review of the 9b56694 → this diff
+- `emergencyWithdraw` → `_updateAll`: this is the same settlement `withdraw` already runs. It makes no external calls and has the same bounds (5 tokens × 5 runs, run ≤ 2^128, `totalStaked` 0 or ≥ 1e15), so it can't overflow or revert. The balance is zeroed after settlement, so the user's credit uses the pre-exit balance, which is correct. No new reentrancy surface (`nonReentrant`, CEI).
+- `checkpoint(tokens)`: `nonReentrant`, no transfers, the balance doesn't change, so per-token settlement is exact (same argument as B-4). A long array only costs the caller. Duplicates are harmless.
+- `address(this)` guard: owner-only path, so there is no user impact.
+- `RewardPaid` indexing: an ABI/event-topic change only.
+- No findings.
+
+---
+
 ## Changelog since 9c74471 (finding ID → fix)
 
 | ID | Source | Change |

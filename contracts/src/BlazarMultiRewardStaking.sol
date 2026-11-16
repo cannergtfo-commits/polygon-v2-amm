@@ -118,7 +118,7 @@ contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
     event Staked(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
     event EmergencyWithdrawn(address indexed user, uint256 amount);
-    event RewardPaid(address indexed user, address indexed token, address to, uint256 amount);
+    event RewardPaid(address indexed user, address indexed token, address indexed to, uint256 amount);
     event RewardTokenAdded(address indexed token);
     event RunStarted(
         address indexed token,
@@ -235,29 +235,26 @@ contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
         _withdraw(msg.sender, amount);
     }
 
-    /// @notice Last-resort exit: all principal back without running any run/curve math and without calling
-    ///         any reward token. The user's share of everything already settled into `rewardPerTokenStored`
-    ///         is credited to `rewards` (pure storage math, cannot revert) and stays claimable. Only emission
-    ///         since the token's last global checkpoint is not credited to the user: it is shared by the
-    ///         remaining stakers at the next checkpoint, or, if this was the last staker, becomes owner-
-    ///         recoverable surplus like any zero-stake emission.
+    /// @notice Last-resort exit: all principal back, never calling any reward token. Settles every listed
+    ///         token first (pure storage math via `_updateAll`, no external calls, cannot revert under the
+    ///         documented bounds), so the user keeps their full share up to this block; it stays claimable.
+    ///         Differs from `withdraw` only in always taking the full balance and skipping the min-stake check.
     function emergencyWithdraw() external nonReentrant {
         uint256 bal = balanceOf[msg.sender];
         if (bal == 0) revert ZeroAmount();
-        uint256 n = _rewardTokens.length;
-        for (uint256 i; i < n; ++i) {
-            address token = _rewardTokens[i];
-            uint256 rpt = _rewards[token].rewardPerTokenStored;
-            uint256 paid = userRewardPerTokenPaid[msg.sender][token];
-            if (rpt != paid) {
-                rewards[msg.sender][token] += Math.mulDiv(bal, rpt - paid, PRECISION);
-                userRewardPerTokenPaid[msg.sender][token] = rpt;
-            }
-        }
+        _updateAll(msg.sender);
         balanceOf[msg.sender] = 0;
         totalStaked -= bal;
         emit EmergencyWithdrawn(msg.sender, bal);
         stakingToken.safeTransfer(msg.sender, bal);
+    }
+
+    /// @notice Settle the given reward tokens (globally and for the caller) without transferring anything.
+    ///         Unlisted entries are ignored. Lets anyone checkpoint even if a token's transfers are failing.
+    function checkpoint(address[] calldata tokens) external nonReentrant {
+        for (uint256 i; i < tokens.length; ++i) {
+            _updateOne(msg.sender, tokens[i]);
+        }
     }
 
     /// @notice Claim one token. Settles only that token (balance is unchanged, so other tokens' accounting
@@ -449,6 +446,7 @@ contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
     function _addRewardToken(address token) internal {
         if (token == address(0)) revert ZeroAddress();
         if (token.code.length == 0) revert NotContract();
+        if (token == address(this)) revert NotContract();
         RewardState storage s = _rewards[token];
         if (s.listed) revert AlreadyListed();
         if (_rewardTokens.length >= MAX_REWARD_TOKENS) revert TooManyRewardTokens();

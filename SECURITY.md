@@ -59,3 +59,24 @@ What that does not stop:
 - [ ] Pause both contracts and confirm swaps and new stakes stop, while staking withdrawals still work.
 - [ ] The Next.js registry still keeps the fee router at the zero address so the unsigned preview stays closed. Do not point that UI at the deployed router until that gate is reviewed.
 - [ ] Keep the indexer off the reward poster until a day of test trades matches the JSON by hand.
+
+## BlazarMultiRewardStaking (not deployed)
+
+Branch `multireward-staking`, `contracts/src/BlazarMultiRewardStaking.sol`. Stake BZB and earn up to 5 owner-listed reward tokens. Each token can have up to 5 independent runs with linear curves. The authoring bot reviewed it twice (`contracts/audits/multireward-selfreview.md`), and the head-of-security bot reviewed 9b56694 in two passes: no Critical, High or Medium findings. This is not a professional audit. It is not deployed, and deploying needs the owner's explicit OK.
+
+What the code guarantees:
+- **Staked BZB cannot be moved by the owner.**
+  - `recover(BZB)` is limited to `balance − (totalStaked + owed + unemitted across all runs)`.
+  - `pause` blocks only `stake` and new runs.
+  - `withdraw` and `emergencyWithdraw` have no owner or pause gate and never call a reward token. Their settlement step is pure storage math.
+  - There is no proxy, no delegatecall, no selfdestruct, and no setter for the stake token or `minStake`. `renounceOwnership` is disabled.
+- **Existing runs can't be changed by new ones.** A top-up creates a new run. Existing runs keep their exact schedule.
+- **Rewards are always settled before an exit.** `emergencyWithdraw` settles every listed token first, so a user never forfeits accrued rewards (L-1 fix). `checkpoint(tokens)` settles without any transfer.
+
+Residual risks and disclosures:
+- **BZB is an upgradeable Polygon PoS-bridge proxy (P-6 / P2-07).** Its proxy admin (Polygon's multisig) could upgrade, pause or blacklist BZB. A sender-side fee, rebase or blacklist in a future BZB implementation could make the last withdrawals fail. This contract cannot defend against its own staking token. Watch BZB's implementation slot and admin, and pause new stakes in the UI if they change.
+- **`recover` takes all surplus (I-2).** Surplus is donations, emission while nobody is staked (for example, a run that starts before the first stake), and rounding dust above what's owed. The owner can move all of it, and it never includes principal, owed rewards or unemitted run amounts.
+- **The owner at launch is an EOA, by the user's choice (I-7 / P-8).** The owner is the user's own wallet 0x6F47…dB14 via Ownable2Step. The plan is to move ownership to a Safe later. While the owner is an EOA, a stolen key can only grief future rewards: listing junk tokens into the permanent 5 slots, filling a token's 5 run slots for up to about 395 days, pausing new stakes, or recovering surplus. It cannot touch principal or owed rewards. Listing the contract itself is rejected (I-1).
+- **`claimTo` / `claimManyTo` (I-6).** These pay only the caller's own rewards. They reject `to == 0` and `to == this`. Any other address is accepted, including token contracts, which may not be able to return funds. The intended use is a user blacklisted by a reward token sending the payout to another wallet they control.
+- **Reward-token behavior.** Rebasing or balance-reducing reward tokens aren't supported. A sender-fee or negative-rebase token can only make its own claims insolvent; other tokens and exits are unaffected. A fee-on-transfer token's `RewardPaid.amount` overstates what the recipient actually gets.
+- **UI requirement before launch.** `withdraw` is the default exit. The emergency button must carry a warning and should only be used if a normal withdraw fails. The `RewardPaid(user, token, to, amount)` event now indexes `to`, so the indexer must be updated.

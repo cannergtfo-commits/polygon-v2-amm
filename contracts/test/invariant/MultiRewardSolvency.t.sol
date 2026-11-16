@@ -242,8 +242,8 @@ contract MultiRewardHandler is Test {
     }
 }
 
-/// forge-config: default.invariant.runs = 128
-/// forge-config: default.invariant.depth = 60
+/// forge-config: default.invariant.runs = 256
+/// forge-config: default.invariant.depth = 128
 /// forge-config: default.invariant.fail_on_revert = true
 contract MultiRewardSolvencyInvariant is Test {
     uint256 internal constant MIN = 1e15;

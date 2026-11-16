@@ -625,21 +625,21 @@ contract BlazarMultiRewardStakingTest is Test {
         s.claim(address(wpol)); // checkpoint + pay ~25
         _warp(1 days);
         vm.prank(alice);
-        s.emergencyWithdraw(); // forfeits ~5 accrued since checkpoint
+        s.emergencyWithdraw(); // L-1: settles first, keeps the ~5 accrued since her last claim
         assertEq(bzb.balanceOf(alice), 10 ether);
         assertEq(s.balanceOf(alice), 0);
-        assertEq(s.earned(alice, address(wpol)), 0);
+        assertApproxEqAbs(s.earned(alice, address(wpol)), 5 ether, 1e3);
         _warp(4 days);
         uint256 bobEarned = s.earned(bob, address(wpol));
-        // bob gets his 25 + 5 (day 5-6, alone after alice's exit) + 40.
-        assertApproxEqAbs(bobEarned, 75 ether, 1e3);
-        assertLe(wpol.balanceOf(alice) + bobEarned, 100 ether);
+        // bob: 30 for days 0-6 (half) + 40 for days 6-10 (alone).
+        assertApproxEqAbs(bobEarned, 70 ether, 1e3);
+        assertLe(wpol.balanceOf(alice) + s.earned(alice, address(wpol)) + bobEarned, 100 ether);
         // alice can restake cleanly.
         vm.startPrank(alice);
         bzb.approve(address(s), 10 ether);
         s.stake(10 ether);
         vm.stopPrank();
-        assertEq(s.earned(alice, address(wpol)), 0);
+        assertApproxEqAbs(s.earned(alice, address(wpol)), 5 ether, 1e3); // credited share kept, no new accrual yet
         vm.prank(alice);
         vm.expectRevert(M.ZeroAmount.selector);
         s.withdraw(0);
@@ -736,9 +736,9 @@ contract BlazarMultiRewardStakingTest is Test {
         g = gasleft();
         s.emergencyWithdraw();
         used = g - gasleft();
-        // Bob never checkpointed: crediting 5 tokens writes 10 fresh slots (P-1 fix). Still O(tokens), no run math.
-        emit log_named_uint("emergencyWithdraw gas, 5 tokens, first credit", used);
-        assertLt(used, 400_000);
+        // L-1: settles all 5 tokens x 5 runs first (bob never checkpointed, so 10 fresh user slots).
+        emit log_named_uint("emergencyWithdraw gas, 5 tokens x 5 runs, first credit", used);
+        assertLt(used, 900_000);
     }
 
     // ---------------------------------------------------------------- reviewer findings (prelim 9c74471)
@@ -766,20 +766,54 @@ contract BlazarMultiRewardStakingTest is Test {
         s.recover(address(wpol), 1 ether, owner); // no longer Underfunded
     }
 
-    /// P-2 (documented behaviour): if the LAST staker emergency-exits, emission since the last global checkpoint
-    /// had no recipient and becomes recoverable surplus. Settled share is still credited (P-1 fix).
-    function test_P2_lastEmergencyExitPendingBecomesSurplus() public {
+    /// L-1: the LAST staker's emergency exit now settles first, so they keep the full share; nothing becomes
+    /// owner surplus except emission after they left.
+    function test_L1_lastEmergencyExitKeepsFullShare() public {
         _stake(alice, 10 ether);
         _fund(address(wpol), 100 ether, 10 days, 1, 1);
         _warp(4 days);
         vm.prank(alice);
-        s.claim(address(wpol)); // settles 40
+        s.claim(address(wpol)); // pays 40
         _warp(1 days); // 10 pending, never checkpointed
         vm.prank(alice);
         s.emergencyWithdraw();
-        assertEq(s.earned(alice, address(wpol)), 0);
+        assertApproxEqAbs(s.earned(alice, address(wpol)), 10 ether, 1e3);
+        assertLe(s.recoverable(address(wpol)), 1);
+        _warp(1 days); // nobody staked now: this day's 10 is surplus
         assertApproxEqAbs(s.recoverable(address(wpol)), 10 ether, 1e3);
-        assertApproxEqAbs(s.unemitted(address(wpol)), 50 ether, 1);
+        assertApproxEqAbs(s.unemitted(address(wpol)), 40 ether, 1);
+    }
+
+    /// checkpoint(tokens) settles globally and for the caller without transferring, even if transfers fail.
+    function test_checkpointWithoutTransfer() public {
+        BlacklistToken blk = new BlacklistToken();
+        vm.prank(owner);
+        s.addRewardToken(address(blk));
+        _stake(alice, 10 ether);
+        blk.mint(owner, 10 ether);
+        vm.startPrank(owner);
+        blk.approve(address(s), 10 ether);
+        s.notifyRewardAmount(_cfg(address(blk), 10 ether, 2 days, 1, 1));
+        vm.stopPrank();
+        _warp(1 days);
+        blk.setFrozen(true);
+        address[] memory list = new address[](2);
+        list[0] = address(blk);
+        list[1] = address(0xdead); // unlisted: ignored
+        vm.prank(alice);
+        s.checkpoint(list);
+        assertApproxEqAbs(s.rewards(alice, address(blk)), 5 ether, 1e3);
+        assertApproxEqAbs(s.getRun(address(blk), 0).emitted, 5 ether, 1);
+        assertEq(blk.balanceOf(alice), 0);
+        vm.prank(alice);
+        s.emergencyWithdraw(); // frozen reward token cannot block the exit
+        assertEq(bzb.balanceOf(alice), 10 ether);
+    }
+
+    function test_I1_cannotListSelf() public {
+        vm.prank(owner);
+        vm.expectRevert(M.NotContract.selector);
+        s.addRewardToken(address(s));
     }
 
     /// P-3: claim(token) settles only that token.
