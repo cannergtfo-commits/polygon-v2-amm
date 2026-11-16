@@ -9,12 +9,24 @@ This is the authoring bot's own review. It is not an independent audit. The firs
 
 ---
 
+## Changelog since 984a927 (head-of-security re-verification: L-1, checkpoint(), I-1 and RewardPaid.to closed; nothing above Info)
+
+| ID | Change |
+|----|--------|
+| RV-01 | Adopted `test/review/reverify/RvGas.t.sol` (cold `vm.cool` measurements, with 21k intrinsic included). Every user-path scenario is capped at **1,000,000 gas**. Worst-case `emergencyWithdraw`: **~792k cold** (never-touched user, 5 tokens × 25 runs mid-flight) and **~885k gross** when all 25 runs finish inside the exit transaction. **UI requirement:** send `emergencyWithdraw`, `checkpoint` and `withdraw` with `estimateGas` + 25%, or a fixed gas limit of at least **1.1M**. This is also recorded in SECURITY.md. |
+| RV-02 | Invariant handlers (`MultiRewardSolvency`, `Pass1PrincipalInvariant`) now call `checkpoint()` with random lists: listed tokens, unlisted addresses, duplicates and empty lists. They assert `checkpoint` never changes `earned()`, and that after every `emergencyWithdraw`, `rewards(user, token) == earned()` from just before the exit, with exact principal returned. |
+| RV-03 | SECURITY.md corrected. Rounding dust stays inside `owed` and is **not** owner surplus. The section now references the 984a927 fix verification and the gas-limit note. |
+| RV-04 | Added `SAFETY BOUND` comments at `MIN_STAKE_FLOOR`, `MAX_RUN_AMOUNT` and `MIN_DURATION`, plus a SECURITY.md note: any change to them requires re-proving that `withdraw`/`emergencyWithdraw` cannot revert. They are compile-time constants with no setter. |
+| RV-05 | New `CannotListSelf()` error for self-listing; this is the only contract logic change. Renamed the stale tests: `test_P2_emergencyStaleWindowCreditedToUser`, `test_P2_listSelfRejected`, `test_P1_listingSelfRejected` (stale "only wastes a permanent slot" comment removed), plus `test_P1_emergencyStaleWindowKeptByUser`. |
+
+---
+
 ## Changelog since 9b56694 (head-of-security full review, pass1 + pass2: no Critical/High/Medium)
 
 | ID | Sev | Change |
 |----|-----|--------|
-| L-1 (P1-01 / P2-01) | Low | `emergencyWithdraw` now runs `_updateAll(msg.sender)` before zeroing the balance. That settles every listed token (all runs) with pure storage math, so the user keeps their full share up to the exit block. Before this, only the share up to each token's last *global* checkpoint was credited, so a stale window was forfeited, and became owner-recoverable if it was the last staker. Added a public `checkpoint(address[] tokens)` that settles globally and for the caller with no transfer (unlisted entries are ignored). Adopted regression tests `test_P2_emergencyStaleWindowForfeitedToOwner` (now asserts the full window is credited and nothing is recoverable) and `test_P2_emergencyAfterAnyCheckpointKeepsShare`. Inverted to the fixed behavior: `test_P1_emergencyStaleLossGoesToRemainingStakers`, `test_P1_01_emergencyNoLongerForfeitsStaleTokenShare`. Own tests: `test_L1_lastEmergencyExitKeepsFullShare`, `test_checkpointWithoutTransfer` (a frozen reward token can block neither checkpoint nor emergencyWithdraw). This supersedes the P-2 and B-6 notes below: the only remaining zero-stake surplus is emission *after* the last staker has left. |
-| I-1 (P2-03) | Info | `_addRewardToken` rejects `address(this)` (`NotContract`). BZB as a reward is still allowed. Tests: `test_I1_cannotListSelf`, inverted `test_P2_listSelfBurnsSlotPermanently` and `test_P1_listingNonTokenContractWastesSlotOnly`. |
+| L-1 (P1-01 / P2-01) | Low | `emergencyWithdraw` now runs `_updateAll(msg.sender)` before zeroing the balance. That settles every listed token (all runs) with pure storage math, so the user keeps their full share up to the exit block. Before this, only the share up to each token's last *global* checkpoint was credited, so a stale window was forfeited, and became owner-recoverable if it was the last staker. Added a public `checkpoint(address[] tokens)` that settles globally and for the caller with no transfer (unlisted entries are ignored). Adopted regression tests `test_P2_emergencyStaleWindowCreditedToUser (renamed from `…ForfeitedToOwner` in RV-05)` (now asserts the full window is credited and nothing is recoverable) and `test_P2_emergencyAfterAnyCheckpointKeepsShare`. Inverted to the fixed behavior: `test_P1_emergencyStaleWindowKeptByUser`, `test_P1_01_emergencyNoLongerForfeitsStaleTokenShare`. Own tests: `test_L1_lastEmergencyExitKeepsFullShare`, `test_checkpointWithoutTransfer` (a frozen reward token can block neither checkpoint nor emergencyWithdraw). This supersedes the P-2 and B-6 notes below: the only remaining zero-stake surplus is emission *after* the last staker has left. |
+| I-1 (P2-03) | Info | `_addRewardToken` rejects `address(this)` (`CannotListSelf`, since RV-05). BZB as a reward is still allowed. Tests: `test_I1_cannotListSelf`, inverted and renamed `test_P2_listSelfRejected` and `test_P1_listingSelfRejected`. |
 | I-2, I-5/P-6, I-6, I-7 | Info | Added a `BlazarMultiRewardStaking` section to `SECURITY.md`. It covers the BZB proxy-admin risk, `recover` taking all surplus, the EOA owner at launch (the user's choice, Safe later), the `claimTo` destination notes, reward-token behavior, and UI requirements. |
 | P1-06 | Info | `RewardPaid.to` is now `indexed`; the event is `RewardPaid(user, token, to, amount)`. |
 | Tests | — | Adopted the reviewer's adversarial suites in `test/review/pass1` (hostile, lying, gas-bomb, false-returning and re-entering tokens; BZB sender-fee upgrade; principal invariant with claimTo, claimMany, exit and blacklisting handlers) and `test/review/pass2` (hostile/slashable tokens, a partial-claim differential fuzz, accumulator headroom, solvency and ghost invariants, gas table). All three invariant suites now run at 256 runs × depth 128 with fail_on_revert. Slither output regenerated. |
@@ -29,7 +41,7 @@ This is the authoring bot's own review. It is not an independent audit. The firs
 | `stake`, first checkpoint, 25 live runs | ~763k–787k (max user path) |
 | `withdraw`, steady state | ~450k–599k |
 | `withdraw` full, all 25 runs need SSTORE | ~770k |
-| `emergencyWithdraw` | ~412k–519k typical, **~621k worst** (never-touched user, 5 × 5) |
+| `emergencyWithdraw` | ~412k–519k typical. **Worst: ~792k cold** (never-touched user, 25 runs mid-flight) and **~885k gross** when all 25 runs finish in the exit tx (RV-01 correction; earlier ~621k figure was understated) |
 | `claim(one token)` | ~159k–172k |
 | `claimAll` / `claimMany(5)` | ~569k–762k |
 | `exit`, pruning 25 finished runs | ~695k |

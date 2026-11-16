@@ -52,13 +52,19 @@ contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
 
     uint256 public constant MAX_REWARD_TOKENS = 5;
     uint256 public constant MAX_RUNS_PER_TOKEN = 5;
+    /// @dev SAFETY BOUND (RV-04): together with MAX_RUN_AMOUNT and MIN_STAKE_FLOOR this bounds checkpoint math
+    ///      that runs on the withdraw/emergencyWithdraw path. Changing it requires re-proving exits cannot revert.
     uint256 public constant MIN_DURATION = 1 days;
     uint256 public constant MAX_DURATION = 365 days;
     uint256 public constant MAX_START_DELAY = 30 days;
     uint256 public constant MAX_WEIGHT = 10_000;
+    /// @dev SAFETY BOUND (RV-04): changing this requires re-proving that `_checkpoint` (run on every exit)
+    ///      cannot overflow or revert.
     /// @notice Upper bound on one run's amount. With `minStake`, keeps the accumulator far from overflow.
     uint256 public constant MAX_RUN_AMOUNT = type(uint128).max;
     uint256 public constant PRECISION = 1e36;
+    /// @dev SAFETY BOUND (RV-04): lowering this requires re-proving the reward-per-token accumulator cannot
+    ///      overflow, i.e. that withdraw/emergencyWithdraw cannot revert.
     /// @notice Constructor floor for `minStake` (0.001 of an 18-decimal stake token). Keeps the per-checkpoint
     ///         accumulator increment <= 5·2^128·1e36/1e15 ≈ 2^201, so overflow is unreachable.
     uint256 public constant MIN_STAKE_FLOOR = 1e15;
@@ -148,6 +154,7 @@ contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
     error Underfunded();
     error RenounceDisabled();
     error BelowMinStake();
+    error CannotListSelf();
 
     constructor(address initialOwner, address stakingToken_, uint256 minStake_) Ownable(initialOwner) {
         if (stakingToken_ == address(0)) revert ZeroAddress();
@@ -446,7 +453,7 @@ contract BlazarMultiRewardStaking is Ownable2Step, Pausable, ReentrancyGuard {
     function _addRewardToken(address token) internal {
         if (token == address(0)) revert ZeroAddress();
         if (token.code.length == 0) revert NotContract();
-        if (token == address(this)) revert NotContract();
+        if (token == address(this)) revert CannotListSelf();
         RewardState storage s = _rewards[token];
         if (s.listed) revert AlreadyListed();
         if (_rewardTokens.length >= MAX_REWARD_TOKENS) revert TooManyRewardTokens();

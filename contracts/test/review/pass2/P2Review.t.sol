@@ -105,7 +105,7 @@ contract P2ReviewTest is Test {
     /// L-1 regression (was P2-01): a lone staker who only uses emergencyWithdraw after a long untouched window
     /// is now credited the full window (emergencyWithdraw checkpoints every listed token), and nothing is
     /// owner-recoverable.
-    function test_P2_emergencyStaleWindowForfeitedToOwner() public {
+    function test_P2_emergencyStaleWindowCreditedToUser() public {
         MockERC20 usdc = new MockERC20("USDC", "USDC", 6);
         _list(address(usdc));
         _stake(alice, 10 ether); // checkpoint at t0 (nothing emitted yet)
@@ -311,9 +311,9 @@ contract P2ReviewTest is Test {
     // ------------------------------------------------------------ owner-power edge cases (Info)
 
     /// I-1 regression (was P2-03): listing the staking contract itself is rejected.
-    function test_P2_listSelfBurnsSlotPermanently() public {
+    function test_P2_listSelfRejected() public {
         vm.prank(owner);
-        vm.expectRevert(M.NotContract.selector);
+        vm.expectRevert(M.CannotListSelf.selector);
         s.addRewardToken(address(s));
         assertFalse(s.isRewardToken(address(s)));
         assertEq(s.rewardTokensLength(), 0);

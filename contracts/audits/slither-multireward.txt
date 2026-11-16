@@ -4,63 +4,63 @@ Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest p
 'forge build --build-info --deny never src/BlazarMultiRewardStaking.sol' running (wd: /workspace/polygon-v2-amm-fix/contracts)
 INFO:Detectors:
 Detector: incorrect-equality
-BlazarMultiRewardStaking._checkpoint(address) (src/BlazarMultiRewardStaking.sol#528-558) uses a dangerous strict equality:
-	- nowE == amount (src/BlazarMultiRewardStaking.sol#539)
-BlazarMultiRewardStaking._withdraw(address,uint256) (src/BlazarMultiRewardStaking.sol#603-613) uses a dangerous strict equality:
-	- amount == 0 (src/BlazarMultiRewardStaking.sol#604)
-BlazarMultiRewardStaking.curveEmitted(uint256,uint256,uint256,uint256,uint256) (src/BlazarMultiRewardStaking.sol#430-440) uses a dangerous strict equality:
-	- amount == 0 || elapsed == 0 (src/BlazarMultiRewardStaking.sol#435)
-BlazarMultiRewardStaking.rewardPerToken(address) (src/BlazarMultiRewardStaking.sol#380-387) uses a dangerous strict equality:
-	- ts == 0 (src/BlazarMultiRewardStaking.sol#384)
-BlazarMultiRewardStaking.stake(uint256) (src/BlazarMultiRewardStaking.sol#218-230) uses a dangerous strict equality:
-	- received == 0 (src/BlazarMultiRewardStaking.sol#224)
+BlazarMultiRewardStaking._checkpoint(address) (src/BlazarMultiRewardStaking.sol#535-565) uses a dangerous strict equality:
+	- nowE == amount (src/BlazarMultiRewardStaking.sol#546)
+BlazarMultiRewardStaking._withdraw(address,uint256) (src/BlazarMultiRewardStaking.sol#610-620) uses a dangerous strict equality:
+	- amount == 0 (src/BlazarMultiRewardStaking.sol#611)
+BlazarMultiRewardStaking.curveEmitted(uint256,uint256,uint256,uint256,uint256) (src/BlazarMultiRewardStaking.sol#437-447) uses a dangerous strict equality:
+	- amount == 0 || elapsed == 0 (src/BlazarMultiRewardStaking.sol#442)
+BlazarMultiRewardStaking.rewardPerToken(address) (src/BlazarMultiRewardStaking.sol#387-394) uses a dangerous strict equality:
+	- ts == 0 (src/BlazarMultiRewardStaking.sol#391)
+BlazarMultiRewardStaking.stake(uint256) (src/BlazarMultiRewardStaking.sol#225-237) uses a dangerous strict equality:
+	- received == 0 (src/BlazarMultiRewardStaking.sol#231)
 Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#dangerous-strict-equalities
 INFO:Detectors:
 Detector: uninitialized-local
-BlazarMultiRewardStaking.getRuns(address).tmp (src/BlazarMultiRewardStaking.sol#336) is a local variable never initialized
+BlazarMultiRewardStaking.getRuns(address).tmp (src/BlazarMultiRewardStaking.sol#343) is a local variable never initialized
 Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#uninitialized-local-variables
 INFO:Detectors:
 Detector: calls-loop
-BlazarMultiRewardStaking._notify(BlazarMultiRewardStaking.RunConfig) (src/BlazarMultiRewardStaking.sol#458-503) has external calls inside a loop: beforeBal = token.balanceOf(address(this)) (src/BlazarMultiRewardStaking.sol#480)
+BlazarMultiRewardStaking._notify(BlazarMultiRewardStaking.RunConfig) (src/BlazarMultiRewardStaking.sol#465-510) has external calls inside a loop: beforeBal = token.balanceOf(address(this)) (src/BlazarMultiRewardStaking.sol#487)
 	Calls stack containing the loop:
 		BlazarMultiRewardStaking.notifyRewardAmounts(BlazarMultiRewardStaking.RunConfig[])
-BlazarMultiRewardStaking._notify(BlazarMultiRewardStaking.RunConfig) (src/BlazarMultiRewardStaking.sol#458-503) has external calls inside a loop: afterBal = token.balanceOf(address(this)) (src/BlazarMultiRewardStaking.sol#482)
+BlazarMultiRewardStaking._notify(BlazarMultiRewardStaking.RunConfig) (src/BlazarMultiRewardStaking.sol#465-510) has external calls inside a loop: afterBal = token.balanceOf(address(this)) (src/BlazarMultiRewardStaking.sol#489)
 	Calls stack containing the loop:
 		BlazarMultiRewardStaking.notifyRewardAmounts(BlazarMultiRewardStaking.RunConfig[])
 Reference: https://github.com/crytic/slither/wiki/Detector-Documentation/#calls-inside-a-loop
 INFO:Detectors:
 Detector: timestamp
-BlazarMultiRewardStaking.getRuns(address) (src/BlazarMultiRewardStaking.sol#333-356) uses timestamp for comparisons
+BlazarMultiRewardStaking.getRuns(address) (src/BlazarMultiRewardStaking.sol#340-363) uses timestamp for comparisons
 	Dangerous comparisons:
-	- r.amount == 0 || _finishedAt(r,block.timestamp) (src/BlazarMultiRewardStaking.sol#339)
-BlazarMultiRewardStaking.activeRunCount(address) (src/BlazarMultiRewardStaking.sol#359-365) uses timestamp for comparisons
+	- r.amount == 0 || _finishedAt(r,block.timestamp) (src/BlazarMultiRewardStaking.sol#346)
+BlazarMultiRewardStaking.activeRunCount(address) (src/BlazarMultiRewardStaking.sol#366-372) uses timestamp for comparisons
 	Dangerous comparisons:
-	- r.amount != 0 && ! _finishedAt(r,block.timestamp) (src/BlazarMultiRewardStaking.sol#363)
-BlazarMultiRewardStaking.curveEmitted(uint256,uint256,uint256,uint256,uint256) (src/BlazarMultiRewardStaking.sol#430-440) uses timestamp for comparisons
+	- r.amount != 0 && ! _finishedAt(r,block.timestamp) (src/BlazarMultiRewardStaking.sol#370)
+BlazarMultiRewardStaking.curveEmitted(uint256,uint256,uint256,uint256,uint256) (src/BlazarMultiRewardStaking.sol#437-447) uses timestamp for comparisons
 	Dangerous comparisons:
-	- amount == 0 || elapsed == 0 (src/BlazarMultiRewardStaking.sol#435)
-	- elapsed >= duration (src/BlazarMultiRewardStaking.sol#436)
-BlazarMultiRewardStaking._notify(BlazarMultiRewardStaking.RunConfig) (src/BlazarMultiRewardStaking.sol#458-503) uses timestamp for comparisons
+	- amount == 0 || elapsed == 0 (src/BlazarMultiRewardStaking.sol#442)
+	- elapsed >= duration (src/BlazarMultiRewardStaking.sol#443)
+BlazarMultiRewardStaking._notify(BlazarMultiRewardStaking.RunConfig) (src/BlazarMultiRewardStaking.sol#465-510) uses timestamp for comparisons
 	Dangerous comparisons:
-	- start < block.timestamp || start > block.timestamp + MAX_START_DELAY (src/BlazarMultiRewardStaking.sol#466)
-BlazarMultiRewardStaking._checkpoint(address) (src/BlazarMultiRewardStaking.sol#528-558) uses timestamp for comparisons
+	- start < block.timestamp || start > block.timestamp + MAX_START_DELAY (src/BlazarMultiRewardStaking.sol#473)
+BlazarMultiRewardStaking._checkpoint(address) (src/BlazarMultiRewardStaking.sol#535-565) uses timestamp for comparisons
 	Dangerous comparisons:
-	- nowE == amount (src/BlazarMultiRewardStaking.sol#539)
-	- d != 0 (src/BlazarMultiRewardStaking.sol#543)
-	- delta == 0 (src/BlazarMultiRewardStaking.sol#550)
-BlazarMultiRewardStaking._emittedAt(BlazarMultiRewardStaking.Run,uint256) (src/BlazarMultiRewardStaking.sol#584-587) uses timestamp for comparisons
+	- nowE == amount (src/BlazarMultiRewardStaking.sol#546)
+	- d != 0 (src/BlazarMultiRewardStaking.sol#550)
+	- delta == 0 (src/BlazarMultiRewardStaking.sol#557)
+BlazarMultiRewardStaking._emittedAt(BlazarMultiRewardStaking.Run,uint256) (src/BlazarMultiRewardStaking.sol#591-594) uses timestamp for comparisons
 	Dangerous comparisons:
-	- ts <= r.start (src/BlazarMultiRewardStaking.sol#585)
-BlazarMultiRewardStaking._finishedAt(BlazarMultiRewardStaking.Run,uint256) (src/BlazarMultiRewardStaking.sol#589-591) uses timestamp for comparisons
+	- ts <= r.start (src/BlazarMultiRewardStaking.sol#592)
+BlazarMultiRewardStaking._finishedAt(BlazarMultiRewardStaking.Run,uint256) (src/BlazarMultiRewardStaking.sol#596-598) uses timestamp for comparisons
 	Dangerous comparisons:
-	- ts >= uint256(r.start) + r.duration (src/BlazarMultiRewardStaking.sol#590)
-BlazarMultiRewardStaking._rateAt(BlazarMultiRewardStaking.Run,uint256) (src/BlazarMultiRewardStaking.sol#593-601) uses timestamp for comparisons
+	- ts >= uint256(r.start) + r.duration (src/BlazarMultiRewardStaking.sol#597)
+BlazarMultiRewardStaking._rateAt(BlazarMultiRewardStaking.Run,uint256) (src/BlazarMultiRewardStaking.sol#600-608) uses timestamp for comparisons
 	Dangerous comparisons:
-	- r.amount == 0 || ts < r.start (src/BlazarMultiRewardStaking.sol#594)
-	- x >= d (src/BlazarMultiRewardStaking.sol#597)
+	- r.amount == 0 || ts < r.start (src/BlazarMultiRewardStaking.sol#601)
+	- x >= d (src/BlazarMultiRewardStaking.sol#604)
 Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#block-timestamp
 INFO:Detectors:
 Detector: cyclomatic-complexity
-BlazarMultiRewardStaking._notify(BlazarMultiRewardStaking.RunConfig) (src/BlazarMultiRewardStaking.sol#458-503) has a high cyclomatic complexity (14).
+BlazarMultiRewardStaking._notify(BlazarMultiRewardStaking.RunConfig) (src/BlazarMultiRewardStaking.sol#465-510) has a high cyclomatic complexity (14).
 Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#cyclomatic-complexity
 INFO:Slither:src/BlazarMultiRewardStaking.sol analyzed (15 contracts with 102 detectors), 17 result(s) found

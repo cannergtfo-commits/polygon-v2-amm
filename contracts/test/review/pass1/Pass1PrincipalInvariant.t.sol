@@ -103,10 +103,37 @@ contract P1Handler is Test {
         uint256 bal = s.balanceOf(a);
         if (bal == 0) return;
         uint256 b0 = bzb.balanceOf(a);
+        uint256[] memory e = new uint256[](toks.length);
+        for (uint256 i; i < toks.length; ++i) {
+            e[i] = s.earned(a, toks[i]);
+        }
         vm.prank(a);
         s.emergencyWithdraw();
         assertEq(bzb.balanceOf(a) - b0, bal, "emergency exact");
+        for (uint256 i; i < toks.length; ++i) {
+            assertEq(s.rewards(a, toks[i]), e[i], "RV: emergency credits full earned()");
+        }
         principal[a] = 0;
+    }
+
+    function rvCheckpoint(uint256 seed, uint256 tseed, uint8 n) external {
+        calls++;
+        address a = _a(seed);
+        uint256 len = uint256(n) % 12;
+        address[] memory l = new address[](len);
+        for (uint256 i; i < len; ++i) {
+            uint256 r = uint256(keccak256(abi.encode(tseed, i)));
+            l[i] = r % 4 == 0 ? address(uint160(r)) : _t(r);
+        }
+        uint256[] memory e = new uint256[](toks.length);
+        for (uint256 i; i < toks.length; ++i) {
+            e[i] = s.earned(a, toks[i]);
+        }
+        vm.prank(a);
+        s.checkpoint(l);
+        for (uint256 i; i < toks.length; ++i) {
+            assertEq(s.earned(a, toks[i]), e[i], "RV: checkpoint never changes earned()");
+        }
     }
 
     function exitOrWithdraw(uint256 seed) external {
@@ -353,7 +380,7 @@ contract Pass1PrincipalInvariant is Test {
         s.addRewardTokens(list);
         h = new P1Handler(s, bzb, usdc, tax, blk, lie, owner);
         targetContract(address(h));
-        bytes4[] memory sel = new bytes4[](19);
+        bytes4[] memory sel = new bytes4[](21);
         sel[0] = h.stake.selector;
         sel[1] = h.withdraw.selector;
         sel[2] = h.emergency.selector;
@@ -373,6 +400,8 @@ contract Pass1PrincipalInvariant is Test {
         sel[16] = h.stake.selector;
         sel[17] = h.ownerNotify.selector;
         sel[18] = h.warp.selector;
+        sel[19] = h.rvCheckpoint.selector;
+        sel[20] = h.rvCheckpoint.selector;
         targetSelector(FuzzSelector({addr: address(h), selectors: sel}));
     }
 

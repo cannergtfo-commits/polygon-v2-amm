@@ -79,9 +79,38 @@ contract MultiRewardHandler is Test {
         address a = _actor(seed);
         uint256 bal = s.balanceOf(a);
         if (bal == 0) return;
+        uint256[] memory e = new uint256[](tokens.length);
+        for (uint256 i; i < tokens.length; ++i) {
+            e[i] = s.earned(a, tokens[i]);
+        }
+        uint256 before = bzb.balanceOf(a);
         vm.prank(a);
         s.emergencyWithdraw();
+        assertEq(bzb.balanceOf(a) - before, bal, "emergency exact principal");
+        for (uint256 i; i < tokens.length; ++i) {
+            assertEq(s.rewards(a, tokens[i]), e[i], "RV-02: emergency credits exactly earned()");
+        }
         principal[a] = 0;
+    }
+
+    function rvCheckpoint(uint256 seed, uint256 tseed, uint8 n) external {
+        calls++;
+        address a = _actor(seed);
+        uint256 len = uint256(n) % 12;
+        address[] memory l = new address[](len);
+        for (uint256 i; i < len; ++i) {
+            uint256 r = uint256(keccak256(abi.encode(tseed, i)));
+            l[i] = r % 4 == 0 ? address(uint160(r)) : _token(r);
+        }
+        uint256[] memory e = new uint256[](tokens.length);
+        for (uint256 i; i < tokens.length; ++i) {
+            e[i] = s.earned(a, tokens[i]);
+        }
+        vm.prank(a);
+        s.checkpoint(l);
+        for (uint256 i; i < tokens.length; ++i) {
+            assertEq(s.earned(a, tokens[i]), e[i], "RV-02: checkpoint never changes earned()");
+        }
     }
 
     function claim(uint256 seed, uint256 tseed) external {
@@ -266,7 +295,7 @@ contract MultiRewardSolvencyInvariant is Test {
         vm.stopPrank();
         h = new MultiRewardHandler(s, bzb, owner, tokens);
         targetContract(address(h));
-        bytes4[] memory sel = new bytes4[](13);
+        bytes4[] memory sel = new bytes4[](14);
         sel[0] = h.stake.selector;
         sel[1] = h.withdraw.selector;
         sel[2] = h.emergencyWithdraw.selector;
@@ -280,6 +309,7 @@ contract MultiRewardSolvencyInvariant is Test {
         sel[10] = h.ownerTogglePause.selector;
         sel[11] = h.ownerTryOverRecover.selector;
         sel[12] = h.probeWithdrawAll.selector;
+        sel[13] = h.rvCheckpoint.selector;
         targetSelector(FuzzSelector({addr: address(h), selectors: sel}));
     }
 

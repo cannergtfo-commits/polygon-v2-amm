@@ -305,7 +305,7 @@ contract Pass1Test is Test {
     }
 
     /// L-1 regression: emergencyWithdraw after a 4-day untouched window now credits alice's full share.
-    function test_P1_emergencyStaleLossGoesToRemainingStakers() public {
+    function test_P1_emergencyStaleWindowKeptByUser() public {
         _stake(alice, 5 ether);
         _stake(bob, 5 ether);
         _fund(address(ra), 1000e18, 10 days, 0, 1, 1);
@@ -492,11 +492,10 @@ contract Pass1Test is Test {
         assertGe(bzb.balanceOf(alice) - b0, stakeAmt, "principal + rewards");
     }
 
-    /// Listing the staking contract itself (or any non-ERC20 contract) only wastes a permanent slot.
     /// I-1 regression: listing the staking contract itself now reverts; principal unaffected either way.
-    function test_P1_listingNonTokenContractWastesSlotOnly() public {
+    function test_P1_listingSelfRejected() public {
         vm.prank(owner);
-        vm.expectRevert(M.NotContract.selector);
+        vm.expectRevert(M.CannotListSelf.selector);
         s.addRewardToken(address(s));
         _stake(alice, 1 ether);
         vm.prank(alice);

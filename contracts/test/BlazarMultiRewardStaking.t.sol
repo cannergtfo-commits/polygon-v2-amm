@@ -812,7 +812,7 @@ contract BlazarMultiRewardStakingTest is Test {
 
     function test_I1_cannotListSelf() public {
         vm.prank(owner);
-        vm.expectRevert(M.NotContract.selector);
+        vm.expectRevert(M.CannotListSelf.selector);
         s.addRewardToken(address(s));
     }
 
