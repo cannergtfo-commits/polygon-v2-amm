@@ -1445,9 +1445,11 @@ async function stakeAction(kind) {
       throw new Error(err.shortMessage || "Simulation failed. Nothing was sent.");
     }
     const receipt = await send(tx, "stakeLog");
-    log("stakeLog", `Confirmed in block ${receipt.blockNumber}.`, "ok");
+    // Refresh first: loadStake() clears the log, so the confirmation must be written after it.
     await loadStake();
-    await paintBalances();
+    await paintBalances().catch(() => {});
+    const done = kind === "claim" ? "Claimed" : kind === "stake" ? "Staked" : "Withdrew";
+    log("stakeLog", `${done}. Confirmed in block ${receipt.blockNumber}.`, "ok");
   } catch (err) {
     log("stakeLog", explainError(err) || "Staking action failed", "err");
   } finally {
