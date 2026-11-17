@@ -6,9 +6,10 @@ import {BlazarMultiRewardStaking} from "../src/BlazarMultiRewardStaking.sol";
 
 /// @notice Deploys BlazarMultiRewardStaking (stake BZB, earn up to 5 reward tokens). NOT RUN.
 ///         Mirrors Deploy.s.sol safety: no key in this file, refuses chain 137 unless
-///         ALLOW_POLYGON_MAINNET=1, deployer must be PixelForge on 137. Ownership goes to OWNER
-///         (default operator 0x6F47…dB14, or a Safe) via Ownable2Step; OWNER must call acceptOwnership. Adds no reward tokens and
-///         funds nothing; the owner does that after accepting ownership.
+///         ALLOW_POLYGON_MAINNET=1, deployer must be PixelForge on 137. OWNER (default the user's
+///         wallet 0x6F47…dB14, or a Safe) is passed straight to the constructor, so the deployer
+///         never holds any owner power and there is no pending-owner window (security B-1).
+///         Adds no reward tokens and funds nothing; the owner does that after deploy.
 ///
 ///         Dry run (simulation only):
 ///           forge script script/DeployMultiRewardStaking.s.sol --rpc-url polygon
@@ -29,12 +30,13 @@ contract DeployMultiRewardStaking is Script {
         address owner = vm.envOr("OWNER", OPERATOR);
         if (owner == address(0)) revert("OWNER is zero");
         address stakeToken = vm.envOr("STAKE_TOKEN", BZB);
-        // 0.001 BZB minimum position (BZB has 18 decimals). Bounds reward-per-token growth.
-        uint256 minStake = vm.envOr("MIN_STAKE", uint256(1e15));
+        // 1 BZB minimum position (BZB has 18 decimals; immutable). Bounds reward-per-token growth.
+        uint256 minStake = vm.envOr("MIN_STAKE", uint256(1e18));
         if (chainId == 137) {
             if (deployer != PIXELFORGE) revert("refusing chain 137: deployer must be the PixelForge address");
             if (stakeToken != BZB) revert("refusing chain 137: stake token must be BZB");
             if (minStake < 1e15 || minStake > 1e18) revert("refusing chain 137: MIN_STAKE out of range");
+            if (owner != OPERATOR) revert("refusing chain 137: owner must be 0x6F47...dB14");
         }
 
         if (key != 0) {
@@ -43,11 +45,16 @@ contract DeployMultiRewardStaking is Script {
         } else {
             vm.startBroadcast(deployer);
         }
-        staking = new BlazarMultiRewardStaking(deployer, stakeToken, minStake);
-        if (owner != deployer) staking.transferOwnership(owner);
+        staking = new BlazarMultiRewardStaking(owner, stakeToken, minStake);
         vm.stopBroadcast();
 
+        // Post-checks (B-1): final owner set directly, nothing pending, deployer holds no role.
+        require(staking.owner() == owner, "post-check: owner mismatch");
+        require(staking.pendingOwner() == address(0), "post-check: pending owner not zero");
+        require(address(staking.stakingToken()) == stakeToken, "post-check: stake token mismatch");
+        require(staking.minStake() == minStake, "post-check: minStake mismatch");
         console2.log("BlazarMultiRewardStaking", address(staking));
-        console2.log("pending owner (must acceptOwnership)", owner);
+        console2.log("owner", staking.owner());
+        console2.log("minStake", minStake);
     }
 }
