@@ -1444,6 +1444,9 @@ async function stakeAction(kind) {
     } catch (err) {
       throw new Error(err.shortMessage || "Simulation failed. Nothing was sent.");
     }
+    // Legacy writes get estimate + 25%: a bare estimate ran out of gas on a fork withdraw (82,195 used = limit).
+    const est = await withReadProvider((rpc) => rpc.estimateGas({ ...tx, from: state.account }));
+    tx.gasLimit = (BigInt(est) * 125n + 99n) / 100n;
     const receipt = await send(tx, "stakeLog");
     // Refresh first: loadStake() clears the log, so the confirmation must be written after it.
     await loadStake();
