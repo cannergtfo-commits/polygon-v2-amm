@@ -131,7 +131,7 @@ export const ERROR_TEXT = {
   AmountTooLarge: "That run amount is above the per-run cap.",
   InsufficientBalance: "That's more than you have staked.",
   Underfunded: "The contract would not hold enough to cover what it owes.",
-  BelowMinStake: "A position must be 0 or at least the 0.001 BZB minimum. Withdraw all, or leave at least 0.001.",
+  BelowMinStake: "A position must be 0 or at least the minimum stake. Withdraw all, or leave at least the minimum.",
   CannotListSelf: "The staking contract can't list itself.",
   EnforcedPause: "Staking is paused. Withdraw and claims still work.",
   OwnableUnauthorizedAccount: "Only the owner can do that.",

@@ -781,7 +781,7 @@ function doWithdraw() {
     if (d && d.staked != null) {
       if (amount > d.staked) throw new Error(ERROR_TEXT.InsufficientBalance);
       const left = d.staked - amount;
-      if (left !== 0n && left < d.minStake) throw new Error(ERROR_TEXT.BelowMinStake);
+      if (left !== 0n && left < d.minStake) throw new Error(`A position must be 0 or at least the ${fmt(d.minStake, 18, 6)} BZB minimum. Withdraw all, or leave at least ${fmt(d.minStake, 18, 6)}.`);
     }
     const receipt = await sendCall("withdraw", [amount], "withdraw", "msLog");
     $("msAmount").value = "";
