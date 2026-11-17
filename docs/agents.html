@@ -12,7 +12,8 @@
   <link rel="alternate" type="text/plain" href="llms.txt" title="llms.txt" />
   <link rel="stylesheet" href="css/style.css?v=desk29" />
   <style>
-    header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:100%}
+    main.ag, .hero, .cta, .status, .panel, .connect-ai{max-width:100%}
     .nav{display:flex;align-items:center;gap:8px}
     .nav a.ghost{font-family:Syne,sans-serif;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--text);background:rgba(255,255,255,.04);border:1px solid var(--stroke);padding:10px 14px;border-radius:999px;text-decoration:none}
     .nav a.connect{text-decoration:none}
@@ -77,6 +78,7 @@
     .toast.show{opacity:1}
     @media(max-width:760px){.grid{grid-template-columns:1fr 1fr}.nav a.ghost{display:none}header{padding:12px 12px;gap:8px;width:100%;max-width:100%}.brand{gap:8px}.brand img{width:38px;height:38px}.brand h1{font-size:16px;letter-spacing:.12em}.hero,.cta,.status{max-width:100%}.hero h2{font-size:clamp(28px,7.6vw,48px);padding:0 4px}.hero p{padding:0 8px}.status{gap:8px 12px;padding:0 10px;justify-content:center}}
     @media(max-width:460px){.grid{grid-template-columns:1fr}header{padding:12px 10px}.endpoint{max-width:100%}.endpoint code{font-size:11px}.hero h2{font-size:28px}}
+    @media(max-width:400px){header{padding:10px 8px;gap:6px}.brand{gap:6px;min-width:0}.brand img{width:32px;height:32px}.brand h1{font-size:15px;letter-spacing:.08em}.nav a.connect{padding:8px 12px}main.ag{width:min(980px,calc(100% - 20px))}.panel.connect-ai,.panel.setup,.cap{padding:16px 14px}.status{font-size:11px;letter-spacing:.04em}}
   </style>
 </head>
 <body>
