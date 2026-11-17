@@ -1409,6 +1409,8 @@ async function loadStake() {
   }
 }
 
+const LEGACY_GAS_FLOOR = 300_000n;
+
 async function stakeAction(kind) {
   if (!state.account) {
     $("connectBtn").click();
@@ -1444,9 +1446,11 @@ async function stakeAction(kind) {
     } catch (err) {
       throw new Error(err.shortMessage || "Simulation failed. Nothing was sent.");
     }
-    // Legacy writes get estimate + 25%: a bare estimate ran out of gas on a fork withdraw (82,195 used = limit).
+    // Legacy writes: max(estimate + 25%, 300k). An estimate taken in the same second as a previous claim
+    // skips the rewards[user] 0->nonzero write, so a withdraw estimated at ~82k needed ~138k when mined (fork OOG).
     const est = await withReadProvider((rpc) => rpc.estimateGas({ ...tx, from: state.account }));
-    tx.gasLimit = (BigInt(est) * 125n + 99n) / 100n;
+    const padded = (BigInt(est) * 125n + 99n) / 100n;
+    tx.gasLimit = padded > LEGACY_GAS_FLOOR ? padded : LEGACY_GAS_FLOOR;
     const receipt = await send(tx, "stakeLog");
     // Refresh first: loadStake() clears the log, so the confirmation must be written after it.
     await loadStake();
