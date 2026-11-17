@@ -70,6 +70,7 @@ import {
   v2ShareAndAmounts,
 } from "./lp-positions.mjs?v=desk22";
 import { initProfile, loadProfile, profileAccountChanged } from "./profile.mjs?v=desk23";
+import { initMultiStake, loadMultiStake, multiStakeEnabled } from "./stake-multi.mjs?v=desk29";
 
 const $ = (id) => document.getElementById(id);
 const ethers = window.ethers;
@@ -199,6 +200,7 @@ function rpcFlaky(err) {
 }
 
 function explainError(err) {
+  if (err?.submittedTx) return String(err.message);
   const msg = String(err?.shortMessage || err?.reason || err?.message || err || "Request failed");
   if (err?.code === "CALL_EXCEPTION" || /execution reverted|revert/i.test(msg)) {
     const reason = err?.reason;
@@ -222,7 +224,19 @@ function dropReadProvider() {
 function log(id, message, kind) {
   const el = $(id);
   if (!el) return;
-  el.textContent = message || "";
+  // Plain text, except Polygonscan tx URLs become links (built with createElement, never innerHTML).
+  el.replaceChildren();
+  const parts = String(message || "").split(/(https:\/\/polygonscan\.com\/tx\/0x[0-9a-fA-F]{64})/);
+  for (const part of parts) {
+    if (/^https:\/\/polygonscan\.com\/tx\/0x[0-9a-fA-F]{64}$/.test(part)) {
+      const a = document.createElement("a");
+      a.href = part;
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.textContent = "Polygonscan";
+      el.append(a);
+    } else if (part) el.append(document.createTextNode(part));
+  }
   el.className = "log" + (kind ? " " + kind : "");
 }
 
@@ -1002,7 +1016,9 @@ async function assertChain() {
   state.chainId = parseInt(hex, 16);
   if (state.chainId === CHAIN_ID) return;
   await state.injected.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x89" }] });
-  state.chainId = CHAIN_ID;
+  // Re-read instead of assuming the switch worked (security L-2).
+  state.chainId = parseInt(await state.injected.request({ method: "eth_chainId" }), 16);
+  if (state.chainId !== CHAIN_ID) throw new Error("Switch your wallet to Polygon first.");
 }
 
 async function simulate(tx) {
@@ -1013,14 +1029,28 @@ async function send(tx, label) {
   const signer = await new ethers.BrowserProvider(state.injected).getSigner();
   let response;
   try {
-    response = await signer.sendTransaction(tx);
+    // Pin every tx to Polygon so a wallet on another network can't sign it there (security L-2).
+    response = await signer.sendTransaction({ ...tx, chainId: BigInt(CHAIN_ID) });
   } catch (err) {
     if (rejected(err)) throw new Error("Wallet rejected the request.");
     throw err;
   }
   log(label, `Submitted ${short(response.hash)}`, "");
-  const receipt = await response.wait();
-  if (!receipt || receipt.status !== 1) throw new Error("Transaction failed");
+  const scan = `https://polygonscan.com/tx/${response.hash}`;
+  let receipt;
+  try {
+    receipt = await response.wait();
+  } catch (err) {
+    // The tx was already sent: never let an RPC hiccup here read as "nothing happened" (follow-up 3).
+    const e = new Error(`Sent, but the RPC failed while waiting for the receipt (${explainError(err)}). It may still confirm. Check ${scan} before trying again.`);
+    e.submittedTx = response.hash;
+    throw e;
+  }
+  if (!receipt || receipt.status !== 1) {
+    const e = new Error(`Transaction failed on-chain. Details: ${scan}`);
+    e.submittedTx = response.hash;
+    throw e;
+  }
   return receipt;
 }
 
@@ -1355,7 +1385,16 @@ function approxApr(daily, supply) {
   return `${apr.toFixed(2)}%`;
 }
 
+/** "Nov 30, 2:47 PM PST · 14d left" in the viewer's own time zone. */
+function legacyEndText(finishSec, leftSec) {
+  const when = new Date(finishSec * 1000).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" });
+  const left = leftSec >= 172800 ? `${Math.floor(leftSec / 86400)}d left` : `${Math.ceil(leftSec / 3600)}h left`;
+  return `${when} · ${left}`;
+}
+
 async function loadStake() {
+  // The multi-reward contract (if configured) loads on its own; this function keeps the legacy contract.
+  loadMultiStake().catch(() => {});
   try {
     const rpc = await provider();
     const stake = new ethers.Contract(STAKING, stakeIface.fragments, rpc);
@@ -1383,15 +1422,20 @@ async function loadStake() {
     $("stakeRate").textContent = live ? approxApr(daily, supply) : "—";
     $("stakeRateLabel").textContent = live ? `${formatUnits(daily, 18, 4)} BZB/day` : "No active stream";
     const left = live ? Number(BigInt(finish) - BigInt(now)) : 0;
-    $("stakePeriod").textContent = live ? `${Math.ceil(left / 3600)}h left · ${Number(duration) / 86400}d duration` : "Not streaming";
+    $("stakePeriod").textContent = live ? legacyEndText(Number(finish), left) : "Not streaming";
+    $("stakePeriod").title = live ? `${Number(duration) / 86400}-day stream` : "";
     $("stakeFloat").textContent = formatUnits(supply, 18, 4);
-    setStatus("stakeStatus", paused ? "Staking is paused. Withdraw and claim stay open." : "Staked BZB excludes the reward pot. APR is BZB earned per BZB staked if this daily rate ran a year.");
+    if (paused) setStatus("stakeStatus", "Legacy staking is paused. Withdraw and claim stay open.");
+    else if (multiStakeEnabled()) setStatus("stakeStatus", "The original BZB-only contract, still streaming. Separate from the multi-reward stake above.");
+    else setStatus("stakeStatus", "No lock, no fee. APR is BZB earned per BZB staked if this daily rate ran a year.");
     log("stakeLog", "");
   } catch (err) {
     setStatus("stakeStatus", "Could not read the staking contract.");
     log("stakeLog", explainError(err) || "Read failed", "err");
   }
 }
+
+const LEGACY_GAS_FLOOR = 300_000n;
 
 async function stakeAction(kind) {
   if (!state.account) {
@@ -1428,10 +1472,17 @@ async function stakeAction(kind) {
     } catch (err) {
       throw new Error(err.shortMessage || "Simulation failed. Nothing was sent.");
     }
+    // Legacy writes: max(estimate + 25%, 300k). An estimate taken in the same second as a previous claim
+    // skips the rewards[user] 0->nonzero write, so a withdraw estimated at ~82k needed ~138k when mined (fork OOG).
+    const est = await withReadProvider((rpc) => rpc.estimateGas({ ...tx, from: state.account }));
+    const padded = (BigInt(est) * 125n + 99n) / 100n;
+    tx.gasLimit = padded > LEGACY_GAS_FLOOR ? padded : LEGACY_GAS_FLOOR;
     const receipt = await send(tx, "stakeLog");
-    log("stakeLog", `Confirmed in block ${receipt.blockNumber}.`, "ok");
+    // Refresh first: loadStake() clears the log, so the confirmation must be written after it.
     await loadStake();
-    await paintBalances();
+    await paintBalances().catch(() => {});
+    const done = kind === "claim" ? "Claimed" : kind === "stake" ? "Staked" : "Withdrew";
+    log("stakeLog", `${done}. Confirmed in block ${receipt.blockNumber}.`, "ok");
   } catch (err) {
     log("stakeLog", explainError(err) || "Staking action failed", "err");
   } finally {
@@ -2829,6 +2880,12 @@ function boot() {
   $("stakeBtn").addEventListener("click", () => { stakeAction("stake"); });
   $("withdrawBtn").addEventListener("click", () => { stakeAction("withdraw"); });
   $("claimStakeBtn").addEventListener("click", () => { stakeAction("claim"); });
+  $("maxStakeStaked").addEventListener("click", async () => {
+    if (!state.account) return;
+    // Fill the full legacy staked balance so Withdraw takes all of it.
+    const raw = await call(STAKING, stakeIface.encodeFunctionData("balanceOf", [state.account]));
+    $("stakeAmount").value = formatUnits(BigInt(stakeIface.decodeFunctionResult("balanceOf", raw)[0]), 18, 18);
+  });
   $("maxStake").addEventListener("click", async () => {
     if (!state.account) return;
     const amount = await balanceOf(tokenByAddress(BZB), state.account);
@@ -2886,6 +2943,25 @@ function boot() {
     reservePrice,
     wpolUsd,
     showTab,
+  });
+  initMultiStake({
+    state,
+    BZB,
+    call,
+    multicall,
+    withReadProvider,
+    send,
+    assertChain,
+    ensureAllowance,
+    explainError,
+    log,
+    setStatus,
+    formatUnits,
+    parseUnits,
+    tokenByAddress,
+    reservePrice,
+    wpolUsd,
+    paintBalances,
   });
   if (profileFromHash) showTab("profile");
   announcedWallets();

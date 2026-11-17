@@ -10,6 +10,10 @@ window.BLAZARSWAP = {
   router: "0x5C0cCC397A5B222B06815C3c23959dd83F42aA86",
   feeRouter: "0x014AC678c96dd5dFAEc78BfffD8E00EEbf117E9b",
   staking: "0x3Aa4a59deC4F677A138857a828220eEd259b2469",
+  // BlazarMultiRewardStaking (multireward-agent d475961), deployed Nov 16, 2026 6:39 PM PST in Polygon tx
+  // 0x2164b2ee61970a69286f03b006ababd031ed99961c89d76d91e1363b6d9317c9 (block 97,451,811). Owner 0x6F47…dB14,
+  // minStake 1 BZB. The tab only sends after it re-verifies code, stakingToken, owner and minStake (B-3).
+  multiStaking: "0x4222bFF08cc9D42cd3311033a4882314DfE19615",
   dailyRewards: "0x323DCb75A4f265D26dd3f5F203e12e7625d49951",
   oracle: "0x7d022EB5b18a79b585601326d87964C87F948892",
   baseToken: "0x462D8d82C2B2D2DDabf7f8a93928De09d47A5807",
@@ -30,3 +34,13 @@ window.BLAZARSWAP = {
     { symbol: "M421", name: "Markarian 421", address: "0xd2aD34cab1fc6ee954276d28c67E219875397420", decimals: 18, logo: "m421.jpg" }
   ]
 };
+
+// Freeze the config so no later script can repoint addresses (security L-3).
+(function freezeConfig(cfg) {
+  (cfg.tokens || []).forEach(Object.freeze);
+  Object.freeze(cfg.tokens);
+  Object.freeze(cfg.rpcUrls);
+  Object.freeze(cfg.nativeCurrency);
+  Object.freeze(cfg);
+  Object.defineProperty(window, "BLAZARSWAP", { value: cfg, writable: false, configurable: false });
+})(window.BLAZARSWAP);

@@ -109,6 +109,109 @@
     .pf-skel{display:block;height:34px;border-radius:10px;background:linear-gradient(90deg,rgba(255,255,255,.04),rgba(62,224,255,.10),rgba(255,255,255,.04));background-size:200% 100%;animation:pfshim 1.2s linear infinite}
     .pf-skel-wide{width:180px;height:30px}
     @keyframes pfshim{from{background-position:200% 0}to{background-position:-200% 0}}
+    #msStake{max-width:560px;margin:0 auto}
+    #pane-stake [hidden]{display:none!important}
+    #msStake h3{margin:0}
+    .ms-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+    .ms-pill{font-size:11px;border:1px solid var(--stroke);border-radius:999px;padding:2px 9px;color:var(--muted)}
+    .ms-pill-warn{color:#ffb15e;border-color:rgba(255,177,94,.5)}
+    .ms-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:16px}
+    .ms-stats small{display:block;color:var(--muted);font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+    .ms-stats b{display:block;font-family:Sora,sans-serif;font-size:18px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .ms-seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border:1px solid var(--stroke);border-radius:999px;margin-bottom:10px}
+    .ms-seg button{font-family:Syne,sans-serif;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);background:transparent;border:0;border-radius:999px;padding:8px;cursor:pointer}
+    .ms-seg button.on{color:#021018;background:linear-gradient(90deg,#3ee0ff,#7af)}
+    .ms-leg{margin-bottom:10px}
+    .ms-leg .leg-top b{color:var(--text);font-weight:600}
+    .ms-link{background:transparent;border:0;color:var(--cyan);font-family:Sora,sans-serif;font-size:12px;font-weight:600;cursor:pointer;padding:2px 4px}
+    .ms-link:disabled{color:var(--muted);cursor:default}
+    .ms-hint{color:var(--muted);font-size:12px;margin:6px 0 0;text-align:center}
+    .ms-more-body .ms-hint{text-align:left;margin:0 0 6px}
+    #msLog,#stakeLog{min-height:0;margin-top:6px;font-size:13px;text-align:center}
+    .ms-block{margin-top:22px}
+    .ms-block-head{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+    .ms-head-actions{display:inline-flex;align-items:center;gap:8px}
+    button.ms-sm{padding:6px 12px;font-size:10px}
+    #pane-stake button:disabled{opacity:.45;cursor:not-allowed}
+    .ms-tok{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(62,224,255,.1)}
+    .ms-tok:last-child{border-bottom:0}
+    .ms-tok .pf-logo{width:24px;height:24px}
+    .ms-tok .ms-sym{font-weight:600;font-size:14px}
+    .ms-tok .ms-amt{margin-left:auto;text-align:right;font-variant-numeric:tabular-nums;font-size:14px;font-weight:600}
+    .ms-tok .ms-amt small{display:block;color:var(--muted);font-size:11px;font-weight:400}
+    .ms-empty{color:var(--muted);font-size:13px;padding:8px 0}
+    .ms-strip{display:flex;align-items:center;gap:10px;width:100%;padding:9px 0;background:transparent;border:0;border-bottom:1px solid rgba(62,224,255,.1);color:var(--text);cursor:pointer;text-align:left;font-family:Sora,sans-serif}
+    .ms-strip .pf-logo{width:22px;height:22px}
+    .ms-strip .ms-sym{font-weight:600;font-size:13px;min-width:44px}
+    .ms-strip .ms-rate{font-size:12px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+    .ms-strip .ms-mini{flex:1;height:4px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;min-width:40px}
+    .ms-strip .ms-mini i{display:block;height:100%;background:linear-gradient(90deg,#3ee0ff,#7af)}
+    .ms-strip .ms-state{font-size:11px;color:var(--muted);white-space:nowrap;min-width:52px;text-align:right}
+    .ms-strip .ms-state.ms-sched{color:var(--gold)}
+    .ms-strip .ms-chev{color:var(--muted);font-size:11px;transition:transform .2s}
+    .ms-strip[aria-expanded=true] .ms-chev{transform:rotate(90deg)}
+    .ms-run-detail{padding:8px 0 12px 32px;border-bottom:1px solid rgba(62,224,255,.1)}
+    .ms-run-detail .ms-kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 16px;font-size:12px;color:var(--muted)}
+    .ms-run-detail .ms-kv b{color:var(--text);font-weight:600;float:right;font-variant-numeric:tabular-nums}
+    .ms-run-detail .ms-curve-cap{font-size:12px;color:var(--muted);margin:8px 0 4px}
+    .ms-curve{display:block;width:100%;max-width:280px;height:auto}
+    .ms-curve .area{fill:rgba(62,224,255,.14)}
+    .ms-curve .rate{fill:none;stroke:#3ee0ff;stroke-width:2}
+    .ms-curve .cum{fill:none;stroke:#f0c36a;stroke-width:1.5;stroke-dasharray:4 3}
+    .ms-curve .now{stroke:#3effb1;stroke-width:1.5}
+    .ms-legend{font-size:11px;color:var(--muted);margin-top:2px}
+    .ms-legend i{display:inline-block;width:12px;height:2px;vertical-align:middle;margin:0 4px 0 8px;background:#3ee0ff}
+    .ms-legend i.cum{background:#f0c36a}
+    .ms-more{margin-top:18px;border-top:1px solid rgba(62,224,255,.12);padding-top:10px}
+    .ms-more>summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:.08em;text-transform:uppercase;list-style:none;text-align:center}
+    .ms-more>summary::-webkit-details-marker{display:none}
+    .ms-more>summary::after{content:" ▾"}
+    .ms-more[open]>summary::after{content:" ▴"}
+    .ms-more-body{padding-top:8px}
+    .ms-line{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;font-size:13px}
+    .ms-sub{color:var(--muted);font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin:14px 0 6px}
+    .ms-sub-danger{color:#ffb15e}
+    .ms-dim{color:var(--muted);font-weight:400}
+    .ms-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:6px 0}
+    .ms-grow{flex:1;min-width:160px}
+    .ms-narrow{width:auto!important;min-width:90px;max-width:150px}
+    .ms-push{margin-left:auto}
+    .ms-input,select.ms-input{width:100%;margin:0;padding:7px 10px;font-family:Sora,sans-serif;font-size:13px;font-weight:500;background:rgba(0,0,0,.3);border:1px solid rgba(62,224,255,.18);border-radius:10px;color:var(--text);outline:none}
+    select.ms-input option{background:#061026}
+    .ms-errs{color:var(--danger);font-size:12px;line-height:1.45}
+    .ms-errs:empty{display:none}
+    .ms-quick{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0}
+    .ms-quick button{font-family:Sora,sans-serif;font-size:11px;color:var(--cyan);background:transparent;border:1px solid rgba(62,224,255,.2);border-radius:999px;padding:3px 9px;cursor:pointer}
+    .ms-quick button:disabled{color:var(--muted)}
+    .ms-warn{border:1px solid rgba(255,93,122,.5);background:rgba(255,93,122,.07);border-radius:12px;padding:10px 12px;font-size:13px}
+    .ms-warn b{color:var(--danger)}
+    .ms-warn p{margin:6px 0;color:var(--text)}
+    .ms-check{display:flex;gap:8px;align-items:flex-start;font-size:13px;margin:6px 0 8px}
+    .ms-inline{display:inline-flex;gap:4px;align-items:center;font-size:11px;color:var(--muted);text-transform:none;letter-spacing:0}
+    .ms-danger-btn{font-family:Syne,sans-serif;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#fff;background:rgba(255,93,122,.22);border:1px solid var(--danger);padding:8px 14px;border-radius:999px;cursor:pointer}
+    #legacyStake{max-width:560px;margin:0 auto}
+    #legacyStake h3{margin:0}
+    #msStake:not([hidden])+#legacyStake{margin-top:26px;padding-top:20px;border-top:1px solid rgba(62,224,255,.14)}
+    #msStake:not([hidden])+#legacyStake h3{color:var(--muted)}
+    #msStake:not([hidden])+#legacyStake .ms-stats b{font-size:16px}
+    .ms-kvline{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 14px;font-size:12px;color:var(--muted);margin:-6px 0 14px}
+    .ms-kvline b{color:var(--text);font-weight:600;font-variant-numeric:tabular-nums}
+    .ms-actions3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+    .ms-accept{margin-top:14px}
+    .ms-owner>summary{text-align:left}
+    .ms-draft{padding:8px 0;border-top:1px solid rgba(62,224,255,.1)}
+    .ms-draft-head{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted)}
+    .ms-draft-body{display:grid;grid-template-columns:minmax(0,1fr) 200px;gap:10px;align-items:start}
+    .ms-field{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--muted);min-width:90px}
+    .ms-field.ms-grow{flex:1}
+    .ms-presets{display:flex;gap:4px;flex-wrap:wrap}
+    .ms-presets button{font-family:Sora,sans-serif;font-size:11px;color:var(--muted);background:transparent;border:1px solid rgba(62,224,255,.2);border-radius:999px;padding:3px 9px;cursor:pointer}
+    .ms-presets button.on{color:#021018;background:linear-gradient(90deg,#3ee0ff,#7af);border-color:transparent}
+    .ms-sum{font-size:11px;color:var(--muted);line-height:1.45;margin:4px 0 0}
+    .ms-x{background:transparent;border:0;color:var(--muted);font-size:16px;cursor:pointer}
+    .ms-surplus-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;color:var(--muted)}
+    .ms-surplus-row b{color:var(--text);font-variant-numeric:tabular-nums}
+    @media(max-width:900px){#msStake{max-width:none}.ms-stats b{font-size:16px}.ms-draft-body{grid-template-columns:1fr}.ms-run-detail{padding-left:0}.ms-narrow{max-width:none;flex:1}}
     @media(max-width:900px){.pf-net{font-size:26px}.pf-look input{min-width:0}}
     @media(max-width:900px){
       header{display:flex;flex-wrap:wrap}
@@ -214,26 +317,130 @@
       </div>
 
       <div class="panel card pane" id="pane-stake" hidden>
-        <h3>Stake BZB</h3>
-        <p class="status" id="stakeStatus">No lock and no stake fee. Stake, withdraw, and claim each wait for your signature.</p>
-        <div class="stats-grid">
-          <article><b id="stakeWallet">—</b><small>Wallet BZB</small></article>
-          <article><b id="stakeStaked">—</b><small>Staked</small></article>
-          <article><b id="stakeEarned">—</b><small>Earned</small></article>
-          <article><b id="stakeRate">—</b><small id="stakeRateLabel">Approx. APR</small></article>
-          <article><b id="stakePeriod">—</b><small>Period</small></article>
-          <article><b id="stakeFloat">—</b><small>Staked BZB</small></article>
-        </div>
-        <div class="leg">
-          <div class="leg-top"><span>Amount</span><button class="max" id="maxStake" type="button">Max wallet</button></div>
-          <input id="stakeAmount" class="amt" type="text" inputmode="decimal" placeholder="0.0" autocomplete="off" />
-        </div>
-        <div class="actions">
-          <button class="primary" id="stakeBtn" type="button">Stake</button>
-          <button class="ghost" id="withdrawBtn" type="button">Withdraw</button>
-          <button class="ghost" id="claimStakeBtn" type="button">Claim</button>
-        </div>
-        <div class="log" id="stakeLog" role="status"></div>
+        <section id="msStake" hidden>
+          <div class="ms-title"><h3>Stake BZB</h3><span class="ms-pill ms-pill-warn" id="msPausedTag" hidden>Paused</span></div>
+          <div class="ms-stats">
+            <div><small>Your stake</small><b id="msStaked">—</b></div>
+            <div><small>Total staked</small><b id="msTotal">—</b></div>
+            <div><small>APR</small><b id="msApr">—</b></div>
+          </div>
+          <div class="ms-seg" role="tablist" aria-label="Stake or withdraw">
+            <button type="button" class="on" data-mode="stake" id="msModeStake" role="tab" aria-selected="true">Stake</button>
+            <button type="button" data-mode="withdraw" id="msModeWithdraw" role="tab" aria-selected="false">Withdraw</button>
+          </div>
+          <div class="leg ms-leg">
+            <div class="leg-top"><span id="msBalLabel">Wallet <b id="msWallet">—</b> BZB</span><button class="ms-link" id="msMax" type="button">Max</button></div>
+            <input id="msAmount" class="amt" type="text" inputmode="decimal" placeholder="0.0" autocomplete="off" />
+          </div>
+          <button class="primary full" id="msActionBtn" type="button">Stake</button>
+          <p class="ms-hint" id="msHint">No lock, no fee. Min 1 BZB.</p>
+          <div class="log" id="msLog" role="status"></div>
+
+          <div class="ms-block">
+            <div class="ms-block-head"><span>Rewards</span><span class="ms-head-actions">
+              <!-- TODO(multireward-agent): shown when FEATURES.compound / FEATURES.claimAllSkipping are on (stake-multi-contract.mjs). -->
+              <label class="ms-inline" id="msSkipBrokenWrap" hidden><input type="checkbox" id="msSkipBroken" /> Skip broken</label>
+              <button class="ms-link" id="msCompoundBtn" type="button" hidden>Compound</button>
+              <button class="ghost ms-sm" id="msClaimAllBtn" type="button">Claim all</button></span></div>
+            <div id="msEarned"></div>
+          </div>
+
+          <div class="ms-block">
+            <div class="ms-block-head"><span>Active rewards</span><small id="msRunCount"></small></div>
+            <div id="msRuns"></div>
+          </div>
+
+          <details class="ms-more" id="msMore">
+            <summary>More</summary>
+            <div class="ms-more-body">
+              <div class="ms-line"><span>Withdraw everything and claim all</span><button class="ghost ms-sm" id="msExitBtn" type="button">Exit</button></div>
+              <div class="ms-line"><span>Save earnings without claiming</span><button class="ghost ms-sm" id="msCheckpointBtn" type="button">Checkpoint</button></div>
+              <div class="ms-sub">Claim to another address</div>
+              <div class="ms-row">
+                <select id="msClaimToToken" class="ms-input ms-narrow" aria-label="Token"></select>
+                <input id="msClaimToAddr" class="ms-input ms-grow" type="text" placeholder="0x… a wallet you control" autocomplete="off" spellcheck="false" aria-label="Send to" />
+                <button class="ghost ms-sm" id="msClaimToBtn" type="button">Send</button>
+              </div>
+              <div class="ms-danger" id="msDanger">
+                <div class="ms-sub ms-sub-danger">Emergency withdraw</div>
+                <div class="ms-warn" id="msEmergencyWarn">
+                  <b>Only use this if a normal Withdraw fails.</b>
+                  <p>Returns your full stake without calling any reward token. Earnings so far stay claimable. The wallet will show a gas limit of at least 1.1M; you only pay what's used.</p>
+                  <label class="ms-check"><input type="checkbox" id="msEmergencyAck" /> Withdraw failed and I want my full stake back now.</label>
+                  <button class="ms-danger-btn" id="msEmergencyBtn" type="button" disabled>Emergency withdraw</button>
+                </div>
+              </div>
+            </div>
+          </details>
+
+          <div class="ms-line ms-accept" id="msAccept" hidden>
+            <span>You're the pending owner of this contract.</span>
+            <button class="primary ms-sm" id="msAcceptBtn" type="button">Accept ownership</button>
+          </div>
+
+          <details class="ms-more ms-owner" id="msOwner" hidden>
+            <summary>Owner panel</summary>
+            <div class="ms-more-body">
+              <div class="ms-line"><span>Staking <b id="msPauseState">—</b> <small class="ms-dim">(pause blocks new stakes and runs only)</small></span><button class="ghost ms-sm" id="msPauseBtn" type="button">Pause</button></div>
+
+              <div class="ms-sub">Reward tokens <small class="ms-dim" id="msTokenSlots"></small></div>
+              <p class="ms-hint">Permanent once listed. Plain ERC-20s only.</p>
+              <div class="ms-quick" id="msQuickTokens"></div>
+              <div class="ms-row">
+                <input id="msAddTokens" class="ms-input ms-grow" type="text" placeholder="0x…, 0x…" autocomplete="off" spellcheck="false" aria-label="Token addresses" />
+                <button class="ghost ms-sm" id="msAddTokensBtn" type="button">List</button>
+              </div>
+              <div class="ms-errs" id="msAddErrs"></div>
+
+              <div class="ms-sub">New runs</div>
+              <p class="ms-hint">Each run is independent and never changes. Max 5 unfinished per token.</p>
+              <div id="msDrafts"></div>
+              <div class="ms-row">
+                <button class="ms-link" id="msAddDraftBtn" type="button">+ Add run</button>
+                <button class="primary ms-sm ms-push" id="msCreateRunsBtn" type="button">Approve and create</button>
+              </div>
+              <div class="ms-errs" id="msRunErrs"></div>
+
+              <div class="ms-sub">Recover surplus</div>
+              <p class="ms-hint">Only tokens beyond stakes, owed rewards and scheduled runs.</p>
+              <div id="msSurplus"></div>
+              <div class="ms-row">
+                <select id="msRecoverToken" class="ms-input ms-narrow" aria-label="Token"></select>
+                <input id="msRecoverAmount" class="ms-input ms-narrow" type="text" inputmode="decimal" placeholder="Amount" autocomplete="off" aria-label="Amount" />
+                <button class="ms-link" id="msRecoverMax" type="button">Max</button>
+                <input id="msRecoverTo" class="ms-input ms-grow" type="text" placeholder="To 0x…" autocomplete="off" spellcheck="false" aria-label="To" />
+                <button class="ghost ms-sm" id="msRecoverBtn" type="button">Recover</button>
+              </div>
+              <div class="ms-errs" id="msRecoverErrs"></div>
+              <div class="log" id="msOwnerLog" role="status"></div>
+            </div>
+          </details>
+        </section>
+
+        <section id="legacyStake" class="ms-legacy">
+          <div class="ms-title"><h3 id="legacyTitle">Stake BZB</h3><span class="ms-pill" id="legacyEraTag">Era 2</span></div>
+          <div class="ms-stats">
+            <div><small>Your stake</small><b id="stakeStaked">—</b></div>
+            <div><small>Earned</small><b id="stakeEarned">—</b></div>
+            <div><small>APR</small><b id="stakeRate">—</b></div>
+          </div>
+          <div class="ms-kvline">
+            <span>Rewards <b id="stakeRateLabel">—</b></span>
+            <span>Ends <b id="stakePeriod">—</b></span>
+            <span>Total <b id="stakeFloat">—</b></span>
+          </div>
+          <div class="leg ms-leg">
+            <div class="leg-top"><span>Wallet <b id="stakeWallet">—</b> BZB</span><span class="ms-head-actions"><button class="ms-link" id="maxStake" type="button">Max</button><button class="ms-link" id="maxStakeStaked" type="button">All staked</button></span></div>
+            <input id="stakeAmount" class="amt" type="text" inputmode="decimal" placeholder="0.0" autocomplete="off" />
+          </div>
+          <div class="ms-actions3">
+            <button class="primary" id="stakeBtn" type="button">Stake</button>
+            <button class="ghost" id="withdrawBtn" type="button">Withdraw</button>
+            <button class="ghost" id="claimStakeBtn" type="button">Claim</button>
+          </div>
+          <p class="ms-hint" id="stakeStatus">No lock, no fee. Each action waits for your signature.</p>
+          <div class="log" id="stakeLog" role="status"></div>
+        </section>
       </div>
 
       <div class="panel card pane" id="pane-liq" hidden>
@@ -325,9 +532,9 @@
     </section>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js" integrity="sha384-6Zl0Pc8zjSz8KvmNeXRvUQgY4ryFb+BwDvKCmLYcBME0joAaru491tQgi9B7zsMM" crossorigin="anonymous"></script>
   <script src="js/images.js"></script>
-  <script src="js/config.js?v=desk2"></script>
+  <script src="js/config.js?v=desk29"></script>
   <script>
     (function () {
       var imgs = window.BLAZAR_IMGS || {};
@@ -341,6 +548,6 @@
     })();
   </script>
   <script src="js/music.js?v=snd1"></script>
-  <script type="module" src="js/desk.js?v=desk24"></script>
+  <script type="module" src="js/desk.js?v=desk29"></script>
 </body>
 </html>
