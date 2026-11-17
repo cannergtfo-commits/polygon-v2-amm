@@ -6,8 +6,8 @@ import {BlazarMultiRewardStaking} from "../src/BlazarMultiRewardStaking.sol";
 
 /// @notice Deploys BlazarMultiRewardStaking (stake BZB, earn up to 5 reward tokens). NOT RUN.
 ///         Mirrors Deploy.s.sol safety: no key in this file, refuses chain 137 unless
-///         ALLOW_POLYGON_MAINNET=1, deployer must be PixelForge on 137. OWNER (default the user's
-///         wallet 0x6F47…dB14, or a Safe) is passed straight to the constructor, so the deployer
+///         ALLOW_POLYGON_MAINNET=1, deployer must be PixelForge on 137. OWNER (the user's wallet
+///         0x6F47…dB14; enforced on 137) is passed straight to the constructor, so the deployer
 ///         never holds any owner power and there is no pending-owner window (security B-1).
 ///         Adds no reward tokens and funds nothing; the owner does that after deploy.
 ///
@@ -25,8 +25,8 @@ contract DeployMultiRewardStaking is Script {
         }
         address deployer = vm.envOr("DEPLOYER", PIXELFORGE);
         uint256 key = vm.envOr("DEPLOYER_KEY", uint256(0));
-        // Owner is a parameter. Default: the user's wallet 0x6F47…dB14 (the user's accepted choice for launch).
-        // A Safe can be passed via OWNER now, or ownership moved to a Safe later with Ownable2Step.
+        // Owner: the user's wallet 0x6F47…dB14. OWNER is only honoured off-mainnet (tests); chain 137 requires
+        // 0x6F47. A move to a Safe happens later via Ownable2Step (transferOwnership, then the Safe accepts).
         address owner = vm.envOr("OWNER", OPERATOR);
         if (owner == address(0)) revert("OWNER is zero");
         address stakeToken = vm.envOr("STAKE_TOKEN", BZB);
@@ -35,7 +35,7 @@ contract DeployMultiRewardStaking is Script {
         if (chainId == 137) {
             if (deployer != PIXELFORGE) revert("refusing chain 137: deployer must be the PixelForge address");
             if (stakeToken != BZB) revert("refusing chain 137: stake token must be BZB");
-            if (minStake < 1e15 || minStake > 1e18) revert("refusing chain 137: MIN_STAKE out of range");
+            if (minStake != 1e18) revert("refusing chain 137: MIN_STAKE must be 1e18 (1 BZB)");
             if (owner != OPERATOR) revert("refusing chain 137: owner must be 0x6F47...dB14");
         }
 

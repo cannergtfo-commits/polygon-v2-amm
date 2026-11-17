@@ -48,4 +48,12 @@ contract DeployMultiRewardForkTest is Test {
         s.pause();
         assertTrue(s.paused());
     }
+
+    function testFork_mainnetRefusesOtherMinStake() public {
+        DeployMultiRewardStaking d = new DeployMultiRewardStaking();
+        vm.setEnv("MIN_STAKE", "1000000000000000");
+        vm.expectRevert(bytes("refusing chain 137: MIN_STAKE must be 1e18 (1 BZB)"));
+        d.run();
+        vm.setEnv("MIN_STAKE", "1000000000000000000");
+    }
 }
