@@ -29,6 +29,8 @@ export const CURVE_PRESETS = Object.freeze({
  * Gas: every write sends estimate + 25%, raised to a floor for the paths that must never run out of gas.
  *  - withdraw, emergencyWithdraw, checkpoint: at least 1.1M (SECURITY.md RV-01).
  *  - stake, stakeFor, stakeWithPermit2, compound: at least 1.2M (security review of aeaf3e6).
+ *  - claim, claimTo: at least 1.1M (security L-5; a short limit only reverts, but keep it consistent).
+ *  - claimManyTo: at least 2.2M (can pay up to 5 reward tokens, like claimAll).
  *  - exit, claimAll, claimAllSkipping, exitSkipping: at least 2.2M. They pay up to 5 reward tokens, and on
  *    multireward-agent (aeaf3e6) the skipping variants revert InsufficientGas rather than skip on a short limit.
  */
@@ -39,6 +41,9 @@ export const GAS_FLOORS = Object.freeze({
   withdraw: GAS_FLOOR,
   emergencyWithdraw: GAS_FLOOR,
   checkpoint: GAS_FLOOR,
+  claim: GAS_FLOOR,
+  claimTo: GAS_FLOOR,
+  claimManyTo: GAS_FLOOR_PAYOUT,
   stake: GAS_FLOOR_STAKE,
   stakeFor: GAS_FLOOR_STAKE,
   stakeWithPermit2: GAS_FLOOR_STAKE,

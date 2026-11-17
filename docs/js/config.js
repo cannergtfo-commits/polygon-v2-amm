@@ -33,3 +33,13 @@ window.BLAZARSWAP = {
     { symbol: "M421", name: "Markarian 421", address: "0xd2aD34cab1fc6ee954276d28c67E219875397420", decimals: 18, logo: "m421.jpg" }
   ]
 };
+
+// Freeze the config so no later script can repoint addresses (security L-3).
+(function freezeConfig(cfg) {
+  (cfg.tokens || []).forEach(Object.freeze);
+  Object.freeze(cfg.tokens);
+  Object.freeze(cfg.rpcUrls);
+  Object.freeze(cfg.nativeCurrency);
+  Object.freeze(cfg);
+  Object.defineProperty(window, "BLAZARSWAP", { value: cfg, writable: false, configurable: false });
+})(window.BLAZARSWAP);

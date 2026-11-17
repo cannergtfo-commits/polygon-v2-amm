@@ -160,7 +160,11 @@ test("gas: estimate + 25% with the 1.1M / 2.2M floors", () => {
     assert.equal(gasLimitFor(400_000n, a), 2_200_000n, a);
     assert.equal(gasLimitFor(2_000_001n, a), 2_500_002n, a);
   }
-  assert.equal(gasLimitFor(100_000n, "claim"), 125_000n);
+  // L-5: claim/claimTo get the 1.1M floor, claimManyTo the 2.2M payout floor; owner calls have none.
+  assert.equal(gasLimitFor(100_000n, "claim"), 1_100_000n);
+  assert.equal(gasLimitFor(100_000n, "claimTo"), 1_100_000n);
+  assert.equal(gasLimitFor(400_000n, "claimManyTo"), 2_200_000n);
+  assert.equal(gasLimitFor(100_000n, "addRewardToken"), 125_000n);
 });
 
 test("run status and start time", () => {

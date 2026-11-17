@@ -70,7 +70,7 @@ import {
   v2ShareAndAmounts,
 } from "./lp-positions.mjs?v=desk22";
 import { initProfile, loadProfile, profileAccountChanged } from "./profile.mjs?v=desk23";
-import { initMultiStake, loadMultiStake, multiStakeEnabled, paintLegacyRow } from "./stake-multi.mjs?v=desk26";
+import { initMultiStake, loadMultiStake, multiStakeEnabled } from "./stake-multi.mjs?v=desk26";
 
 const $ = (id) => document.getElementById(id);
 const ethers = window.ethers;
@@ -1003,7 +1003,9 @@ async function assertChain() {
   state.chainId = parseInt(hex, 16);
   if (state.chainId === CHAIN_ID) return;
   await state.injected.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x89" }] });
-  state.chainId = CHAIN_ID;
+  // Re-read instead of assuming the switch worked (security L-2).
+  state.chainId = parseInt(await state.injected.request({ method: "eth_chainId" }), 16);
+  if (state.chainId !== CHAIN_ID) throw new Error("Switch your wallet to Polygon first.");
 }
 
 async function simulate(tx) {
@@ -1014,7 +1016,8 @@ async function send(tx, label) {
   const signer = await new ethers.BrowserProvider(state.injected).getSigner();
   let response;
   try {
-    response = await signer.sendTransaction(tx);
+    // Pin every tx to Polygon so a wallet on another network can't sign it there (security L-2).
+    response = await signer.sendTransaction({ ...tx, chainId: BigInt(CHAIN_ID) });
   } catch (err) {
     if (rejected(err)) throw new Error("Wallet rejected the request.");
     throw err;
@@ -1356,6 +1359,13 @@ function approxApr(daily, supply) {
   return `${apr.toFixed(2)}%`;
 }
 
+/** "Nov 30, 2:47 PM PST · 14d left" in the viewer's own time zone. */
+function legacyEndText(finishSec, leftSec) {
+  const when = new Date(finishSec * 1000).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" });
+  const left = leftSec >= 172800 ? `${Math.floor(leftSec / 86400)}d left` : `${Math.ceil(leftSec / 3600)}h left`;
+  return `${when} · ${left}`;
+}
+
 async function loadStake() {
   // The multi-reward contract (if configured) loads on its own; this function keeps the legacy contract.
   loadMultiStake().catch(() => {});
@@ -1378,7 +1388,6 @@ async function loadStake() {
       stake.totalSupply(),
     ]);
     state.stakePaused = paused;
-    paintLegacyRow(state.account ? staked : null, state.account ? earned : 0n);
     $("stakeWallet").textContent = wallet === null ? "Connect" : formatUnits(wallet, 18, 4);
     $("stakeStaked").textContent = state.account ? formatUnits(staked, 18, 4) : "Connect";
     $("stakeEarned").textContent = state.account ? formatUnits(earned, 18, 6) : "Connect";
@@ -1387,10 +1396,12 @@ async function loadStake() {
     $("stakeRate").textContent = live ? approxApr(daily, supply) : "—";
     $("stakeRateLabel").textContent = live ? `${formatUnits(daily, 18, 4)} BZB/day` : "No active stream";
     const left = live ? Number(BigInt(finish) - BigInt(now)) : 0;
-    $("stakePeriod").textContent = live ? `${Math.ceil(left / 3600)}h left · ${Number(duration) / 86400}d duration` : "Not streaming";
+    $("stakePeriod").textContent = live ? legacyEndText(Number(finish), left) : "Not streaming";
+    $("stakePeriod").title = live ? `${Number(duration) / 86400}-day stream` : "";
     $("stakeFloat").textContent = formatUnits(supply, 18, 4);
-    if (multiStakeEnabled()) setStatus("stakeStatus", "Withdraw and claim only. Stake new BZB in the multi-reward contract above.");
-    else setStatus("stakeStatus", paused ? "Staking is paused. Withdraw and claim stay open." : "Staked BZB excludes the reward pot. APR is BZB earned per BZB staked if this daily rate ran a year.");
+    if (paused) setStatus("stakeStatus", "Legacy staking is paused. Withdraw and claim stay open.");
+    else if (multiStakeEnabled()) setStatus("stakeStatus", "The original BZB-only contract, still streaming. Separate from the multi-reward stake above.");
+    else setStatus("stakeStatus", "No lock, no fee. APR is BZB earned per BZB staked if this daily rate ran a year.");
     log("stakeLog", "");
   } catch (err) {
     setStatus("stakeStatus", "Could not read the staking contract.");
@@ -1408,7 +1419,6 @@ async function stakeAction(kind) {
   try {
     await assertChain();
     const code = await withReadProvider((rpc) => rpc.getCode(STAKING));
-    if (kind === "stake" && multiStakeEnabled()) throw new Error("New stakes go to the multi-reward contract above. Legacy staking is withdraw and claim only.");
     if (kind === "stake" && state.stakePaused) throw new Error("That contract is paused.");
     let data;
     if (kind === "claim") data = stakeIface.encodeFunctionData("getReward", []);
@@ -2835,14 +2845,14 @@ function boot() {
   $("stakeBtn").addEventListener("click", () => { stakeAction("stake"); });
   $("withdrawBtn").addEventListener("click", () => { stakeAction("withdraw"); });
   $("claimStakeBtn").addEventListener("click", () => { stakeAction("claim"); });
+  $("maxStakeStaked").addEventListener("click", async () => {
+    if (!state.account) return;
+    // Fill the full legacy staked balance so Withdraw takes all of it.
+    const raw = await call(STAKING, stakeIface.encodeFunctionData("balanceOf", [state.account]));
+    $("stakeAmount").value = formatUnits(BigInt(stakeIface.decodeFunctionResult("balanceOf", raw)[0]), 18, 18);
+  });
   $("maxStake").addEventListener("click", async () => {
     if (!state.account) return;
-    if (multiStakeEnabled()) {
-      // Legacy section is exit-only: fill the full staked balance so Withdraw takes all of it.
-      const raw = await call(STAKING, stakeIface.encodeFunctionData("balanceOf", [state.account]));
-      $("stakeAmount").value = formatUnits(BigInt(stakeIface.decodeFunctionResult("balanceOf", raw)[0]), 18, 18);
-      return;
-    }
     const amount = await balanceOf(tokenByAddress(BZB), state.account);
     $("stakeAmount").value = formatUnits(amount, 18, 6);
   });
@@ -2900,12 +2910,6 @@ function boot() {
     showTab,
   });
   initMultiStake({
-    legacyWithdrawAll: async () => {
-      if (!state.account) return;
-      const raw = await call(STAKING, stakeIface.encodeFunctionData("balanceOf", [state.account]));
-      $("stakeAmount").value = formatUnits(BigInt(stakeIface.decodeFunctionResult("balanceOf", raw)[0]), 18, 18);
-      await stakeAction("withdraw");
-    },
     state,
     BZB,
     call,

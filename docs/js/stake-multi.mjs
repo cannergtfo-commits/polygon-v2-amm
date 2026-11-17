@@ -142,11 +142,12 @@ async function multiRead(rows) {
 }
 
 async function tokenMeta(addresses) {
-  const need = addresses.filter((a) => !ms.meta.has(lower(a)));
+  // Re-read tokens whose decimals() failed last time (L-4) instead of trusting a guessed 18.
+  const need = addresses.filter((a) => !ms.meta.has(lower(a)) || ms.meta.get(lower(a)).decimalsKnown === false);
   const known = [];
   for (const a of need) {
     const t = deps.tokenByAddress(a);
-    if (t) ms.meta.set(lower(a), { address: ethers.getAddress(a), symbol: t.symbol, decimals: Number(t.decimals), logo: t.logo || "" });
+    if (t) ms.meta.set(lower(a), { address: ethers.getAddress(a), symbol: t.symbol, decimals: Number(t.decimals), decimalsKnown: true, logo: t.logo || "" });
     else known.push(a);
   }
   if (known.length) {
@@ -157,7 +158,9 @@ async function tokenMeta(addresses) {
     known.forEach((a, i) => {
       const sym = rows[i * 2]?.[0];
       const dec = rows[i * 2 + 1]?.[0];
-      ms.meta.set(lower(a), { address: ethers.getAddress(a), symbol: sym ? String(sym).slice(0, 16) : short(a), decimals: dec != null ? Number(dec) : 18, logo: "" });
+      const decOk = dec != null && Number.isInteger(Number(dec)) && Number(dec) >= 0 && Number(dec) <= 36;
+      // decimals 18 is a display-only fallback; decimalsKnown:false blocks run creation (L-4).
+      ms.meta.set(lower(a), { address: ethers.getAddress(a), symbol: sym ? String(sym).slice(0, 16) : short(a), decimals: decOk ? Number(dec) : 18, decimalsKnown: decOk, logo: "" });
     });
   }
   return addresses.map((a) => ms.meta.get(lower(a)));
@@ -322,30 +325,11 @@ export async function loadMultiStake() {
 function paintMode() {
   const on = ms.enabled;
   $("msStake").hidden = !on;
-  // Once the new contract is live, the old one collapses into a single exit-only row (#legacyRow).
-  $("legacyStake").hidden = on;
-  $("stakeBtn").hidden = on;
-  if (!on) $("legacyRow").hidden = true;
-}
-
-/** Legacy section: hide Stake and point the amount helper at the staked balance once the new contract is live. */
-export function legacyMaxIsStaked() {
-  return ms.enabled;
-}
-
-/** Called by desk.js loadStake() with the old contract's numbers. Shows the row only if there's something to exit. */
-export function paintLegacyRow(staked, earned) {
-  const row = $("legacyRow");
-  if (!row) return;
-  if (!ms.enabled || staked == null || (BigInt(staked) === 0n && BigInt(earned || 0n) === 0n)) {
-    row.hidden = true;
-    return;
-  }
-  row.hidden = false;
-  $("legacyRowStaked").textContent = fmtNice(BigInt(staked), 18);
-  $("legacyRowEarned").textContent = fmtNice(BigInt(earned || 0n), 18);
-  $("legacyRowWithdraw").disabled = BigInt(staked) === 0n;
-  $("legacyRowClaim").disabled = BigInt(earned || 0n) === 0n;
+  // Legacy staking stays fully usable (stake, withdraw, claim) next to the new contract (security B-2).
+  // Once the new contract is live it sits underneath as a compact "Legacy staking" card.
+  $("legacyStake").hidden = false;
+  $("stakeBtn").hidden = false;
+  $("legacyTitle").textContent = on ? "Legacy staking" : "Stake BZB";
 }
 
 function setMode(mode) {
@@ -589,7 +573,9 @@ function draftToRun(draft) {
   const meta = ms.meta.get(lower(draft.token));
   let amount = 0n;
   let amountErr = null;
-  if (meta && String(draft.amount).trim()) {
+  if (meta && meta.decimalsKnown === false) {
+    amountErr = `Couldn't read ${meta.symbol}'s decimals, so the amount can't be converted safely. Try again later.`;
+  } else if (meta && String(draft.amount).trim()) {
     try { amount = deps.parseUnits(String(draft.amount).trim(), meta.decimals); } catch (err) { amountErr = err.message; }
   }
   const delaySec = draft.startMode === "now" ? 0 : daysHoursToSec(draft.delayDays, draft.delayHours);
@@ -739,7 +725,7 @@ async function sendCall(fn, args, action, logId) {
   }
   await deps.assertChain();
   const data = iface.encodeFunctionData(fn, args);
-  const tx = { to: ms.address, data, value: 0n };
+  const tx = { to: ms.address, data, value: 0n, chainId: 137n };
   let est;
   try {
     est = await deps.withReadProvider((rpc) => rpc.estimateGas({ ...tx, from: deps.state.account }));
@@ -1005,8 +991,6 @@ function wire() {
     else ms.expanded.add(key);
     if (ms.data) paintRuns(ms.data);
   });
-  $("legacyRowWithdraw").addEventListener("click", () => deps.legacyWithdrawAll?.());
-  $("legacyRowClaim").addEventListener("click", () => $("claimStakeBtn").click());
   $("msExitBtn").addEventListener("click", doExit);
   $("msClaimAllBtn").addEventListener("click", doClaimAll);
   $("msCompoundBtn").addEventListener("click", doCompound);
@@ -1093,15 +1077,6 @@ function wire() {
 /** Called once from desk.js boot with the desk's RPC / wallet helpers. */
 export function initMultiStake(d) {
   deps = d;
-  // The legacy section is hidden once the new contract is live; mirror its log into the legacy row.
-  const src = $("stakeLog");
-  const dst = $("legacyRowLog");
-  if (src && dst && window.MutationObserver) {
-    new MutationObserver(() => {
-      dst.textContent = src.textContent;
-      dst.className = src.className;
-    }).observe(src, { childList: true, characterData: true, subtree: true, attributes: true });
-  }
   ms.address = configured();
   ms.enabled = !!ms.address;
   paintMode();
