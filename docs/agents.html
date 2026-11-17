@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BlazarForce for AI agents · Polygon MCP</title>
+  <meta name="description" content="Connect any AI agent or bot to Polygon: BZB swaps, staking, trading rewards, NFTs and contract deploys over one MCP endpoint. Read-only and unsigned builds." />
+  <link rel="canonical" href="https://blazarforce.net/agents.html" />
+  <link rel="icon" href="favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon.png" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="alternate" type="text/plain" href="llms.txt" title="llms.txt" />
+  <link rel="stylesheet" href="css/style.css?v=desk29" />
+  <style>
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .nav{display:flex;align-items:center;gap:8px}
+    .nav a.ghost{font-family:Syne,sans-serif;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--text);background:rgba(255,255,255,.04);border:1px solid var(--stroke);padding:10px 14px;border-radius:999px;text-decoration:none}
+    .nav a.connect{text-decoration:none}
+    main.ag{width:min(980px,calc(100% - 32px));margin:44px auto 64px;display:grid;gap:22px}
+    .kick{font-family:Syne,sans-serif;letter-spacing:.22em;text-transform:uppercase;color:var(--cyan);font-size:11px}
+    .hero{display:block;text-align:center;padding:26px 0 8px;margin:0}
+    .hero h2{font-family:Syne,sans-serif;font-size:clamp(34px,5.4vw,60px);line-height:1.02;margin:12px 0 0}
+    .hero h2 em{font-style:normal;background:linear-gradient(90deg,var(--cyan),var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
+    .hero p{margin:16px auto 0;max-width:600px;color:var(--muted);font-size:17px;line-height:1.5}
+    .cta{display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap;margin-top:26px}
+    .cta .connect{font-size:13px;padding:15px 30px}
+    .endpoint{display:inline-flex;align-items:center;gap:8px;max-width:100%;background:rgba(0,0,0,.35);border:1px solid var(--stroke);border-radius:999px;padding:6px 6px 6px 14px}
+    .endpoint code{font-family:"JetBrains Mono",monospace;font-size:13px;color:var(--gold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .mini{font-family:Syne,sans-serif;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);background:var(--cyan-dim);border:0;border-radius:999px;padding:7px 11px;cursor:pointer;white-space:nowrap}
+    .mini:hover{background:rgba(62,224,255,.28)}
+    .status{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin-top:16px;color:var(--muted);font-size:12px;letter-spacing:.06em}
+    .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--muted);margin-right:6px;vertical-align:1px}
+    .dot.on{background:var(--ok);box-shadow:0 0 10px var(--ok)}
+    .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+    .cap{background:var(--glass);border:1px solid var(--stroke);border-radius:18px;padding:16px 18px;backdrop-filter:blur(14px)}
+    .cap b{display:block;font-family:Syne,sans-serif;font-size:15px;letter-spacing:.04em}
+    .cap p{color:var(--muted);font-size:13px;line-height:1.45;margin-top:6px}
+    .cap code{display:block;margin-top:10px;font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--gold);opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .setup .tabs{max-width:560px}
+    .snip{position:relative}
+    .snip pre{font-family:"JetBrains Mono",monospace;font-size:12.5px;line-height:1.55;color:var(--text);white-space:pre-wrap;word-break:break-word;background:rgba(0,0,0,.35);border:1px solid var(--stroke);border-radius:14px;padding:16px 18px;margin:0}
+    .snip .mini{position:absolute;bottom:10px;right:10px}
+    .snip p{color:var(--muted);font-size:13px;line-height:1.5;margin:0 0 10px}
+    .snip p a,.foot a,.modal a.inline{color:var(--cyan)}
+    .safe{display:flex;gap:10px;align-items:center;justify-content:center;color:var(--muted);font-size:13px;text-align:center}
+    .safe b{color:var(--ok);font-weight:600}
+    .foot{display:flex;justify-content:center;gap:18px;flex-wrap:wrap;font-size:12px;letter-spacing:.06em;color:var(--muted)}
+    .foot a{text-decoration:none}
+    dialog.modal{margin:auto;width:min(440px,calc(100% - 28px));background:rgba(6,12,28,.97);color:var(--text);border:1px solid var(--stroke);border-radius:22px;padding:20px;box-shadow:0 30px 90px rgba(0,0,0,.6)}
+    dialog.modal::backdrop{background:rgba(2,4,12,.66);backdrop-filter:blur(4px)}
+    .modal h3{font-family:Syne,sans-serif;letter-spacing:.16em;font-size:13px;text-transform:uppercase;color:var(--cyan);margin:0 0 4px}
+    .modal .sub{color:var(--muted);font-size:13px;margin-bottom:14px}
+    .opt{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:12px 14px;margin-top:8px;border:1px solid var(--stroke);border-radius:14px;background:rgba(0,0,0,.25);color:var(--text);text-decoration:none;font-family:Sora,sans-serif;font-size:14px;cursor:pointer;text-align:left}
+    .opt:hover{border-color:var(--cyan);background:rgba(62,224,255,.08)}
+    .opt small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+    .opt .go{font-family:Syne,sans-serif;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);white-space:nowrap}
+    .x:focus:not(:focus-visible){outline:none}
+    .x{position:absolute;top:12px;right:14px;background:transparent;border:0;color:var(--muted);font-size:20px;cursor:pointer}
+    .steps{display:none;margin-top:10px;padding:12px 14px;border-radius:14px;background:rgba(0,0,0,.3);color:var(--muted);font-size:13px;line-height:1.6}
+    .steps.show{display:block}
+    .steps code{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--gold);word-break:break-all}
+    .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:rgba(6,12,28,.96);border:1px solid var(--stroke);color:var(--ok);font-size:13px;padding:9px 16px;border-radius:999px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:60}
+    .toast.show{opacity:1}
+    @media(max-width:760px){.grid{grid-template-columns:1fr 1fr}.nav a.ghost{display:none}header{padding:14px 16px}}
+    @media(max-width:460px){.grid{grid-template-columns:1fr}.endpoint code{font-size:11px}}
+  </style>
+</head>
+<body>
+  <div class="space"></div>
+  <div class="stars"></div>
+  <div class="stars2"></div>
+  <div class="vignette"></div>
+  <header>
+    <a class="brand" href="index.html" style="text-decoration:none;color:inherit">
+      <img src="bzb-icon.png" alt="BzB" />
+      <div><h1>BlazarSwap</h1><span>Agents</span></div>
+    </a>
+    <nav class="nav">
+      <a class="ghost" href="blazar-apps.html">Apps</a>
+      <a class="connect" href="index.html">Swap</a>
+    </nav>
+  </header>
+
+  <main class="ag">
+    <section class="hero">
+      <div class="kick">For AI agents &amp; trading bots</div>
+      <h2>Plug your agent into <em>Polygon</em>.</h2>
+      <p>One MCP endpoint for BZB swaps, staking, trading rewards, NFTs and contract deploys on Polygon. Your agent reads and builds; your wallet signs.</p>
+      <div class="cta">
+        <button class="connect" id="connectAgent" type="button">Connect your agent</button>
+        <span class="endpoint"><code id="ep">https://api.blazarforce.net/mcp</code><button class="mini" type="button" data-copy="https://api.blazarforce.net/mcp">Copy</button></span>
+      </div>
+      <div class="status">
+        <span id="live"><span class="dot"></span>Checking endpoint…</span>
+        <span>Polygon PoS · chain 137</span>
+        <span>No API key</span>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="What agents can do">
+      <div class="cap"><b>Swap</b><p>Best route across BlazarSwap, QuickSwap and Sushi, built as ready-to-sign txs.</p><code>blazar_quote · blazar_build_swap</code></div>
+      <div class="cap"><b>Stake</b><p>BZB staking and multi-reward staking v2: live APR, positions, stake and exit builds.</p><code>blazar_staking_info · blazar_build_stake</code></div>
+      <div class="cap"><b>Rewards</b><p>Daily trading rewards. Every fee-router trade counts toward the leaderboard.</p><code>blazar_daily_rewards · blazar_build_claim</code></div>
+      <div class="cap"><b>Earn</b><p>Ranked earning options from live reads, with dead rewards flagged.</p><code>blazar_rank_earning · blazar_earn_strategies</code></div>
+      <div class="cap"><b>NFTs</b><p>Collections, holders and listings, plus transfer and approve builds.</p><code>blazar_nft_collections · blazar_nft_holder</code></div>
+      <div class="cap"><b>Deploy</b><p>Build deploy txs for a fixed-supply ERC-20 or a staking pool (unaudited templates).</p><code>blazar_deploy_templates · blazar_build_deploy</code></div>
+    </section>
+
+    <section class="panel setup">
+      <h3>Manual setup</h3>
+      <div class="tabs" role="tablist">
+        <button class="active" role="tab" data-tab="cursor" type="button">Cursor</button>
+        <button role="tab" data-tab="claude" type="button">Claude</button>
+        <button role="tab" data-tab="openai" type="button">ChatGPT / OpenAI</button>
+        <button role="tab" data-tab="rest" type="button">REST</button>
+      </div>
+      <div class="snip" data-pane="cursor">
+        <p>Add to <code class="mono">~/.cursor/mcp.json</code> (VS Code: same block under <code class="mono">"servers"</code> with <code class="mono">"type": "http"</code>).</p>
+        <pre>{
+  "mcpServers": {
+    "blazar-polygon": { "url": "https://api.blazarforce.net/mcp" }
+  }
+}</pre><button class="mini" type="button" data-copy-pre>Copy</button>
+      </div>
+      <div class="snip" data-pane="claude" hidden>
+        <p>Claude Code, or in Claude.ai / Desktop: <b>Settings → Connectors → Add custom connector</b> and paste the URL.</p>
+        <pre>claude mcp add --transport http blazar-polygon https://api.blazarforce.net/mcp</pre><button class="mini" type="button" data-copy-pre>Copy</button>
+      </div>
+      <div class="snip" data-pane="openai" hidden>
+        <p>ChatGPT: <b>Plugins → + → Add custom MCP server</b>, paste the URL, choose No authentication. Responses API:</p>
+        <pre>{
+  "type": "mcp",
+  "server_label": "blazar_polygon",
+  "server_url": "https://api.blazarforce.net/mcp",
+  "require_approval": "never"
+}</pre><button class="mini" type="button" data-copy-pre>Copy</button>
+      </div>
+      <div class="snip" data-pane="rest" hidden>
+        <p>Every tool is also plain HTTPS. List them at <a href="https://api.blazarforce.net/v1/tools">/v1/tools</a>; spec in <a href="openapi.json">openapi.json</a>.</p>
+        <pre>curl "https://api.blazarforce.net/v1/quote?tokenIn=POL&amp;tokenOut=BZB&amp;amount=10"
+curl -X POST https://api.blazarforce.net/v1/tools/blazar_overview -d '{}'</pre><button class="mini" type="button" data-copy-pre>Copy</button>
+      </div>
+    </section>
+
+    <p class="safe"><b>&#10003; No tool signs.</b> Builds are unsigned and simulated; nothing moves until your wallet signs. Never share a seed phrase or private key.</p>
+
+    <footer class="foot">
+      <a href="llms.txt">llms.txt</a>
+      <a href="llms-full.txt">llms-full.txt</a>
+      <a href="openapi.json">openapi.json</a>
+      <a href=".well-known/mcp.json">mcp.json</a>
+      <a href="agents/tools.json">tools.json</a>
+      <a href="agents/SKILL.md">SKILL.md</a>
+    </footer>
+  </main>
+
+  <dialog class="modal" id="connectModal" aria-labelledby="cmTitle">
+    <button class="x" type="button" data-close aria-label="Close">&times;</button>
+    <h3 id="cmTitle">Connect your agent</h3>
+    <div class="sub">Pick your client. You will review and approve it there.</div>
+    <a class="opt" id="optCursor" href="cursor://anysphere.cursor-deeplink/mcp/install?name=blazar-polygon&amp;config=eyJ1cmwiOiJodHRwczovL2FwaS5ibGF6YXJmb3JjZS5uZXQvbWNwIn0="><span>Cursor<small>One-click install</small></span><span class="go">Open &rarr;</span></a>
+    <a class="opt" id="optVscode" href="vscode:mcp/install?%7B%22name%22%3A%22blazar-polygon%22%2C%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fapi.blazarforce.net%2Fmcp%22%7D"><span>VS Code<small>One-click install (Copilot agent mode)</small></span><span class="go">Open &rarr;</span></a>
+    <button class="opt" type="button" data-steps="stClaude" data-copy="https://api.blazarforce.net/mcp"><span>Claude<small>Copy URL, add as a custom connector</small></span><span class="go">Copy URL</span></button>
+    <div class="steps" id="stClaude">URL copied. In Claude: <b>Settings → Connectors → Add custom connector</b>, paste it, save. Claude Code:<br /><code>claude mcp add --transport http blazar-polygon https://api.blazarforce.net/mcp</code></div>
+    <button class="opt" type="button" data-steps="stChatgpt" data-copy="https://api.blazarforce.net/mcp"><span>ChatGPT<small>Copy URL, add as a custom MCP server</small></span><span class="go">Copy URL</span></button>
+    <div class="steps" id="stChatgpt">URL copied. In ChatGPT on the web: <b>Plugins → + → Add custom MCP server</b>, paste it, pick <b>No authentication</b>, then Create.</div>
+    <button class="opt" type="button" data-steps="stOther" data-copy='{"mcpServers":{"blazar-polygon":{"url":"https://api.blazarforce.net/mcp"}}}'><span>Any other MCP client<small>Copy the JSON config</small></span><span class="go">Copy JSON</span></button>
+    <div class="steps" id="stOther">Config copied. Paste it into your client's MCP settings. Transport: Streamable HTTP, no auth.</div>
+  </dialog>
+  <div class="toast" id="toast">Copied</div>
+
+  <script>
+  (() => {
+    const $ = (s, r = document) => r.querySelector(s);
+    const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+    const toast = $("#toast");
+    let tt;
+    async function copy(text, msg = "Copied") {
+      try { await navigator.clipboard.writeText(text); }
+      catch { const t = document.createElement("textarea"); t.value = text; document.body.appendChild(t); t.select(); document.execCommand("copy"); t.remove(); }
+      toast.textContent = msg; toast.classList.add("show"); clearTimeout(tt); tt = setTimeout(() => toast.classList.remove("show"), 1400);
+    }
+    $$("[data-copy]").forEach((b) => b.addEventListener("click", () => {
+      copy(b.dataset.copy);
+      if (b.dataset.steps) { $$(".steps").forEach((s) => s.classList.remove("show")); $("#" + b.dataset.steps).classList.add("show"); }
+    }));
+    $$("[data-copy-pre]").forEach((b) => b.addEventListener("click", () => copy(b.previousElementSibling.textContent)));
+    $$(".setup .tabs button").forEach((b) => b.addEventListener("click", () => {
+      $$(".setup .tabs button").forEach((x) => x.classList.toggle("active", x === b));
+      $$(".setup [data-pane]").forEach((p) => (p.hidden = p.dataset.pane !== b.dataset.tab));
+    }));
+    const modal = $("#connectModal");
+    $("#connectAgent").addEventListener("click", () => { $$(".steps").forEach((s) => s.classList.remove("show")); modal.showModal(); });
+    $("[data-close]").addEventListener("click", () => modal.close());
+    if (location.hash === "#connect") modal.showModal();
+    modal.addEventListener("click", (e) => { if (e.target === modal) modal.close(); });
+    fetch("https://api.blazarforce.net/health", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((h) => { $("#live").innerHTML = '<span class="dot on"></span>Live · ' + Number(h.tools) + " tools"; })
+      .catch(() => { $("#live").innerHTML = '<span class="dot"></span>Endpoint status unavailable'; });
+  })();
+  </script>
+</body>
+</html>

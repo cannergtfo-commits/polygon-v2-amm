@@ -1,0 +1,175 @@
+{
+ "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+ "name": "io.github.cannergtfo-commits/blazar-polygon",
+ "title": "Blazar Polygon plugin: BZB token, BlazarSwap DEX & trading rewards (Polygon)",
+ "description": "Polygon swap quotes and one-call unsigned swap / stake / claim / deploy builds (with simulation) for BZB, POL and BlazarSwap. Only BlazarFeeRouter swaps earn BZB trading rewards. Read-only + unsigned txs.",
+ "version": "0.3.0",
+ "websiteUrl": "https://blazarforce.net/agents.html",
+ "transports": [
+  {
+   "type": "streamable-http",
+   "url": "https://api.blazarforce.net/mcp",
+   "status": "live",
+   "auth": "none"
+  }
+ ],
+ "tools": [
+  {
+   "name": "blazar_overview",
+   "kind": "read",
+   "description": "Start here: BlazarForce overview. START HERE."
+  },
+  {
+   "name": "blazar_quote",
+   "kind": "read",
+   "description": "Quote a Polygon swap (BZB, POL, USDC...). Price a Polygon swap (POL, WPOL, BZB, BBY, USDC, USDT, WETH, WBTC, M421) before trading."
+  },
+  {
+   "name": "blazar_compare_venues",
+   "kind": "read",
+   "description": "Compare a swap across venues. Compare one swap across venues before trading: the best BlazarFeeRouter route, the best route on each single venue (BlazarSwap, QuickSwap V2, SushiSwap V2) through the fee router and as a direct pool swap, and a ParaSwap reference price (public API, no key)."
+  },
+  {
+   "name": "blazar_build_swap",
+   "kind": "unsigned",
+   "description": "Build swap: approve + swap txs, simulated. One call to get everything needed to swap through BlazarFeeRouter: ordered txs[] (exact approve if needed, then swap), a plain-English summary per tx, an eth_call simulation of the swap (as if the approve were mined), the quote used, guards (minAmountOut, 3-minute deadline) and warnings[]."
+  },
+  {
+   "name": "blazar_check_limit",
+   "kind": "read",
+   "description": "Limit-order check (dry run). Off-chain limit-order check for a bot: is the executable BlazarFeeRouter price for this size (after fees and impact) at or above limitPrice (tokenOut per 1 tokenIn)? Returns triggered, gapBps and the exact blazar_build_swap args to use."
+  },
+  {
+   "name": "blazar_plan_twap",
+   "kind": "read",
+   "description": "TWAP plan (dry run). Dry-run TWAP planner: splits a swap into N slices every intervalSeconds and compares with one swap now (impact per slice, estimated gain in bps, schedule with min-out per slice)."
+  },
+  {
+   "name": "blazar_pools",
+   "kind": "read",
+   "description": "BlazarSwap pools and reserves. List every BlazarSwap V2 pair on Polygon with live reserves."
+  },
+  {
+   "name": "blazar_prices",
+   "kind": "read",
+   "description": "BZB price on each Polygon venue. BZB/WPOL mid price and USD value on BlazarSwap, QuickSwap V2 and SushiSwap V2, with pool depth in USD from the Chainlink-backed Blazar oracle."
+  },
+  {
+   "name": "blazar_recent_events",
+   "kind": "read",
+   "description": "Recent swaps / pool events (log polling). Read recent onchain events by log polling: BlazarFeeRouter AggregatedSwap (trader, tokens, amounts, USD) or one BlazarSwap pair's Swap + Sync (reserves and price)."
+  },
+  {
+   "name": "blazar_tokens",
+   "kind": "local",
+   "description": "Token list. Uniswap-schema token list (BZB, BBY, WPOL, USDC, USDT, WETH, WBTC, M421) with addresses, decimals and transfer-tax flags."
+  },
+  {
+   "name": "blazar_contracts",
+   "kind": "local",
+   "description": "Contract addresses. BlazarForce contract addresses on Polygon (router, factory, fee router, staking, daily rewards, oracle, BZB) plus the pair init code hash."
+  },
+  {
+   "name": "blazar_staking_info",
+   "kind": "read",
+   "description": "BZB staking status and APR. BZB single-sided staking (BlazarStakingRewards): status first (ACTIVE or REWARDS_ENDED with date), live APR from the reward rate, total staked, and optionally one account's stake, earned BZB and allowance."
+  },
+  {
+   "name": "blazar_build_stake",
+   "kind": "unsigned",
+   "description": "Build stake / withdraw / claim / exit. One call for BZB staking: ordered txs[] (exact approve if needed, then stake / withdraw / claim / exit), a summary per tx, a simulation, and warnings (e.g."
+  },
+  {
+   "name": "blazar_staking_v2_info",
+   "kind": "read",
+   "description": "Staking v2 (multi-reward): status, rates, APR, position. BlazarMultiRewardStaking (staking v2: stake BZB, earn up to 5 reward tokens, no lock)."
+  },
+  {
+   "name": "blazar_build_staking_v2",
+   "kind": "unsigned",
+   "description": "Build staking v2: stake / withdraw / claim / exit (gas-padded). One call for staking v2: ordered txs[] for stake (exact approve + stake), withdraw, claimAll, claimMany (defaults to only tokens with rewards), exit or emergencyWithdraw, each with a summary, a simulation, warnings, and a gas limit."
+  },
+  {
+   "name": "blazar_daily_rewards",
+   "kind": "read",
+   "description": "Trading rewards: status and posted days. BZB daily trading-rewards status for swaps through BlazarFeeRouter: today's dayId, recently posted days with totals and claim deadlines, daily cap, contract balance, and scoring rules."
+  },
+  {
+   "name": "blazar_trading_rewards_preview",
+   "kind": "read",
+   "description": "Trading-rewards leaderboard preview (estimate). Preview the BZB daily trading-rewards leaderboard for a UTC day from live BlazarFeeRouter AggregatedSwap logs, using the swap-desk rules: no minimum trade, no per-wallet cap, same-wallet round trips within 10 minutes netted, top 50 listed, top 25 paid fixed shares of the daily cap."
+  },
+  {
+   "name": "blazar_daily_claimable",
+   "kind": "read",
+   "description": "Claimable trading reward. How much BZB one address can claim for one posted trading-reward day."
+  },
+  {
+   "name": "blazar_build_claim",
+   "kind": "unsigned",
+   "description": "Build trading-reward claim. One call to claim a posted BZB trading reward: the claim tx with a summary (amount and day), a simulation, and NOTHING_TO_CLAIM if the amount is 0."
+  },
+  {
+   "name": "blazar_earn_strategies",
+   "kind": "read",
+   "description": "Ways to earn with BZB / POL (live reads). Earning options on BlazarForce ranked from live onchain reads only (no projections): BZB staking, BlazarSwap LP positions with reserves, trading rewards, and the BZB cross-venue spread."
+  },
+  {
+   "name": "blazar_rank_earning",
+   "kind": "read",
+   "description": "Rank earning options; flag dead rewards. Rank BlazarForce earning options from live reads only: BZB staking, BlazarSwap LP fee APR (trailing 24h), daily trading rewards, staking v2."
+  },
+  {
+   "name": "blazar_nft_collections",
+   "kind": "read",
+   "description": "BlazarForce NFT collections. BlazarForce NFT collections on Polygon (Sleepy Validators, Night Market Stubs, Crystal Moths): live name, supply, holder count, top holders, interfaces, sample token URI, site-stated ask, marketplace links."
+  },
+  {
+   "name": "blazar_nft_holder",
+   "kind": "read",
+   "description": "NFT owner / holdings. Who owns a BlazarForce NFT (tokenId), or which token ids an address holds (owner), with metadata and marketplace operator approvals."
+  },
+  {
+   "name": "blazar_nft_listings",
+   "kind": "read",
+   "description": "NFT listing info. Listing info for a BlazarForce NFT: owner, the site-stated ask, on-chain marketplace approvals (OpenSea Seaport conduit), and live Rarible orders only if RARIBLE_API_KEY is set in your env."
+  },
+  {
+   "name": "blazar_build_nft_transfer",
+   "kind": "unsigned",
+   "description": "Build NFT transfer (unsigned). Build an UNSIGNED safeTransferFrom for a BlazarForce NFT after checking ownership, with a simulation and warnings (irreversible, contract recipient, burn address)."
+  },
+  {
+   "name": "blazar_build_nft_approve",
+   "kind": "unsigned",
+   "description": "Build NFT approve / revoke (unsigned). Build an UNSIGNED approve(tokenId) or setApprovalForAll (or a revoke with approved=false) for a BlazarForce NFT, with warnings for unknown operators and approve-all."
+  },
+  {
+   "name": "blazar_deploy_templates",
+   "kind": "local",
+   "description": "Contract templates. List the contract templates this plugin can build deploy txs for: a fixed-supply ERC-20 (no owner, no tax) and a Synthetix-style staking pool."
+  },
+  {
+   "name": "blazar_build_deploy",
+   "kind": "unsigned",
+   "description": "Build deploy tx (ERC-20 or staking pool). One call to build an UNSIGNED contract-creation tx for a template, with named parameters per template, the predicted address, a simulation (eth_call creation) and verification settings."
+  },
+  {
+   "name": "blazar_decode_tx",
+   "kind": "local",
+   "description": "Decode a tx before signing. Decode calldata for a tx to a BlazarForce contract or an ERC-20 approve, e.g."
+  },
+  {
+   "name": "blazar_simulate_tx",
+   "kind": "read",
+   "description": "Simulate any tx (read-only). Dry-run any Polygon tx with eth_call + estimateGas from `from` (POL balance overridden, token balances real)."
+  }
+ ],
+ "status": "live: hosted read-only endpoint; not yet submitted to any registry",
+ "remotes": [
+  {
+   "type": "streamable-http",
+   "url": "https://api.blazarforce.net/mcp"
+  }
+ ]
+}

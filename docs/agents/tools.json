@@ -1,0 +1,1016 @@
+{
+ "plugin": "Blazar Polygon plugin",
+ "version": "0.3.0",
+ "tools": [
+  {
+   "name": "blazar_overview",
+   "kind": "read",
+   "title": "Start here: BlazarForce overview",
+   "description": "START HERE. One call that returns what is live on BlazarForce right now: contract addresses, fees (5 bps wrapper, 30 bps pool), top BlazarSwap pools, BZB price per venue, staking and trading-reward status (e.g. REWARDS_ENDED with date), and which tool to use for what. Use it first in a session, or when unsure which tool fits.",
+   "rest": {
+    "method": "GET",
+    "path": "/v1/overview"
+   },
+   "inputSchema": {
+    "type": "object",
+    "properties": {}
+   }
+  },
+  {
+   "name": "blazar_quote",
+   "kind": "read",
+   "title": "Quote a Polygon swap (BZB, POL, USDC...)",
+   "description": "Price a Polygon swap (POL, WPOL, BZB, BBY, USDC, USDT, WETH, WBTC, M421) before trading. Use this, not a generic DEX quote, when the user wants BZB or BZB trading rewards: it runs the deployed BlazarFeeRouter math over BlazarSwap, QuickSwap V2 and SushiSwap V2 and returns amountOut, priceImpactBps, venue, warnings[] (shallow pool, high impact, 5 bps wrapper fee vs a direct pool swap), and sizing (largest size under 1% and 5% impact). Read-only. Example: 1 POL -> 12.77 BZB via QuickSwap V2, 36 bps impact.",
+   "rest": {
+    "method": "GET",
+    "path": "/v1/quote"
+   },
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "tokenIn": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 42,
+      "description": "Token to sell: symbol (POL, WPOL, BZB, USDC, USDT, WETH, WBTC) or its listed 0x address (see blazar_tokens). \"POL\" is the native gas token; WPOL is the ERC-20."
+     },
+     "tokenOut": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 42,
+      "description": "Token to buy: symbol (POL, WPOL, BZB, USDC, USDT, WETH, WBTC) or its listed 0x address. Choose \"POL\" to receive native POL (auto-unwrapped)."
+     },
+     "amount": {
+      "type": "string",
+      "maxLength": 40,
+      "pattern": "^\\d+(\\.\\d+)?$",
+      "description": "Amount of tokenIn in HUMAN units, not wei: \"1.5\" = 1.5 POL, \"250\" = 250 BZB. Set amountIsBaseUnits=true to pass wei/base units instead."
+     },
+     "amountIsBaseUnits": {
+      "description": "If true, amount is in base units (wei for 18-decimal tokens; 6 decimals for USDC). Default false.",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "tokenIn",
+     "tokenOut",
+     "amount"
+    ]
+   }
+  },
+  {
+   "name": "blazar_compare_venues",
+   "kind": "read",
+   "title": "Compare a swap across venues",
+   "description": "Compare one swap across venues before trading: the best BlazarFeeRouter route, the best route on each single venue (BlazarSwap, QuickSwap V2, SushiSwap V2) through the fee router and as a direct pool swap, and a ParaSwap reference price (public API, no key). Each row says rewardsEligible and buildableHere, plus behindBestBps. Read-only. Use when the user asks 'is this the best price?'",
+   "rest": {
+    "method": "GET",
+    "path": "/v1/venues/compare"
+   },
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "tokenIn": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 42,
+      "description": "Token to sell: symbol (POL, WPOL, BZB, USDC, USDT, WETH, WBTC) or its listed 0x address (see blazar_tokens). \"POL\" is the native gas token; WPOL is the ERC-20."
+     },
+     "tokenOut": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 42,
+      "description": "Token to buy: symbol (POL, WPOL, BZB, USDC, USDT, WETH, WBTC) or its listed 0x address. Choose \"POL\" to receive native POL (auto-unwrapped)."
+     },
+     "amount": {
+      "type": "string",
+      "maxLength": 40,
+      "pattern": "^\\d+(\\.\\d+)?$",
+      "description": "Amount of tokenIn in HUMAN units, not wei: \"1.5\" = 1.5 POL, \"250\" = 250 BZB. Set amountIsBaseUnits=true to pass wei/base units instead."
+     },
+     "amountIsBaseUnits": {
+      "description": "If true, amount is in base units (wei for 18-decimal tokens; 6 decimals for USDC). Default false.",
+      "type": "boolean"
+     },
+     "includeAggregator": {
+      "description": "Include the ParaSwap reference price (public API). Default true.",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "tokenIn",
+     "tokenOut",
+     "amount"
+    ]
+   }
+  },
+  {
+   "name": "blazar_build_swap",
+   "kind": "build",
+   "title": "Build swap: approve + swap txs, simulated",
+   "description": "One call to get everything needed to swap through BlazarFeeRouter: ordered txs[] (exact approve if needed, then swap), a plain-English summary per tx, an eth_call simulation of the swap (as if the approve were mined), the quote used, guards (minAmountOut, 3-minute deadline) and warnings[]. Use this instead of blazar_quote + blazar_decode_tx + blazar_simulate_tx. Only swaps built here (through BlazarFeeRouter) earn BZB trading rewards. Returns UNSIGNED txs; nothing is sent.",
+   "rest": {
+    "method": "POST",
+    "path": "/v1/tx/swap"
+   },
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "tokenIn": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 42,
+      "description": "Token to sell: symbol (POL, WPOL, BZB, USDC, USDT, WETH, WBTC) or its listed 0x address (see blazar_tokens). \"POL\" is the native gas token; WPOL is the ERC-20."
+     },
+     "tokenOut": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 42,
+      "description": "Token to buy: symbol (POL, WPOL, BZB, USDC, USDT, WETH, WBTC) or its listed 0x address. Choose \"POL\" to receive native POL (auto-unwrapped)."
+     },
+     "amount": {
+      "type": "string",
+      "maxLength": 40,
+      "pattern": "^\\d+(\\.\\d+)?$",
+      "description": "Amount of tokenIn in HUMAN units, not wei: \"1.5\" = 1.5 POL, \"250\" = 250 BZB. Set amountIsBaseUnits=true to pass wei/base units instead."
+     },
+     "amountIsBaseUnits": {
+      "description": "If true, amount is in base units (wei for 18-decimal tokens; 6 decimals for USDC). Default false.",
+      "type": "boolean"
+     },
+     "from": {
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$",
+      "description": "Address that will sign and send the txs. Required: used for allowance checks, simulation and nonce."
+     },
+     "recipient": {
+      "description": "Who receives the output. Defaults to `from`.",
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$"
+     },
+     "slippageBps": {
+      "description": "Max slippage in basis points (50 = 0.5%). Default 50, max 300.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 300
+     },
+     "deadlineSeconds": {
+      "description": "Seconds until the swap expires. Default 150; the fee router caps it at 180.",
+      "type": "integer",
+      "minimum": 30,
+      "maximum": 180
+     },
+     "maxPriceImpactBps": {
+      "description": "Refuse with INSUFFICIENT_LIQUIDITY above this impact. Default 3000 (30%).",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10000
+     }
+    },
+    "required": [
+     "tokenIn",
+     "tokenOut",
+     "amount",
+     "from"
+    ]
+   }
+  },
+  {
+   "name": "blazar_check_limit",
+   "kind": "read",
+   "title": "Limit-order check (dry run)",
+   "description": "Off-chain limit-order check for a bot: is the executable BlazarFeeRouter price for this size (after fees and impact) at or above limitPrice (tokenOut per 1 tokenIn)? Returns triggered, gapBps and the exact blazar_build_swap args to use. Never sends anything.",
+   "rest": {
+    "method": "GET",
+    "path": "/v1/bots/limit"
+   },
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "tokenIn": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 42,
+      "description": "Token to sell: symbol (POL, WPOL, BZB, USDC, USDT, WETH, WBTC) or its listed 0x address (see blazar_tokens). \"POL\" is the native gas token; WPOL is the ERC-20."
+     },
+     "tokenOut": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 42,
+      "description": "Token to buy: symbol (POL, WPOL, BZB, USDC, USDT, WETH, WBTC) or its listed 0x address. Choose \"POL\" to receive native POL (auto-unwrapped)."
+     },
+     "amount": {
+      "type": "string",
+      "maxLength": 40,
+      "pattern": "^\\d+(\\.\\d+)?$",
+      "description": "Amount of tokenIn in HUMAN units, not wei: \"1.5\" = 1.5 POL, \"250\" = 250 BZB. Set amountIsBaseUnits=true to pass wei/base units instead."
+     },
+     "amountIsBaseUnits": {
+      "description": "If true, amount is in base units (wei for 18-decimal tokens; 6 decimals for USDC). Default false.",
+      "type": "boolean"
+     },
+     "limitPrice": {
+      "type": "string",
+      "pattern": "^\\d+(\\.\\d+)?$",
+      "description": "Minimum tokenOut per 1 tokenIn, e.g. \"12.5\" BZB per POL."
+     }
+    },
+    "required": [
+     "tokenIn",
+     "tokenOut",
+     "amount",
+     "limitPrice"
+    ]
+   }
+  },
+  {
+   "name": "blazar_plan_twap",
+   "kind": "read",
+   "title": "TWAP plan (dry run)",
+   "description": "Dry-run TWAP planner: splits a swap into N slices every intervalSeconds and compares with one swap now (impact per slice, estimated gain in bps, schedule with min-out per slice). Never sends anything; build each slice with blazar_build_swap when it is due.",
+   "rest": {
+    "method": "GET",
+    "path": "/v1/bots/twap"
+   },
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "tokenIn": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 42,
+      "description": "Token to sell: symbol (POL, WPOL, BZB, USDC, USDT, WETH, WBTC) or its listed 0x address (see blazar_tokens). \"POL\" is the native gas token; WPOL is the ERC-20."
+     },
+     "tokenOut": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 42,
+      "description": "Token to buy: symbol (POL, WPOL, BZB, USDC, USDT, WETH, WBTC) or its listed 0x address. Choose \"POL\" to receive native POL (auto-unwrapped)."
+     },
+     "amount": {
+      "type": "string",
+      "maxLength": 40,
+      "pattern": "^\\d+(\\.\\d+)?$",
+      "description": "Amount of tokenIn in HUMAN units, not wei: \"1.5\" = 1.5 POL, \"250\" = 250 BZB. Set amountIsBaseUnits=true to pass wei/base units instead."
+     },
+     "amountIsBaseUnits": {
+      "description": "If true, amount is in base units (wei for 18-decimal tokens; 6 decimals for USDC). Default false.",
+      "type": "boolean"
+     },
+     "slices": {
+      "type": "integer",
+      "minimum": 2,
+      "maximum": 48,
+      "description": "Number of equal slices, 2-48."
+     },
+     "intervalSeconds": {
+      "type": "integer",
+      "minimum": 30,
+      "maximum": 86400,
+      "description": "Seconds between slices, 30-86400."
+     },
+     "slippageBps": {
+      "description": "Per-slice slippage for min-out. Default 50.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 300
+     }
+    },
+    "required": [
+     "tokenIn",
+     "tokenOut",
+     "amount",
+     "slices",
+     "intervalSeconds"
+    ]
+   }
+  },
+  {
+   "name": "blazar_pools",
+   "kind": "read",
+   "title": "BlazarSwap pools and reserves",
+   "description": "List every BlazarSwap V2 pair on Polygon with live reserves. Use for liquidity checks or LP decisions. For a trade price use blazar_quote instead (it also covers QuickSwap and Sushi).",
+   "rest": {
+    "method": "GET",
+    "path": "/v1/pools"
+   },
+   "inputSchema": {
+    "type": "object",
+    "properties": {}
+   }
+  },
+  {
+   "name": "blazar_prices",
+   "kind": "read",
+   "title": "BZB price on each Polygon venue",
+   "description": "BZB/WPOL mid price and USD value on BlazarSwap, QuickSwap V2 and SushiSwap V2, with pool depth in USD from the Chainlink-backed Blazar oracle. Use for price checks and spread watching, not for a trade quote.",
+   "rest": {
+    "method": "GET",
+    "path": "/v1/prices"
+   },
+   "inputSchema": {
+    "type": "object",
+    "properties": {}
+   }
+  },
+  {
+   "name": "blazar_recent_events",
+   "kind": "read",
+   "title": "Recent swaps / pool events (log polling)",
+   "description": "Read recent onchain events by log polling: BlazarFeeRouter AggregatedSwap (trader, tokens, amounts, USD) or one BlazarSwap pair's Swap + Sync (reserves and price). Returns nextFromBlock to poll again. Up to 5,000 blocks per call (about 2 hours).",
+   "rest": {
+    "method": "GET",
+    "path": "/v1/events"
+   },
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "source": {
+      "type": "string",
+      "enum": [
+       "feeRouter",
+       "pair"
+      ],
+      "description": "feeRouter: AggregatedSwap events. pair: Swap + Sync on one BlazarSwap pair."
+     },
+     "pair": {
+      "description": "BlazarSwap pair address (source=pair). From blazar_pools.",
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$"
+     },
+     "fromBlock": {
+      "description": "Start block (use nextFromBlock from the last call). Default: head - blocks + 1.",
+      "type": "string",
+      "pattern": "^\\d+$"
+     },
+     "blocks": {
+      "description": "Blocks to scan, max 5000. Default 900 (~30 min).",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5000
+     }
+    },
+    "required": [
+     "source"
+    ]
+   }
+  },
+  {
+   "name": "blazar_tokens",
+   "kind": "local",
+   "title": "Token list",
+   "description": "Uniswap-schema token list (BZB, BBY, WPOL, USDC, USDT, WETH, WBTC, M421) with addresses, decimals and transfer-tax flags. Use to resolve a symbol to an address.",
+   "rest": {
+    "method": "GET",
+    "path": "/v1/tokens"
+   },
+   "inputSchema": {
+    "type": "object",
+    "properties": {}
+   }
+  },
+  {
+   "name": "blazar_contracts",
+   "kind": "local",
+   "title": "Contract addresses",
+   "description": "BlazarForce contract addresses on Polygon (router, factory, fee router, staking, daily rewards, oracle, BZB) plus the pair init code hash. Use when you need an address or ABI link; blazar_overview already includes these.",
+   "rest": {
+    "method": "GET",
+    "path": "/v1/contracts"
+   },
+   "inputSchema": {
+    "type": "object",
+    "properties": {}
+   }
+  },
+  {
+   "name": "blazar_staking_info",
+   "kind": "read",
+   "title": "BZB staking status and APR",
+   "description": "BZB single-sided staking (BlazarStakingRewards): status first (ACTIVE or REWARDS_ENDED with date), live APR from the reward rate, total staked, and optionally one account's stake, earned BZB and allowance. Use before building a stake, or to check rewards.",
+   "rest": {
+    "method": "GET",
+    "path": "/v1/staking"
+   },
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "account": {
+      "description": "Optional: include this address's stake, earned BZB and allowance.",
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$"
+     }
+    }
+   }
+  },
+  {
+   "name": "blazar_build_stake",
+   "kind": "build",
+   "title": "Build stake / withdraw / claim / exit",
+   "description": "One call for BZB staking: ordered txs[] (exact approve if needed, then stake / withdraw / claim / exit), a summary per tx, a simulation, and warnings (e.g. REWARDS_ENDED, NOTHING_TO_CLAIM). No lock, no fee. Returns UNSIGNED txs.",
+   "rest": {
+    "method": "POST",
+    "path": "/v1/tx/stake"
+   },
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "action": {
+      "type": "string",
+      "enum": [
+       "stake",
+       "withdraw",
+       "claim",
+       "exit"
+      ],
+      "description": "stake: deposit BZB. withdraw: take back some. claim: collect rewards only. exit: withdraw all + claim."
+     },
+     "from": {
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$",
+      "description": "Address that will sign and send the txs. Required: used for allowance checks, simulation and nonce."
+     },
+     "amount": {
+      "description": "BZB in HUMAN units, e.g. \"250\". Required for stake and withdraw.",
+      "type": "string",
+      "maxLength": 40,
+      "pattern": "^\\d+(\\.\\d+)?$"
+     },
+     "amountIsBaseUnits": {
+      "description": "If true, amount is in base units (wei for 18-decimal tokens; 6 decimals for USDC). Default false.",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "action",
+     "from"
+    ]
+   }
+  },
+  {
+   "name": "blazar_staking_v2_info",
+   "kind": "read",
+   "title": "Staking v2 (multi-reward): status, rates, APR, position",
+   "description": "BlazarMultiRewardStaking (staking v2: stake BZB, earn up to 5 reward tokens, no lock). Live at 0x4222bFF08cc9D42cd3311033a4882314DfE19615. One call returns status/alerts first, minStake, totalStaked, every reward token with per-second rate, next-24h and next-7d emission from the run curves, APR (token-denominated or Chainlink USD when available), run schedule, and optionally one account's stake, share and claimable rewards. Use before blazar_build_staking_v2.",
+   "rest": {
+    "method": "GET",
+    "path": "/v1/staking-v2"
+   },
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "account": {
+      "description": "Optional: include this address's stake, pool share and claimable rewards.",
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$"
+     }
+    }
+   }
+  },
+  {
+   "name": "blazar_build_staking_v2",
+   "kind": "build",
+   "title": "Build staking v2: stake / withdraw / claim / exit (gas-padded)",
+   "description": "One call for staking v2: ordered txs[] for stake (exact approve + stake), withdraw, claimAll, claimMany (defaults to only tokens with rewards), exit or emergencyWithdraw, each with a summary, a simulation, warnings, and a gas limit. withdraw / exit / emergencyWithdraw / claimAll carry gas = max(estimateGas x 1.25, 1.1M) because a cold exit can use ~885k. Returns UNSIGNED txs.",
+   "rest": {
+    "method": "POST",
+    "path": "/v1/tx/staking-v2"
+   },
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "action": {
+      "type": "string",
+      "enum": [
+       "stake",
+       "withdraw",
+       "claimAll",
+       "claimMany",
+       "exit",
+       "emergencyWithdraw"
+      ],
+      "description": "stake: deposit. withdraw: take back some (the rest must stay >= minStake or be 0). claimAll: every reward token (all-or-nothing). claimMany: chosen tokens (default: tokens with rewards). exit: withdraw all + claim all. emergencyWithdraw: last resort, principal only, rewards stay claimable."
+     },
+     "from": {
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$",
+      "description": "Address that will sign and send the txs. Required: used for allowance checks, simulation and nonce."
+     },
+     "amount": {
+      "description": "Staking-token amount in HUMAN units, e.g. \"250\" = 250 BZB. Required for stake and withdraw.",
+      "type": "string",
+      "maxLength": 40,
+      "pattern": "^\\d+(\\.\\d+)?$"
+     },
+     "amountIsBaseUnits": {
+      "description": "If true, amount is in base units (wei for 18-decimal tokens; 6 decimals for USDC). Default false.",
+      "type": "boolean"
+     },
+     "tokens": {
+      "description": "claimMany only: reward token addresses. Default: every token where earned > 0.",
+      "maxItems": 5,
+      "type": "array",
+      "items": {
+       "type": "string",
+       "pattern": "^0x[a-fA-F0-9]{40}$"
+      }
+     }
+    },
+    "required": [
+     "action",
+     "from"
+    ]
+   }
+  },
+  {
+   "name": "blazar_daily_rewards",
+   "kind": "read",
+   "title": "Trading rewards: status and posted days",
+   "description": "BZB daily trading-rewards status for swaps through BlazarFeeRouter: today's dayId, recently posted days with totals and claim deadlines, daily cap, contract balance, and scoring rules. Use it to find a dayId before blazar_daily_claimable or blazar_build_claim.",
+   "rest": {
+    "method": "GET",
+    "path": "/v1/rewards/daily"
+   },
+   "inputSchema": {
+    "type": "object",
+    "properties": {}
+   }
+  },
+  {
+   "name": "blazar_trading_rewards_preview",
+   "kind": "read",
+   "title": "Trading-rewards leaderboard preview (estimate)",
+   "description": "Preview the BZB daily trading-rewards leaderboard for a UTC day from live BlazarFeeRouter AggregatedSwap logs, using the swap-desk rules: no minimum trade, no per-wallet cap, same-wallet round trips within 10 minutes netted, top 50 listed, top 25 paid fixed shares of the daily cap. Optional account shows its rank, points, estimated BZB and points needed for a paid slot. An ESTIMATE, not a payment: only poster-posted winners are paid.",
+   "rest": {
+    "method": "GET",
+    "path": "/v1/rewards/preview"
+   },
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "dayId": {
+      "description": "UTC day number = floor(unix/86400). Default: today.",
+      "type": "string",
+      "pattern": "^\\d+$"
+     },
+     "account": {
+      "description": "Optional: show this address's rank, points and gap to a paid slot.",
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$"
+     }
+    }
+   }
+  },
+  {
+   "name": "blazar_daily_claimable",
+   "kind": "read",
+   "title": "Claimable trading reward",
+   "description": "How much BZB one address can claim for one posted trading-reward day. Read-only. Get dayId from blazar_daily_rewards.postedDays.",
+   "rest": {
+    "method": "GET",
+    "path": "/v1/rewards/daily/claimable"
+   },
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "dayId": {
+      "type": "string",
+      "pattern": "^\\d+$",
+      "description": "UTC day number of the trades = floor(unixSeconds / 86400), e.g. \"20773\" = 2026-11-16. Get it from blazar_daily_rewards (todayDayId, postedDays[].dayId)."
+     },
+     "account": {
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$",
+      "description": "Address to check."
+     }
+    },
+    "required": [
+     "dayId",
+     "account"
+    ]
+   }
+  },
+  {
+   "name": "blazar_build_claim",
+   "kind": "build",
+   "title": "Build trading-reward claim",
+   "description": "One call to claim a posted BZB trading reward: the claim tx with a summary (amount and day), a simulation, and NOTHING_TO_CLAIM if the amount is 0. Returns an UNSIGNED tx.",
+   "rest": {
+    "method": "POST",
+    "path": "/v1/tx/rewards/claim"
+   },
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "dayId": {
+      "type": "string",
+      "pattern": "^\\d+$",
+      "description": "UTC day number of the trades = floor(unixSeconds / 86400), e.g. \"20773\" = 2026-11-16. Get it from blazar_daily_rewards (todayDayId, postedDays[].dayId)."
+     },
+     "from": {
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$",
+      "description": "Address that will sign and send the txs. Required: used for allowance checks, simulation and nonce."
+     }
+    },
+    "required": [
+     "dayId",
+     "from"
+    ]
+   }
+  },
+  {
+   "name": "blazar_earn_strategies",
+   "kind": "read",
+   "title": "Ways to earn with BZB / POL (live reads)",
+   "description": "Earning options on BlazarForce ranked from live onchain reads only (no projections): BZB staking, BlazarSwap LP positions with reserves, trading rewards, and the BZB cross-venue spread. alerts[] at the top flags ended rewards and thin liquidity. Use when the user asks how to earn with BZB or POL here.",
+   "rest": {
+    "method": "GET",
+    "path": "/v1/strategies"
+   },
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "includeVolume": {
+      "description": "Add 24h swap volume per BlazarSwap pool from Swap events (slower, ~5 s).",
+      "type": "boolean"
+     }
+    }
+   }
+  },
+  {
+   "name": "blazar_rank_earning",
+   "kind": "read",
+   "title": "Rank earning options; flag dead rewards",
+   "description": "Rank BlazarForce earning options from live reads only: BZB staking, BlazarSwap LP fee APR (trailing 24h), daily trading rewards, staking v2. Each has status LIVE / UNPROVEN / IDLE / DEAD / NOT_DEPLOYED and why. deadRewards[] lists anything that pays nothing now. Use instead of guessing yields.",
+   "rest": {
+    "method": "GET",
+    "path": "/v1/earn/rank"
+   },
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "includeVolume": {
+      "description": "Read 24h pool volume for LP fee APR (default true, ~2-5 s).",
+      "type": "boolean"
+     }
+    }
+   }
+  },
+  {
+   "name": "blazar_nft_collections",
+   "kind": "read",
+   "title": "BlazarForce NFT collections",
+   "description": "BlazarForce NFT collections on Polygon (Sleepy Validators, Night Market Stubs, Crystal Moths): live name, supply, holder count, top holders, interfaces, sample token URI, site-stated ask, marketplace links. Read-only.",
+   "rest": {
+    "method": "GET",
+    "path": "/v1/nfts"
+   },
+   "inputSchema": {
+    "type": "object",
+    "properties": {}
+   }
+  },
+  {
+   "name": "blazar_nft_holder",
+   "kind": "read",
+   "title": "NFT owner / holdings",
+   "description": "Who owns a BlazarForce NFT (tokenId), or which token ids an address holds (owner), with metadata and marketplace operator approvals. Read-only.",
+   "rest": {
+    "method": "GET",
+    "path": "/v1/nfts/holder"
+   },
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "collection": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 42,
+      "description": "Collection symbol, id or address: SLPV (Sleepy Validators), STUB (Night Market Stubs), MOTH (Crystal Moths)."
+     },
+     "owner": {
+      "description": "List the token ids this address holds.",
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$"
+     },
+     "tokenId": {
+      "description": "Look up one token's owner and metadata.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100000
+     }
+    },
+    "required": [
+     "collection"
+    ]
+   }
+  },
+  {
+   "name": "blazar_nft_listings",
+   "kind": "read",
+   "title": "NFT listing info",
+   "description": "Listing info for a BlazarForce NFT: owner, the site-stated ask, on-chain marketplace approvals (OpenSea Seaport conduit), and live Rarible orders only if RARIBLE_API_KEY is set in your env. There is no on-chain BlazarForce marketplace.",
+   "rest": {
+    "method": "GET",
+    "path": "/v1/nfts/listings"
+   },
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "collection": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 42,
+      "description": "Collection symbol, id or address: SLPV (Sleepy Validators), STUB (Night Market Stubs), MOTH (Crystal Moths)."
+     },
+     "tokenId": {
+      "description": "Default 1.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100000
+     }
+    },
+    "required": [
+     "collection"
+    ]
+   }
+  },
+  {
+   "name": "blazar_build_nft_transfer",
+   "kind": "build",
+   "title": "Build NFT transfer (unsigned)",
+   "description": "Build an UNSIGNED safeTransferFrom for a BlazarForce NFT after checking ownership, with a simulation and warnings (irreversible, contract recipient, burn address). the plugin's signer refuses NFT txs; sign with your own wallet.",
+   "rest": {
+    "method": "POST",
+    "path": "/v1/tx/nft/transfer"
+   },
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "collection": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 42,
+      "description": "Collection symbol, id or address: SLPV (Sleepy Validators), STUB (Night Market Stubs), MOTH (Crystal Moths)."
+     },
+     "from": {
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$",
+      "description": "Address that will sign and send the txs. Required: used for allowance checks, simulation and nonce."
+     },
+     "to": {
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$",
+      "description": "Recipient."
+     },
+     "tokenId": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100000,
+      "description": "Token id (BlazarForce collections use 1..100)."
+     }
+    },
+    "required": [
+     "collection",
+     "from",
+     "to",
+     "tokenId"
+    ]
+   }
+  },
+  {
+   "name": "blazar_build_nft_approve",
+   "kind": "build",
+   "title": "Build NFT approve / revoke (unsigned)",
+   "description": "Build an UNSIGNED approve(tokenId) or setApprovalForAll (or a revoke with approved=false) for a BlazarForce NFT, with warnings for unknown operators and approve-all. the plugin's signer refuses NFT txs.",
+   "rest": {
+    "method": "POST",
+    "path": "/v1/tx/nft/approve"
+   },
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "collection": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 42,
+      "description": "Collection symbol, id or address: SLPV (Sleepy Validators), STUB (Night Market Stubs), MOTH (Crystal Moths)."
+     },
+     "from": {
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$",
+      "description": "Address that will sign and send the txs. Required: used for allowance checks, simulation and nonce."
+     },
+     "operator": {
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$",
+      "description": "Address allowed to move the NFT(s), e.g. a marketplace."
+     },
+     "tokenId": {
+      "description": "Single-token approve. Omit with all=true.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100000
+     },
+     "all": {
+      "description": "setApprovalForAll for the whole collection.",
+      "type": "boolean"
+     },
+     "approved": {
+      "description": "false = revoke. Default true.",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "collection",
+     "from",
+     "operator"
+    ]
+   }
+  },
+  {
+   "name": "blazar_deploy_templates",
+   "kind": "local",
+   "title": "Contract templates",
+   "description": "List the contract templates this plugin can build deploy txs for: a fixed-supply ERC-20 (no owner, no tax) and a Synthetix-style staking pool. Unaudited. Use before blazar_build_deploy.",
+   "rest": {
+    "method": "GET",
+    "path": "/v1/deploy/templates"
+   },
+   "inputSchema": {
+    "type": "object",
+    "properties": {}
+   }
+  },
+  {
+   "name": "blazar_build_deploy",
+   "kind": "build",
+   "title": "Build deploy tx (ERC-20 or staking pool)",
+   "description": "One call to build an UNSIGNED contract-creation tx for a template, with named parameters per template, the predicted address, a simulation (eth_call creation) and verification settings. Never deploys. Use for launching an agent token or a staking pool on Polygon.",
+   "rest": {
+    "method": "POST",
+    "path": "/v1/tx/deploy"
+   },
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "from": {
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$",
+      "description": "Address that will sign and send the txs. Required: used for allowance checks, simulation and nonce."
+     },
+     "params": {
+      "oneOf": [
+       {
+        "type": "object",
+        "properties": {
+         "template": {
+          "type": "string",
+          "const": "erc20",
+          "description": "Fixed-supply ERC-20, no owner, no tax."
+         },
+         "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "Token name, e.g. \"Agent Token\"."
+         },
+         "symbol": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9]{1,11}$",
+          "description": "Ticker, 1-11 letters/digits, e.g. \"AGT\"."
+         },
+         "supply": {
+          "type": "string",
+          "pattern": "^\\d+(\\.\\d+)?$",
+          "description": "Total supply in HUMAN units (18 decimals): \"1000000\" = one million tokens."
+         },
+         "holder": {
+          "type": "string",
+          "pattern": "^0x[a-fA-F0-9]{40}$",
+          "description": "Receives the entire supply at deploy."
+         }
+        },
+        "required": [
+         "template",
+         "name",
+         "symbol",
+         "supply",
+         "holder"
+        ]
+       },
+       {
+        "type": "object",
+        "properties": {
+         "template": {
+          "type": "string",
+          "const": "staking-pool",
+          "description": "Synthetix-style staking pool."
+         },
+         "stakingToken": {
+          "type": "string",
+          "pattern": "^0x[a-fA-F0-9]{40}$",
+          "description": "Token users stake."
+         },
+         "rewardToken": {
+          "type": "string",
+          "pattern": "^0x[a-fA-F0-9]{40}$",
+          "description": "Token paid as rewards (can equal stakingToken)."
+         },
+         "owner": {
+          "type": "string",
+          "pattern": "^0x[a-fA-F0-9]{40}$",
+          "description": "Can fund reward periods (Ownable2Step). Cannot touch principal."
+         },
+         "durationDays": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 365,
+          "description": "Length of each reward period in days, 1-365."
+         }
+        },
+        "required": [
+         "template",
+         "stakingToken",
+         "rewardToken",
+         "owner",
+         "durationDays"
+        ]
+       }
+      ],
+      "description": "Template and its named parameters."
+     }
+    },
+    "required": [
+     "from",
+     "params"
+    ]
+   }
+  },
+  {
+   "name": "blazar_decode_tx",
+   "kind": "local",
+   "title": "Decode a tx before signing",
+   "description": "Decode calldata for a tx to a BlazarForce contract or an ERC-20 approve, e.g. one from another tool or agent, so you can check it before signing. Builds already include summaries, so this is for txs from other sources.",
+   "rest": {
+    "method": "POST",
+    "path": "/v1/tx/decode"
+   },
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "to": {
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$"
+     },
+     "data": {
+      "type": "string",
+      "pattern": "^0x[0-9a-fA-F]*$"
+     }
+    },
+    "required": [
+     "to",
+     "data"
+    ]
+   }
+  },
+  {
+   "name": "blazar_simulate_tx",
+   "kind": "read",
+   "title": "Simulate any tx (read-only)",
+   "description": "Dry-run any Polygon tx with eth_call + estimateGas from `from` (POL balance overridden, token balances real). Returns ok, gas, or an error code with a hint. Use for txs from other sources; builds already simulate.",
+   "rest": {
+    "method": "POST",
+    "path": "/v1/tx/simulate"
+   },
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "from": {
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$"
+     },
+     "to": {
+      "description": "Omit for contract creation.",
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$"
+     },
+     "data": {
+      "type": "string",
+      "pattern": "^0x[0-9a-fA-F]*$"
+     },
+     "value": {
+      "description": "Wei, default 0.",
+      "type": "string",
+      "pattern": "^\\d+$"
+     }
+    },
+    "required": [
+     "from",
+     "data"
+    ]
+   }
+  }
+ ]
+}

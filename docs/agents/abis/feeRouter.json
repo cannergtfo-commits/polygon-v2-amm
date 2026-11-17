@@ -1,0 +1,989 @@
+[
+ {
+  "type": "constructor",
+  "inputs": [
+   {
+    "name": "initialOwner",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "feeRecipient_",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "wpol_",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "blazarFactory_",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "oracle_",
+    "type": "address",
+    "internalType": "address"
+   }
+  ],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "name": "BadRoute",
+  "type": "error",
+  "inputs": []
+ },
+ {
+  "name": "EnforcedPause",
+  "type": "error",
+  "inputs": []
+ },
+ {
+  "name": "ExpectedPause",
+  "type": "error",
+  "inputs": []
+ },
+ {
+  "name": "Expired",
+  "type": "error",
+  "inputs": []
+ },
+ {
+  "name": "FactoryNotAllowed",
+  "type": "error",
+  "inputs": [
+   {
+    "name": "factory",
+    "type": "address",
+    "internalType": "address"
+   }
+  ]
+ },
+ {
+  "name": "FailedCall",
+  "type": "error",
+  "inputs": []
+ },
+ {
+  "name": "FeeTooHigh",
+  "type": "error",
+  "inputs": [
+   {
+    "name": "requested",
+    "type": "uint16",
+    "internalType": "uint16"
+   },
+   {
+    "name": "maxFee",
+    "type": "uint16",
+    "internalType": "uint16"
+   }
+  ]
+ },
+ {
+  "name": "InsufficientBalance",
+  "type": "error",
+  "inputs": [
+   {
+    "name": "balance",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "needed",
+    "type": "uint256",
+    "internalType": "uint256"
+   }
+  ]
+ },
+ {
+  "name": "InsufficientOutput",
+  "type": "error",
+  "inputs": [
+   {
+    "name": "got",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "min",
+    "type": "uint256",
+    "internalType": "uint256"
+   }
+  ]
+ },
+ {
+  "name": "OwnableInvalidOwner",
+  "type": "error",
+  "inputs": [
+   {
+    "name": "owner",
+    "type": "address",
+    "internalType": "address"
+   }
+  ]
+ },
+ {
+  "name": "OwnableUnauthorizedAccount",
+  "type": "error",
+  "inputs": [
+   {
+    "name": "account",
+    "type": "address",
+    "internalType": "address"
+   }
+  ]
+ },
+ {
+  "name": "ReentrancyGuardReentrantCall",
+  "type": "error",
+  "inputs": []
+ },
+ {
+  "name": "SafeERC20FailedOperation",
+  "type": "error",
+  "inputs": [
+   {
+    "name": "token",
+    "type": "address",
+    "internalType": "address"
+   }
+  ]
+ },
+ {
+  "name": "SameToken",
+  "type": "error",
+  "inputs": []
+ },
+ {
+  "name": "StaleQuote",
+  "type": "error",
+  "inputs": []
+ },
+ {
+  "name": "TargetNotAllowed",
+  "type": "error",
+  "inputs": [
+   {
+    "name": "target",
+    "type": "address",
+    "internalType": "address"
+   }
+  ]
+ },
+ {
+  "name": "ValueMismatch",
+  "type": "error",
+  "inputs": []
+ },
+ {
+  "name": "ZeroAddress",
+  "type": "error",
+  "inputs": []
+ },
+ {
+  "name": "AggregatedSwap",
+  "type": "event",
+  "inputs": [
+   {
+    "name": "trader",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "tokenIn",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "tokenOut",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "recipient",
+    "type": "address",
+    "indexed": false,
+    "internalType": "address"
+   },
+   {
+    "name": "amountIn",
+    "type": "uint256",
+    "indexed": false,
+    "internalType": "uint256"
+   },
+   {
+    "name": "feeAmount",
+    "type": "uint256",
+    "indexed": false,
+    "internalType": "uint256"
+   },
+   {
+    "name": "amountOut",
+    "type": "uint256",
+    "indexed": false,
+    "internalType": "uint256"
+   },
+   {
+    "name": "usdE8",
+    "type": "uint256",
+    "indexed": false,
+    "internalType": "uint256"
+   },
+   {
+    "name": "usdTrusted",
+    "type": "bool",
+    "indexed": false,
+    "internalType": "bool"
+   },
+   {
+    "name": "feeBps",
+    "type": "uint16",
+    "indexed": false,
+    "internalType": "uint16"
+   },
+   {
+    "name": "routeId",
+    "type": "bytes32",
+    "indexed": false,
+    "internalType": "bytes32"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "name": "FeeBpsSet",
+  "type": "event",
+  "inputs": [
+   {
+    "name": "feeBps",
+    "type": "uint16",
+    "indexed": false,
+    "internalType": "uint16"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "name": "OracleSet",
+  "type": "event",
+  "inputs": [
+   {
+    "name": "oracle",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "name": "OwnershipTransferStarted",
+  "type": "event",
+  "inputs": [
+   {
+    "name": "previousOwner",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "newOwner",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "name": "OwnershipTransferred",
+  "type": "event",
+  "inputs": [
+   {
+    "name": "previousOwner",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "newOwner",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "name": "Paused",
+  "type": "event",
+  "inputs": [
+   {
+    "name": "account",
+    "type": "address",
+    "indexed": false,
+    "internalType": "address"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "name": "Rescued",
+  "type": "event",
+  "inputs": [
+   {
+    "name": "token",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "to",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "amount",
+    "type": "uint256",
+    "indexed": false,
+    "internalType": "uint256"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "name": "TargetSet",
+  "type": "event",
+  "inputs": [
+   {
+    "name": "target",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "allowed",
+    "type": "bool",
+    "indexed": false,
+    "internalType": "bool"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "name": "Unpaused",
+  "type": "event",
+  "inputs": [
+   {
+    "name": "account",
+    "type": "address",
+    "indexed": false,
+    "internalType": "address"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "name": "V2FactorySet",
+  "type": "event",
+  "inputs": [
+   {
+    "name": "factory",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "feeBps",
+    "type": "uint16",
+    "indexed": false,
+    "internalType": "uint16"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "name": "WrapperFee",
+  "type": "event",
+  "inputs": [
+   {
+    "name": "trader",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "token",
+    "type": "address",
+    "indexed": true,
+    "internalType": "address"
+   },
+   {
+    "name": "amount",
+    "type": "uint256",
+    "indexed": false,
+    "internalType": "uint256"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "name": "BPS",
+  "type": "function",
+  "inputs": [],
+  "outputs": [
+   {
+    "name": "",
+    "type": "uint16",
+    "internalType": "uint16"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "name": "KIND_TARGET",
+  "type": "function",
+  "inputs": [],
+  "outputs": [
+   {
+    "name": "",
+    "type": "uint8",
+    "internalType": "uint8"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "name": "KIND_V2",
+  "type": "function",
+  "inputs": [],
+  "outputs": [
+   {
+    "name": "",
+    "type": "uint8",
+    "internalType": "uint8"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "name": "MAX_CALLS",
+  "type": "function",
+  "inputs": [],
+  "outputs": [
+   {
+    "name": "",
+    "type": "uint256",
+    "internalType": "uint256"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "name": "MAX_DEADLINE_WINDOW",
+  "type": "function",
+  "inputs": [],
+  "outputs": [
+   {
+    "name": "",
+    "type": "uint256",
+    "internalType": "uint256"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "name": "MAX_FEE_BPS",
+  "type": "function",
+  "inputs": [],
+  "outputs": [
+   {
+    "name": "",
+    "type": "uint16",
+    "internalType": "uint16"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "name": "MAX_SWEEP",
+  "type": "function",
+  "inputs": [],
+  "outputs": [
+   {
+    "name": "",
+    "type": "uint256",
+    "internalType": "uint256"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "name": "NATIVE",
+  "type": "function",
+  "inputs": [],
+  "outputs": [
+   {
+    "name": "",
+    "type": "address",
+    "internalType": "address"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "name": "NO_PATCH",
+  "type": "function",
+  "inputs": [],
+  "outputs": [
+   {
+    "name": "",
+    "type": "uint256",
+    "internalType": "uint256"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "name": "acceptOwnership",
+  "type": "function",
+  "inputs": [],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "name": "allowedTarget",
+  "type": "function",
+  "inputs": [
+   {
+    "name": "",
+    "type": "address",
+    "internalType": "address"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "",
+    "type": "bool",
+    "internalType": "bool"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "name": "blazarFactory",
+  "type": "function",
+  "inputs": [],
+  "outputs": [
+   {
+    "name": "",
+    "type": "address",
+    "internalType": "address"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "name": "feeBps",
+  "type": "function",
+  "inputs": [],
+  "outputs": [
+   {
+    "name": "",
+    "type": "uint16",
+    "internalType": "uint16"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "name": "feeRecipient",
+  "type": "function",
+  "inputs": [],
+  "outputs": [
+   {
+    "name": "",
+    "type": "address",
+    "internalType": "address"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "name": "oracle",
+  "type": "function",
+  "inputs": [],
+  "outputs": [
+   {
+    "name": "",
+    "type": "address",
+    "internalType": "contract IBlazarUsdOracle"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "name": "owner",
+  "type": "function",
+  "inputs": [],
+  "outputs": [
+   {
+    "name": "",
+    "type": "address",
+    "internalType": "address"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "name": "pause",
+  "type": "function",
+  "inputs": [],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "name": "paused",
+  "type": "function",
+  "inputs": [],
+  "outputs": [
+   {
+    "name": "",
+    "type": "bool",
+    "internalType": "bool"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "name": "pendingOwner",
+  "type": "function",
+  "inputs": [],
+  "outputs": [
+   {
+    "name": "",
+    "type": "address",
+    "internalType": "address"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "name": "quoteV2",
+  "type": "function",
+  "inputs": [
+   {
+    "name": "amountIn",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "reserveIn",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "reserveOut",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "feeBps_",
+    "type": "uint16",
+    "internalType": "uint16"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "amountOut",
+    "type": "uint256",
+    "internalType": "uint256"
+   }
+  ],
+  "stateMutability": "pure"
+ },
+ {
+  "name": "renounceOwnership",
+  "type": "function",
+  "inputs": [],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "name": "rescueETH",
+  "type": "function",
+  "inputs": [
+   {
+    "name": "amount",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "to",
+    "type": "address",
+    "internalType": "address"
+   }
+  ],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "name": "rescueToken",
+  "type": "function",
+  "inputs": [
+   {
+    "name": "token",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "amount",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "to",
+    "type": "address",
+    "internalType": "address"
+   }
+  ],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "name": "setAllowedTarget",
+  "type": "function",
+  "inputs": [
+   {
+    "name": "target",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "allowed",
+    "type": "bool",
+    "internalType": "bool"
+   }
+  ],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "name": "setFeeBps",
+  "type": "function",
+  "inputs": [
+   {
+    "name": "next",
+    "type": "uint16",
+    "internalType": "uint16"
+   }
+  ],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "name": "setOracle",
+  "type": "function",
+  "inputs": [
+   {
+    "name": "next",
+    "type": "address",
+    "internalType": "address"
+   }
+  ],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "name": "setV2Factory",
+  "type": "function",
+  "inputs": [
+   {
+    "name": "factory",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "feeBps_",
+    "type": "uint16",
+    "internalType": "uint16"
+   }
+  ],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "name": "swap",
+  "type": "function",
+  "inputs": [
+   {
+    "name": "tokenIn",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "tokenOut",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "amountIn",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "minAmountOut",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "recipient",
+    "type": "address",
+    "internalType": "address"
+   },
+   {
+    "name": "deadline",
+    "type": "uint256",
+    "internalType": "uint256"
+   },
+   {
+    "name": "unwrapNative",
+    "type": "bool",
+    "internalType": "bool"
+   },
+   {
+    "name": "calls",
+    "type": "tuple[]",
+    "components": [
+     {
+      "name": "kind",
+      "type": "uint8",
+      "internalType": "uint8"
+     },
+     {
+      "name": "target",
+      "type": "address",
+      "internalType": "address"
+     },
+     {
+      "name": "spendToken",
+      "type": "address",
+      "internalType": "address"
+     },
+     {
+      "name": "v2TokenOut",
+      "type": "address",
+      "internalType": "address"
+     },
+     {
+      "name": "bps",
+      "type": "uint16",
+      "internalType": "uint16"
+     },
+     {
+      "name": "useBalance",
+      "type": "bool",
+      "internalType": "bool"
+     },
+     {
+      "name": "minBuy",
+      "type": "uint256",
+      "internalType": "uint256"
+     },
+     {
+      "name": "amountOffset",
+      "type": "uint256",
+      "internalType": "uint256"
+     },
+     {
+      "name": "minOffset",
+      "type": "uint256",
+      "internalType": "uint256"
+     },
+     {
+      "name": "data",
+      "type": "bytes",
+      "internalType": "bytes"
+     }
+    ],
+    "internalType": "struct BlazarFeeRouter.Call[]"
+   },
+   {
+    "name": "sweep",
+    "type": "address[]",
+    "internalType": "address[]"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "amountOut",
+    "type": "uint256",
+    "internalType": "uint256"
+   }
+  ],
+  "stateMutability": "payable"
+ },
+ {
+  "name": "transferOwnership",
+  "type": "function",
+  "inputs": [
+   {
+    "name": "newOwner",
+    "type": "address",
+    "internalType": "address"
+   }
+  ],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "name": "unpause",
+  "type": "function",
+  "inputs": [],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "name": "v2FeeBps",
+  "type": "function",
+  "inputs": [
+   {
+    "name": "",
+    "type": "address",
+    "internalType": "address"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "",
+    "type": "uint16",
+    "internalType": "uint16"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "name": "wpol",
+  "type": "function",
+  "inputs": [],
+  "outputs": [
+   {
+    "name": "",
+    "type": "address",
+    "internalType": "address"
+   }
+  ],
+  "stateMutability": "view"
+ },
+ {
+  "type": "receive",
+  "stateMutability": "payable"
+ }
+]

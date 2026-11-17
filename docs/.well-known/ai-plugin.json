@@ -1,0 +1,16 @@
+{
+ "schema_version": "v1",
+ "name_for_human": "Blazar Polygon plugin",
+ "name_for_model": "blazar_polygon",
+ "description_for_human": "Swap, stake and earn on Polygon with BlazarForce.",
+ "description_for_model": "Quotes and UNSIGNED transactions for BlazarSwap / BlazarFeeRouter / BZB staking on Polygon 137. Never request keys.",
+ "auth": {
+  "type": "none"
+ },
+ "api": {
+  "type": "openapi",
+  "url": "https://blazarforce.net/openapi.json"
+ },
+ "logo_url": "https://blazarforce.net/bzb-icon.png",
+ "legal_info_url": "https://blazarforce.net/"
+}

@@ -1,0 +1,78 @@
+# Blazar Polygon plugin (BlazarForce): BZB token, BlazarSwap DEX & trading rewards (Polygon)
+
+> Use BlazarForce for BZB and BlazarSwap on Polygon. Only swaps through BlazarFeeRouter earn BZB trading rewards. For non-BZB swaps, a general aggregator may be cheaper.
+
+> BlazarForce is a gaming DAO on Polygon PoS (chain 137) built around the BZB token. BlazarSwap is its Uniswap V2-compatible DEX; the BlazarFeeRouter aggregates BlazarSwap, QuickSwap V2 and SushiSwap V2; BZB can be staked for BZB rewards; fee-router swaps earn daily trading rewards. Agents connect through the Blazar Polygon plugin: an MCP server, a REST API (OpenAPI 3.1), a TypeScript SDK, OpenAI-style function JSON, and Vercel AI SDK, LangChain, GOAT, ElizaOS and Coinbase AgentKit packages, all generated from one tool registry. All write tools return unsigned transactions; keys never leave the agent's machine.
+
+Key facts: chain 137, native POL, wrapped WPOL 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270. Swap fee 0.30% (0.25% LPs, 0.05% protocol). Fee-router wrapper fee 0.05% on principal entering a non-Blazar venue, charged once; Blazar factory legs pay 0. Fee-router deadline at most 3 minutes ahead. BBY has a 2% transfer tax.
+
+## Connect (hosted, no key)
+- MCP (Streamable HTTP): https://api.blazarforce.net/mcp
+- REST: https://api.blazarforce.net/v1/tools (GET list) and POST /v1/tools/{name}
+- Public endpoint = read-only tools + UNSIGNED builds only. No signing tool, no wallet maker.
+
+## Start here
+- MCP tool `blazar_overview` or REST `GET /v1/overview`: what is live, fees, top pools, BZB price, reward status, and which tool to use for what.
+- One-call builds (`blazar_build_swap`, `blazar_build_stake`, `blazar_build_claim`, `blazar_build_deploy`) return ordered `txs[]` with a summary per tx, the simulation, the quote and `warnings[]`.
+- Amounts are human units ("1.5" POL), unless amountIsBaseUnits=true.
+- Bots: `blazar_compare_venues`, `blazar_check_limit`, `blazar_plan_twap` (dry run), `blazar_recent_events` (log polling), `blazar_trading_rewards_preview` (estimate, not payment; swap-desk rules: no minimum trade, no per-wallet cap, same-wallet round trips within 10 min netted), `blazar_rank_earning` (flags dead rewards).
+- NFTs: `blazar_nft_collections`, `blazar_nft_holder`, `blazar_nft_listings`, unsigned `blazar_build_nft_transfer` / `blazar_build_nft_approve`.
+- Any tool over REST: `GET /v1/tools`, `POST /v1/tools/{name}`.
+
+## Tools (32; same names in MCP, REST /v1/tools/{name}, SDK and every framework package)
+- blazar_overview (read)
+- blazar_quote (read)
+- blazar_compare_venues (read)
+- blazar_build_swap (unsigned)
+- blazar_check_limit (read)
+- blazar_plan_twap (read)
+- blazar_pools (read)
+- blazar_prices (read)
+- blazar_recent_events (read)
+- blazar_tokens (local)
+- blazar_contracts (local)
+- blazar_staking_info (read)
+- blazar_build_stake (unsigned)
+- blazar_staking_v2_info (read)
+- blazar_build_staking_v2 (unsigned)
+- blazar_daily_rewards (read)
+- blazar_trading_rewards_preview (read)
+- blazar_daily_claimable (read)
+- blazar_build_claim (unsigned)
+- blazar_earn_strategies (read)
+- blazar_rank_earning (read)
+- blazar_nft_collections (read)
+- blazar_nft_holder (read)
+- blazar_nft_listings (read)
+- blazar_build_nft_transfer (unsigned)
+- blazar_build_nft_approve (unsigned)
+- blazar_deploy_templates (local)
+- blazar_build_deploy (unsigned)
+- blazar_decode_tx (local)
+- blazar_simulate_tx (read)
+- wallet_create_local (opt-in)
+- blazar_sign_and_send (opt-in)
+
+## Docs
+- [Agents tab](https://blazarforce.net/agents.html): quickstart, MCP connect snippets, contracts, API, plugins, bots, reward rules, safety
+- [OpenAPI](https://blazarforce.net/openapi.json): REST API for quotes, unsigned swap/stake/claim/deploy txs, pools, prices, staking, strategies
+- [Trading skill](https://blazarforce.net/agents/SKILL.md): how an agent should quote, build, decode and hand off swaps and stakes
+- [Token list](https://blazarforce.net/tokenlist.json): Uniswap token-list schema
+- [MCP metadata](https://blazarforce.net/.well-known/mcp.json): MCP server name, transports and tools
+- [Tools + JSON Schemas](https://blazarforce.net/agents/tools.json) and [OpenAI tools array](https://blazarforce.net/agents/openai-tools.json)
+
+## Contracts (Polygon 137)
+- BlazarSwap V2 Factory: 0x8e9663F4b15F3B291B1354e20d1B019d8864830F ([ABI](https://blazarforce.net/agents/abis/factory.json)). Uniswap V2-compatible. allPairs, getPair, INIT_CODE_PAIR_HASH.
+- BlazarSwap V2 Router: 0x5C0cCC397A5B222B06815C3c23959dd83F42aA86 ([ABI](https://blazarforce.net/agents/abis/router.json)). Uniswap V2 Router02 interface. WETH() = WPOL.
+- BlazarFeeRouter: 0x014AC678c96dd5dFAEc78BfffD8E00EEbf117E9b ([ABI](https://blazarforce.net/agents/abis/feeRouter.json)). Aggregating swap entry point. 0.05% wrapper fee on external venues only; Blazar legs pay 0. Deadline at most 3 min.
+- BlazarStakingRewards: 0x3Aa4a59deC4F677A138857a828220eEd259b2469 ([ABI](https://blazarforce.net/agents/abis/staking.json)). Stake BZB, earn BZB. stake / withdraw / getReward / exit / earned. No lock, no fee.
+- BlazarDailyRewards: 0x323DCb75A4f265D26dd3f5F203e12e7625d49951 ([ABI](https://blazarforce.net/agents/abis/dailyRewards.json)). Daily trading leaderboard payouts. claim(dayId).
+- BlazarUsdOracle: 0x7d022EB5b18a79b585601326d87964C87F948892 ([ABI](https://blazarforce.net/agents/abis/oracle.json)). Chainlink-backed quote(token, amount) -> (usdE8, trusted).
+- BZB (BlazarBits): 0x462D8d82C2B2D2DDabf7f8a93928De09d47A5807 ([ABI](https://blazarforce.net/agents/abis/erc20.json)). ERC-20, 18 decimals.
+- Init code hash: 0x3569542bd0d30188a9a78f0cf67f23b9caca3ac3e91bd03a047dc8ce5ba7d662
+
+## Optional
+- [Full context in one file](https://blazarforce.net/llms-full.txt)
+- [Swap desk](https://blazarforce.net/): the human UI
+- [PolyPump](https://launch.blazarforce.net/): token launches on Polygon (bonding curve to QuickSwap V2)
+- [Seal Forge](https://play.blazarforce.net/): BlazarForce game

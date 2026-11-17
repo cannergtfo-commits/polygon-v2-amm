@@ -1,0 +1,93 @@
+{
+ "name": "Blazar Polygon plugin",
+ "description": "Polygon DeFi tools for agents: swap via BlazarFeeRouter, stake BZB, trading rewards, earning strategies, contract templates.",
+ "url": "https://blazarforce.net/agents.html",
+ "version": "0.3.0",
+ "provider": {
+  "organization": "BlazarForce",
+  "url": "https://blazarforce.net"
+ },
+ "documentationUrl": "https://blazarforce.net/llms.txt",
+ "capabilities": {
+  "streaming": false
+ },
+ "defaultInputModes": [
+  "application/json"
+ ],
+ "defaultOutputModes": [
+  "application/json"
+ ],
+ "skills": [
+  {
+   "id": "quote-swap",
+   "name": "Quote and build swaps",
+   "description": "Best route across allowlisted V2 venues; unsigned fee-router tx",
+   "tags": [
+    "defi",
+    "swap",
+    "polygon"
+   ]
+  },
+  {
+   "id": "stake-bzb",
+   "name": "Stake BZB",
+   "description": "Staking info and unsigned stake/withdraw/claim txs",
+   "tags": [
+    "staking"
+   ]
+  },
+  {
+   "id": "earn",
+   "name": "Earning strategies",
+   "description": "Live onchain staking, LP and reward data",
+   "tags": [
+    "yield"
+   ]
+  },
+  {
+   "id": "deploy",
+   "name": "Contract templates",
+   "description": "Unsigned deploy txs for ERC-20 and staking-pool templates",
+   "tags": [
+    "deploy"
+   ]
+  },
+  {
+   "id": "venues",
+   "name": "Venue comparison",
+   "description": "Fee-router route vs each venue vs an aggregator, with rewards eligibility",
+   "tags": [
+    "defi",
+    "routing"
+   ]
+  },
+  {
+   "id": "rewards-preview",
+   "name": "Trading-rewards preview",
+   "description": "Leaderboard estimate from live logs with the documented rules",
+   "tags": [
+    "rewards"
+   ]
+  },
+  {
+   "id": "bots",
+   "name": "Bot helpers",
+   "description": "Limit check, TWAP plan (dry run), event polling",
+   "tags": [
+    "bots"
+   ]
+  },
+  {
+   "id": "nft",
+   "name": "BlazarForce NFTs",
+   "description": "Collections, holders, listings, unsigned transfer/approve",
+   "tags": [
+    "nft"
+   ]
+  }
+ ],
+ "interfaces": {
+  "openapi": "https://blazarforce.net/openapi.json",
+  "mcp": "https://blazarforce.net/.well-known/mcp.json"
+ }
+}
