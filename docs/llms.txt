@@ -9,7 +9,8 @@ Key facts: chain 137, native POL, wrapped WPOL 0x0d500B1d8E8eF31E21C99d1Db9A6444
 ## Connect (hosted, no key)
 - MCP (Streamable HTTP): https://api.blazarforce.net/mcp
 - REST: https://api.blazarforce.net/v1/tools (GET list) and POST /v1/tools/{name}
-- Grok: grok.com/connectors -> New Connector -> Custom, paste the MCP URL. xAI API (Responses / xai-sdk): tools entry {"type":"mcp","server_url":"https://api.blazarforce.net/mcp","server_label":"blazar_polygon"} (xai-sdk: mcp(server_url=..., server_label=...)).
+- Grok Bot: paste this prompt into the chat: "Add the BlazarForce MCP connector at https://api.blazarforce.net/mcp (no sign-in needed). Then call blazar_overview and tell me what's live on BlazarForce and what BZB trades at on Polygon."
+- Grok app: grok.com/connectors -> New Connector -> Custom, paste the MCP URL. xAI API (Responses / xai-sdk): tools entry {"type":"mcp","server_url":"https://api.blazarforce.net/mcp","server_label":"blazar_polygon"} (xai-sdk: mcp(server_url=..., server_label=...)).
 - Public endpoint = read-only tools + UNSIGNED builds only. No signing tool, no wallet maker.
 
 ## Start here

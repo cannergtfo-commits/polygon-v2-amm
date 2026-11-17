@@ -122,6 +122,7 @@ Cursor / Claude Desktop / any client:
 ```
 Claude Code: `claude mcp add --transport http blazar-polygon https://api.blazarforce.net/mcp`
 VS Code: `{"servers":{"blazar-polygon":{"type":"http","url":"https://api.blazarforce.net/mcp"}}}`
+Grok Bot: paste this prompt into the chat: "Add the BlazarForce MCP connector at https://api.blazarforce.net/mcp (no sign-in needed). Then call blazar_overview and tell me what's live on BlazarForce and what BZB trades at on Polygon."
 Grok app: grok.com/connectors -> New Connector -> Custom, paste the MCP URL.
 Grok via xAI API (remote MCP tool, Responses API at https://api.x.ai/v1/responses):
 ```json

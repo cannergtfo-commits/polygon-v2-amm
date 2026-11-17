@@ -23,7 +23,7 @@
     .hero h2 em{font-style:normal;background:linear-gradient(90deg,var(--cyan),var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
     .hero p{margin:16px auto 0;max-width:600px;color:var(--muted);font-size:17px;line-height:1.5}
     .cta{display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap;margin-top:26px}
-    .cta .connect{font-size:13px;padding:15px 30px}
+    .cta .connect,.cta .ghost{font-size:13px;padding:15px 30px}
     .endpoint{display:inline-flex;align-items:center;gap:8px;max-width:100%;background:rgba(0,0,0,.35);border:1px solid var(--stroke);border-radius:999px;padding:6px 6px 6px 14px}
     .endpoint code{font-family:"JetBrains Mono",monospace;font-size:13px;color:var(--gold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .mini{font-family:Syne,sans-serif;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);background:var(--cyan-dim);border:0;border-radius:999px;padding:7px 11px;cursor:pointer;white-space:nowrap}
@@ -44,6 +44,20 @@
     .snip p a,.foot a,.modal a.inline{color:var(--cyan)}
     .safe{display:flex;gap:10px;align-items:center;justify-content:center;color:var(--muted);font-size:13px;text-align:center}
     .safe b{color:var(--ok);font-weight:600}
+    .connect-ai{display:grid;gap:12px}
+    .connect-ai h3{margin-bottom:0}
+    .connect-ai .lead{margin:0;color:var(--muted);font-size:15px;line-height:1.5}
+    .connect-ai .snip pre{padding:16px 18px 44px}
+    .connect-ai .note{margin:0;color:var(--muted);font-size:13px;line-height:1.5;text-align:center}
+    .devbox{border:1px solid var(--stroke);border-radius:16px;background:rgba(0,0,0,.22);overflow:hidden}
+    .devbox summary{list-style:none;cursor:pointer;font-family:Syne,sans-serif;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .devbox summary::-webkit-details-marker{display:none}
+    .devbox summary::after{content:"+";color:var(--muted);font-size:16px;line-height:1}
+    .devbox[open] summary::after{content:"–"}
+    .devbox .inner{padding:0 16px 16px}
+    .devbox .inner p{margin:0 0 10px;color:var(--muted);font-size:13px;line-height:1.5}
+    .devbox .snip pre{padding-bottom:44px}
+    .mini.copied{color:var(--ok)}
     .foot{display:flex;justify-content:center;gap:18px;flex-wrap:wrap;font-size:12px;letter-spacing:.06em;color:var(--muted)}
     .foot a{text-decoration:none}
     dialog.modal{margin:auto;width:min(440px,calc(100% - 28px));background:rgba(6,12,28,.97);color:var(--text);border:1px solid var(--stroke);border-radius:22px;padding:20px;box-shadow:0 30px 90px rgba(0,0,0,.6)}
@@ -87,7 +101,8 @@
       <h2>Plug your agent into <em>Polygon</em>.</h2>
       <p>One MCP endpoint for BZB swaps, staking, trading rewards, NFTs and contract deploys on Polygon. Your agent reads and builds; your wallet signs.</p>
       <div class="cta">
-        <button class="connect" id="connectAgent" type="button">Connect your agent</button>
+        <button class="connect" id="copyPromptHero" type="button" data-copy-from="#aiPrompt">Copy prompt</button>
+        <button class="ghost" id="connectAgent" type="button">Connect your agent</button>
         <span class="endpoint"><code id="ep">https://api.blazarforce.net/mcp</code><button class="mini" type="button" data-copy="https://api.blazarforce.net/mcp">Copy</button></span>
       </div>
       <div class="status">
@@ -95,6 +110,37 @@
         <span>Polygon PoS · chain 137</span>
         <span>No API key</span>
       </div>
+    </section>
+
+    <section class="panel connect-ai" id="connect-ai">
+      <h3>Connect your AI</h3>
+      <p class="lead">Copy this prompt, paste it into Grok Bot or another AI assistant, and it will add the BlazarForce connector for you. No sign-in needed.</p>
+      <div class="snip">
+        <pre id="aiPrompt">Add the BlazarForce MCP connector at https://api.blazarforce.net/mcp (no sign-in needed). Then call blazar_overview and tell me what's live on BlazarForce and what BZB trades at on Polygon.</pre>
+        <button class="mini" type="button" data-copy-from="#aiPrompt">Copy</button>
+      </div>
+      <details class="devbox">
+        <summary>For developers</summary>
+        <div class="inner">
+          <p>xAI Responses API. Uses <code class="mono">$XAI_API_KEY</code> from your environment — never paste a key into this page.</p>
+          <div class="snip">
+            <pre id="devCurl">curl https://api.x.ai/v1/responses \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $XAI_API_KEY" \
+  -d '{
+  "model": "grok-4.7",
+  "input": [{"role": "user", "content": "What is BZB trading at on Polygon?"}],
+  "tools": [{
+    "type": "mcp",
+    "server_url": "https://api.blazarforce.net/mcp",
+    "server_label": "blazar_polygon"
+  }]
+}'</pre>
+            <button class="mini" type="button" data-copy-from="#devCurl">Copy</button>
+          </div>
+        </div>
+      </details>
+      <p class="note">The tools are read-only (quotes and data). They never hold keys or move funds.</p>
     </section>
 
     <section class="grid" aria-label="What agents can do">
@@ -137,7 +183,7 @@
 }</pre><button class="mini" type="button" data-copy-pre>Copy</button>
       </div>
       <div class="snip" data-pane="grok" hidden>
-        <p>Grok app: <b>grok.com/connectors → New Connector → Custom</b>, paste the URL. xAI API (remote MCP tool):</p>
+        <p>Grok Bot: copy the prompt under <a href="#connect-ai">Connect your AI</a> and paste it into the chat. Grok app: <b>grok.com/connectors → New Connector → Custom</b>, paste the URL. xAI API (remote MCP tool):</p>
         <pre>curl https://api.x.ai/v1/responses \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $XAI_API_KEY" \
@@ -180,8 +226,8 @@ curl -X POST https://api.blazarforce.net/v1/tools/blazar_overview -d '{}'</pre><
     <div class="steps" id="stClaude">URL copied. In Claude: <b>Settings → Connectors → Add custom connector</b>, paste it, save. Claude Code:<br /><code>claude mcp add --transport http blazar-polygon https://api.blazarforce.net/mcp</code></div>
     <button class="opt" type="button" data-steps="stChatgpt" data-copy="https://api.blazarforce.net/mcp"><span>ChatGPT<small>Copy URL, add as a custom MCP server</small></span><span class="go">Copy URL</span></button>
     <div class="steps" id="stChatgpt">URL copied. In ChatGPT on the web: <b>Plugins → + → Add custom MCP server</b>, paste it, pick <b>No authentication</b>, then Create.</div>
-    <button class="opt" type="button" data-steps="stGrok" data-copy="https://api.blazarforce.net/mcp"><span>Grok<small>Copy URL, add as a custom connector</small></span><span class="go">Copy URL</span></button>
-    <div class="steps" id="stGrok">URL copied. Go to <b>grok.com/connectors → New Connector → Custom</b>, paste it, save. xAI API: add <code>{"type":"mcp","server_url":"https://api.blazarforce.net/mcp","server_label":"blazar_polygon"}</code> to <code>tools</code>.</div>
+    <button class="opt" type="button" data-steps="stGrok" data-copy-from="#aiPrompt"><span>Grok Bot<small>Copy a prompt, paste it in the chat</small></span><span class="go">Copy prompt</span></button>
+    <div class="steps" id="stGrok">Prompt copied. Paste it into Grok Bot — your assistant will add the connector (no sign-in). For the Grok app: <b>grok.com/connectors → New Connector → Custom</b>, paste <code>https://api.blazarforce.net/mcp</code>.</div>
     <button class="opt" type="button" data-steps="stOther" data-copy='{"mcpServers":{"blazar-polygon":{"url":"https://api.blazarforce.net/mcp"}}}'><span>Any other MCP client<small>Copy the JSON config</small></span><span class="go">Copy JSON</span></button>
     <div class="steps" id="stOther">Config copied. Paste it into your client's MCP settings. Transport: Streamable HTTP, no auth.</div>
   </dialog>
@@ -193,16 +239,26 @@ curl -X POST https://api.blazarforce.net/v1/tools/blazar_overview -d '{}'</pre><
     const $$ = (s, r = document) => [...r.querySelectorAll(s)];
     const toast = $("#toast");
     let tt;
-    async function copy(text, msg = "Copied") {
-      try { await navigator.clipboard.writeText(text); }
-      catch { const t = document.createElement("textarea"); t.value = text; document.body.appendChild(t); t.select(); document.execCommand("copy"); t.remove(); }
+    async function copy(text, btn, msg = "Copied") {
+      const value = (text || "").replace(/\n$/, "");
+      try { await navigator.clipboard.writeText(value); }
+      catch { const t = document.createElement("textarea"); t.value = value; t.setAttribute("readonly", ""); t.style.position = "fixed"; t.style.left = "-9999px"; document.body.appendChild(t); t.select(); document.execCommand("copy"); t.remove(); }
       toast.textContent = msg; toast.classList.add("show"); clearTimeout(tt); tt = setTimeout(() => toast.classList.remove("show"), 1400);
+      if (btn) {
+        const prev = btn.dataset.label || btn.innerHTML;
+        btn.dataset.label = prev;
+        btn.textContent = msg;
+        btn.classList.add("copied");
+        clearTimeout(btn._ct);
+        btn._ct = setTimeout(() => { btn.innerHTML = prev; btn.classList.remove("copied"); }, 1400);
+      }
     }
-    $$("[data-copy]").forEach((b) => b.addEventListener("click", () => {
-      copy(b.dataset.copy);
+    const copiedText = (b) => b.dataset.copyFrom ? ($(b.dataset.copyFrom)?.textContent || "") : b.dataset.copy;
+    $$("[data-copy], [data-copy-from]").forEach((b) => b.addEventListener("click", () => {
+      copy(copiedText(b), b);
       if (b.dataset.steps) { $$(".steps").forEach((s) => s.classList.remove("show")); $("#" + b.dataset.steps).classList.add("show"); }
     }));
-    $$("[data-copy-pre]").forEach((b) => b.addEventListener("click", () => copy(b.previousElementSibling.textContent)));
+    $$("[data-copy-pre]").forEach((b) => b.addEventListener("click", () => copy(b.previousElementSibling.textContent, b)));
     const pick = (b) => {
       $$(".setup .tabs button").forEach((x) => x.classList.toggle("active", x === b));
       $$(".setup [data-pane]").forEach((p) => (p.hidden = p.dataset.pane !== b.dataset.tab));
