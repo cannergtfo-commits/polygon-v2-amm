@@ -36,7 +36,7 @@
     .cap b{display:block;font-family:Syne,sans-serif;font-size:15px;letter-spacing:.04em}
     .cap p{color:var(--muted);font-size:13px;line-height:1.45;margin-top:6px}
     .cap code{display:block;margin-top:10px;font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--gold);opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .setup .tabs{max-width:560px}
+    .setup .tabs{max-width:680px}
     .snip{position:relative}
     .snip pre{font-family:"JetBrains Mono",monospace;font-size:12.5px;line-height:1.55;color:var(--text);white-space:pre-wrap;word-break:break-word;background:rgba(0,0,0,.35);border:1px solid var(--stroke);border-radius:14px;padding:16px 18px;margin:0}
     .snip .mini{position:absolute;bottom:10px;right:10px}
@@ -112,6 +112,7 @@
         <button class="active" role="tab" data-tab="cursor" type="button">Cursor</button>
         <button role="tab" data-tab="claude" type="button">Claude</button>
         <button role="tab" data-tab="openai" type="button">ChatGPT / OpenAI</button>
+        <button role="tab" data-tab="grok" type="button">Grok</button>
         <button role="tab" data-tab="rest" type="button">REST</button>
       </div>
       <div class="snip" data-pane="cursor">
@@ -134,6 +135,21 @@
   "server_url": "https://api.blazarforce.net/mcp",
   "require_approval": "never"
 }</pre><button class="mini" type="button" data-copy-pre>Copy</button>
+      </div>
+      <div class="snip" data-pane="grok" hidden>
+        <p>Grok app: <b>grok.com/connectors → New Connector → Custom</b>, paste the URL. xAI API (remote MCP tool):</p>
+        <pre>curl https://api.x.ai/v1/responses \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $XAI_API_KEY" \
+  -d '{
+  "model": "grok-4.7",
+  "input": [{"role": "user", "content": "What is BZB trading at on Polygon?"}],
+  "tools": [{
+    "type": "mcp",
+    "server_url": "https://api.blazarforce.net/mcp",
+    "server_label": "blazar_polygon"
+  }]
+}'</pre><button class="mini" type="button" data-copy-pre>Copy</button>
       </div>
       <div class="snip" data-pane="rest" hidden>
         <p>Every tool is also plain HTTPS. List them at <a href="https://api.blazarforce.net/v1/tools">/v1/tools</a>; spec in <a href="openapi.json">openapi.json</a>.</p>
@@ -164,6 +180,8 @@ curl -X POST https://api.blazarforce.net/v1/tools/blazar_overview -d '{}'</pre><
     <div class="steps" id="stClaude">URL copied. In Claude: <b>Settings → Connectors → Add custom connector</b>, paste it, save. Claude Code:<br /><code>claude mcp add --transport http blazar-polygon https://api.blazarforce.net/mcp</code></div>
     <button class="opt" type="button" data-steps="stChatgpt" data-copy="https://api.blazarforce.net/mcp"><span>ChatGPT<small>Copy URL, add as a custom MCP server</small></span><span class="go">Copy URL</span></button>
     <div class="steps" id="stChatgpt">URL copied. In ChatGPT on the web: <b>Plugins → + → Add custom MCP server</b>, paste it, pick <b>No authentication</b>, then Create.</div>
+    <button class="opt" type="button" data-steps="stGrok" data-copy="https://api.blazarforce.net/mcp"><span>Grok<small>Copy URL, add as a custom connector</small></span><span class="go">Copy URL</span></button>
+    <div class="steps" id="stGrok">URL copied. Go to <b>grok.com/connectors → New Connector → Custom</b>, paste it, save. xAI API: add <code>{"type":"mcp","server_url":"https://api.blazarforce.net/mcp","server_label":"blazar_polygon"}</code> to <code>tools</code>.</div>
     <button class="opt" type="button" data-steps="stOther" data-copy='{"mcpServers":{"blazar-polygon":{"url":"https://api.blazarforce.net/mcp"}}}'><span>Any other MCP client<small>Copy the JSON config</small></span><span class="go">Copy JSON</span></button>
     <div class="steps" id="stOther">Config copied. Paste it into your client's MCP settings. Transport: Streamable HTTP, no auth.</div>
   </dialog>
@@ -185,10 +203,13 @@ curl -X POST https://api.blazarforce.net/v1/tools/blazar_overview -d '{}'</pre><
       if (b.dataset.steps) { $$(".steps").forEach((s) => s.classList.remove("show")); $("#" + b.dataset.steps).classList.add("show"); }
     }));
     $$("[data-copy-pre]").forEach((b) => b.addEventListener("click", () => copy(b.previousElementSibling.textContent)));
-    $$(".setup .tabs button").forEach((b) => b.addEventListener("click", () => {
+    const pick = (b) => {
       $$(".setup .tabs button").forEach((x) => x.classList.toggle("active", x === b));
       $$(".setup [data-pane]").forEach((p) => (p.hidden = p.dataset.pane !== b.dataset.tab));
-    }));
+    };
+    $$(".setup .tabs button").forEach((b) => b.addEventListener("click", () => pick(b)));
+    const deep = $('.setup .tabs button[data-tab="' + location.hash.slice(1) + '"]');
+    if (deep) { pick(deep); $(".setup").scrollIntoView(); }
     const modal = $("#connectModal");
     $("#connectAgent").addEventListener("click", () => { $$(".steps").forEach((s) => s.classList.remove("show")); modal.showModal(); });
     $("[data-close]").addEventListener("click", () => modal.close());
