@@ -14,10 +14,10 @@
  */
 const ethers = window.ethers;
 
-/** All off: the configured contract (when there is one) is the 7a82a23 version. Don't switch on early. */
+/** Launch config: the aeaf3e6 (multireward-agent) contract is the one deployed, so agentAbi is on (security L-1). */
 export const FEATURES = Object.freeze({
   // Use the multireward-agent (aeaf3e6) ABI. Required by the two flags below.
-  agentAbi: false,
+  agentAbi: true,
   // compound() restakes BZB rewards. Shows #msCompoundBtn when true.
   compound: false,
   // claimAllSkipping() pays every token except ones whose transfer fails. Shows the "skip broken tokens"

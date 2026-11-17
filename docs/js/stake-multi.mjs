@@ -26,10 +26,10 @@ import {
   validateNewTokens,
   validateRecover,
   validateRuns,
-} from "./stake-multi-core.mjs?v=desk26";
+} from "./stake-multi-core.mjs?v=desk27";
 import { DEXSCREENER_TOKENS, dexBatches, fmtUsd, pickDexPrice, priceKey } from "./profile-core.mjs?v=desk23";
 
-import { ERROR_TEXT, FEATURES, decodeRevert, erc20Iface, iface } from "./stake-multi-contract.mjs?v=desk26";
+import { ERROR_TEXT, FEATURES, decodeRevert, erc20Iface, iface } from "./stake-multi-contract.mjs?v=desk27";
 
 const ethers = window.ethers;
 const $ = (id) => document.getElementById(id);

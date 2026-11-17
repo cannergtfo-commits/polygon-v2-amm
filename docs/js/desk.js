@@ -70,7 +70,7 @@ import {
   v2ShareAndAmounts,
 } from "./lp-positions.mjs?v=desk22";
 import { initProfile, loadProfile, profileAccountChanged } from "./profile.mjs?v=desk23";
-import { initMultiStake, loadMultiStake, multiStakeEnabled } from "./stake-multi.mjs?v=desk26";
+import { initMultiStake, loadMultiStake, multiStakeEnabled } from "./stake-multi.mjs?v=desk27";
 
 const $ = (id) => document.getElementById(id);
 const ethers = window.ethers;
