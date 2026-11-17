@@ -18,6 +18,8 @@ import {
   durationLabel,
   formatApr,
   gasLimitFor,
+  verifyDeployment,
+  EXPECTED_DEPLOYMENT,
   parseAddressList,
   runStatus,
   startTimeFor,
@@ -229,6 +231,21 @@ test("validateRecover caps at the surplus", () => {
   assert.ok(!validateRecover({ amount: 6n, recoverable: 5n, to: A }).ok);
   assert.ok(!validateRecover({ amount: 0n, recoverable: 5n, to: A }).ok);
   assert.ok(!validateRecover({ amount: 1n, recoverable: 5n, to: "nope" }).ok);
+});
+
+test("B-3: verifyDeployment fails closed", () => {
+  const BZB = "0x462D8d82C2B2D2DDabf7f8a93928De09d47A5807";
+  const exp = { bzb: BZB, owner: EXPECTED_DEPLOYMENT.owner, minStake: EXPECTED_DEPLOYMENT.minStake };
+  const good = { code: "0x6080", stakingToken: BZB.toLowerCase(), owner: EXPECTED_DEPLOYMENT.owner.toLowerCase(), minStake: 10n ** 18n };
+  assert.ok(verifyDeployment(good, exp).ok);
+  assert.ok(!verifyDeployment({ ...good, code: "0x" }, exp).ok);
+  assert.ok(!verifyDeployment({ ...good, code: undefined }, exp).ok);
+  assert.ok(!verifyDeployment({ ...good, stakingToken: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359" }, exp).ok);
+  assert.ok(!verifyDeployment({ ...good, owner: "0xB452329B7b9d55a82f10a4e60E22748De6e490F2" }, exp).ok);
+  assert.ok(!verifyDeployment({ ...good, minStake: 10n ** 15n }, exp).ok);
+  assert.ok(!verifyDeployment({ ...good, minStake: undefined }, exp).ok);
+  assert.ok(!verifyDeployment(undefined, exp).ok);
+  assert.equal(EXPECTED_DEPLOYMENT.owner, "0x6F47aa396215ab22647dDB3E86b4663DFe11dB14");
 });
 
 console.log(`stake-multi-core: ${n} tests passed`);

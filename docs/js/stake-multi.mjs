@@ -26,10 +26,12 @@ import {
   validateNewTokens,
   validateRecover,
   validateRuns,
-} from "./stake-multi-core.mjs?v=desk27";
+  verifyDeployment,
+  EXPECTED_DEPLOYMENT,
+} from "./stake-multi-core.mjs?v=desk28";
 import { DEXSCREENER_TOKENS, dexBatches, fmtUsd, pickDexPrice, priceKey } from "./profile-core.mjs?v=desk23";
 
-import { ERROR_TEXT, FEATURES, decodeRevert, erc20Iface, iface } from "./stake-multi-contract.mjs?v=desk27";
+import { ERROR_TEXT, FEATURES, decodeRevert, erc20Iface, iface } from "./stake-multi-contract.mjs?v=desk28";
 
 const ethers = window.ethers;
 const $ = (id) => document.getElementById(id);
@@ -39,6 +41,8 @@ let deps = null;
 const ms = {
   address: "",
   enabled: false,
+  // B-3: writes fail closed until the configured address is verified (code, BZB, owner, minStake).
+  verified: { address: "", ok: false, codeHash: "" },
   wired: false,
   loading: false,
   gen: 0,
@@ -229,7 +233,12 @@ export async function loadMultiStake() {
   try {
     const account = deps.state.account;
     const [codeHex, block] = await deps.withReadProvider(async (rpc) => [await rpc.getCode(addr), await rpc.getBlock("latest")]);
-    if (!codeHex || codeHex === "0x") throw new Error("The staking contract has no code at the configured address.");
+    if (ms.verified.address !== addr) ms.verified = { address: addr, ok: false, codeHash: "" };
+    if (!codeHex || codeHex === "0x") {
+      ms.verified = { address: addr, ok: false, codeHash: "" };
+      applyLock();
+      throw new Error("The staking contract has no code at the configured address. Nothing will be sent to it.");
+    }
     const base = await multiRead([
       { fn: "stakingToken" },
       { fn: "minStake" },
@@ -242,7 +251,15 @@ export async function loadMultiStake() {
     ]);
     if (gen !== ms.gen) return;
     const stakingToken = base[0]?.[0];
-    if (!stakingToken || lower(stakingToken) !== lower(deps.BZB)) throw new Error("The configured contract doesn't stake BZB. Nothing will be sent to it.");
+    const check = verifyDeployment(
+      { code: codeHex, stakingToken, owner: base[4]?.[0], minStake: base[1]?.[0] },
+      { bzb: deps.BZB, owner: EXPECTED_DEPLOYMENT.owner, minStake: EXPECTED_DEPLOYMENT.minStake },
+    );
+    ms.verified = { address: addr, ok: check.ok, codeHash: check.ok ? ethers.keccak256(codeHex) : "" };
+    if (!check.ok) {
+      applyLock();
+      throw new Error(`${check.errors[0]} Nothing will be sent to it.`);
+    }
     const tokens = (base[6]?.[0] || []).map((a) => ethers.getAddress(a));
     const owner = base[4]?.[0] || ethers.ZeroAddress;
     const pending = base[5]?.[0] || ethers.ZeroAddress;
@@ -330,6 +347,7 @@ function paintMode() {
   $("legacyStake").hidden = false;
   $("stakeBtn").hidden = false;
   $("legacyTitle").textContent = on ? "Legacy staking" : "Stake BZB";
+  if (on) applyLock();
 }
 
 function setMode(mode) {
@@ -342,12 +360,39 @@ function setMode(mode) {
   paintAction();
 }
 
+function isVerified() {
+  return !!ms.address && ms.verified.ok && ms.verified.address === ms.address;
+}
+
+/** Throws unless the configured contract was verified. Used before every approval and every write. */
+function requireVerified() {
+  if (!isVerified()) throw new Error("The staking contract isn't verified yet, so nothing was sent. Refresh and try again.");
+}
+
+/** Disable every write button in the multi card while unverified; restore when verified (B-3). */
+function applyLock() {
+  const root = $("msStake");
+  if (!root) return;
+  const locked = !isVerified();
+  root.toggleAttribute("data-unverified", locked);
+  for (const b of root.querySelectorAll("button")) {
+    if (b.closest(".ms-seg") || b.id === "msMax") continue;
+    if (locked) {
+      if (!b.disabled) b.dataset.lock = "1";
+      b.disabled = true;
+    } else if (b.dataset.lock) {
+      delete b.dataset.lock;
+      b.disabled = b.id === "msEmergencyBtn" ? !$("msEmergencyAck").checked : false;
+    }
+  }
+}
+
 function paintAction() {
   const d = ms.data;
   const stake = ms.mode !== "withdraw";
   const acct = !!d?.account;
   $("msActionBtn").textContent = !acct ? "Connect wallet" : stake ? "Stake" : "Withdraw";
-  $("msActionBtn").disabled = acct && stake && !!d?.paused;
+  $("msActionBtn").disabled = !isVerified() || (acct && stake && !!d?.paused);
   $("msBalLabel").firstChild.textContent = stake ? "Wallet " : "Staked ";
   $("msWallet").textContent = acct ? fmtNice(stake ? d.wallet : d.staked, 18) : "—";
 }
@@ -355,6 +400,7 @@ function paintAction() {
 function paint() {
   const d = ms.data;
   if (!d) return;
+  applyLock(); // when verified: release buttons locked earlier, then the paint below sets their real state
   const acct = !!d.account;
   $("msStaked").textContent = acct ? fmtNice(d.staked, 18) : "—";
   $("msTotal").textContent = fmtNice(d.totalStaked, 18);
@@ -380,6 +426,7 @@ function paint() {
   $("msAccept").hidden = !d.isPending;
   $("msOwner").hidden = !d.isOwner;
   if (d.isOwner) paintOwner(d);
+  applyLock();
 }
 
 function tokenLogo(meta) {
@@ -723,9 +770,18 @@ async function sendCall(fn, args, action, logId) {
     $("connectBtn").click();
     throw new Error("Connect a wallet first.");
   }
+  requireVerified();
   await deps.assertChain();
+  // Re-check the target right before sending: still has code, and it's the same code that was verified.
+  const target = ms.address;
+  const liveCode = await deps.withReadProvider((rpc) => rpc.getCode(target));
+  if (!liveCode || liveCode === "0x" || ethers.keccak256(liveCode) !== ms.verified.codeHash) {
+    ms.verified = { address: target, ok: false, codeHash: "" };
+    applyLock();
+    throw new Error("The staking contract changed or has no code. Nothing was sent.");
+  }
   const data = iface.encodeFunctionData(fn, args);
-  const tx = { to: ms.address, data, value: 0n, chainId: 137n };
+  const tx = { to: target, data, value: 0n, chainId: 137n };
   let est;
   try {
     est = await deps.withReadProvider((rpc) => rpc.estimateGas({ ...tx, from: deps.state.account }));
@@ -742,6 +798,7 @@ async function run(logId, task) {
   deps.state.busy = true;
   deps.log(logId, "", "");
   try {
+    requireVerified(); // B-3: every multi-tab write fails closed on an unverified address
     const msg = await task();
     if (msg) deps.log(logId, msg, "ok");
     await loadMultiStake();
@@ -767,6 +824,7 @@ function doStake() {
     await deps.assertChain();
     // Approve is folded into the same button: exact-amount approval first (skipped if already enough).
     deps.log("msLog", "Checking BZB approval…", "");
+    requireVerified();
     await deps.ensureAllowance({ address: deps.BZB, symbol: "BZB", decimals: 18 }, ms.address, amount, "msLog");
     const receipt = await sendCall("stake", [amount], "stake", "msLog");
     $("msAmount").value = "";
@@ -930,6 +988,7 @@ function doCreateRuns() {
     for (const [key, total] of Object.entries(v.perTokenAmount)) {
       const meta = ms.meta.get(key);
       deps.log("msOwnerLog", `Approving ${fmtNice(total, meta.decimals)} ${meta.symbol}…`, "");
+      requireVerified();
       await deps.ensureAllowance({ address: meta.address, symbol: meta.symbol, decimals: meta.decimals }, ms.address, total, "msOwnerLog");
     }
     const block = await deps.withReadProvider((rpc) => rpc.getBlock("latest"));
@@ -997,7 +1056,7 @@ function wire() {
   $("msClaimToBtn").addEventListener("click", doClaimTo);
   $("msClaimToAddr").addEventListener("input", () => { delete $("msClaimToAddr").dataset.contractOk; });
   $("msCheckpointBtn").addEventListener("click", doCheckpoint);
-  $("msEmergencyAck").addEventListener("change", () => { $("msEmergencyBtn").disabled = !$("msEmergencyAck").checked; });
+  $("msEmergencyAck").addEventListener("change", () => { $("msEmergencyBtn").disabled = !$("msEmergencyAck").checked || !isVerified(); });
   $("msEmergencyBtn").addEventListener("click", doEmergency);
   $("msAcceptBtn").addEventListener("click", doAccept);
   $("msPauseBtn").addEventListener("click", doPause);

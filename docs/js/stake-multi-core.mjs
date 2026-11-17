@@ -320,3 +320,26 @@ export function durationLabel(sec) {
   if (h) return `${h}h${m ? ` ${m}m` : ""}`;
   return `${m}m`;
 }
+
+/**
+ * Launch expectations for the deployed BlazarMultiRewardStaking (security B-3). Writes are allowed only when
+ * the configured address matches all of these. If ownership later moves to a Safe, update EXPECTED.owner.
+ */
+export const EXPECTED_DEPLOYMENT = Object.freeze({
+  owner: "0x6F47aa396215ab22647dDB3E86b4663DFe11dB14",
+  minStake: 10n ** 18n,
+});
+
+/** Pure check of on-chain reads against the expected deployment. Fails closed on anything missing. */
+export function verifyDeployment(reads, expected) {
+  const errors = [];
+  const lc = (a) => String(a || "").toLowerCase();
+  const code = String(reads?.code || "0x");
+  if (code === "0x" || code.length < 4) errors.push("No contract code at the configured address.");
+  if (!reads?.stakingToken || lc(reads.stakingToken) !== lc(expected.bzb)) errors.push("The configured contract doesn't stake BZB.");
+  if (!reads?.owner || lc(reads.owner) !== lc(expected.owner)) errors.push("The configured contract isn't owned by the expected wallet.");
+  let min = null;
+  try { min = reads?.minStake == null ? null : BigInt(reads.minStake); } catch { min = null; }
+  if (min === null || min !== BigInt(expected.minStake)) errors.push("The configured contract's minimum stake isn't 1 BZB.");
+  return { ok: errors.length === 0, errors };
+}
