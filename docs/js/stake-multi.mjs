@@ -28,10 +28,10 @@ import {
   validateRuns,
   verifyDeployment,
   EXPECTED_DEPLOYMENT,
-} from "./stake-multi-core.mjs?v=desk28";
+} from "./stake-multi-core.mjs?v=desk29";
 import { DEXSCREENER_TOKENS, dexBatches, fmtUsd, pickDexPrice, priceKey } from "./profile-core.mjs?v=desk23";
 
-import { ERROR_TEXT, FEATURES, decodeRevert, erc20Iface, iface } from "./stake-multi-contract.mjs?v=desk28";
+import { ERROR_TEXT, FEATURES, decodeRevert, erc20Iface, iface } from "./stake-multi-contract.mjs?v=desk29";
 
 const ethers = window.ethers;
 const $ = (id) => document.getElementById(id);
@@ -315,7 +315,7 @@ export async function loadMultiStake() {
     ms.data = {
       account,
       now: Number(block?.timestamp || Math.floor(Date.now() / 1000)),
-      minStake: BigInt(base[1]?.[0] ?? LIMITS.MIN_STAKE),
+      minStake: BigInt(base[1]?.[0] ?? EXPECTED_DEPLOYMENT.minStake),
       totalStaked: BigInt(base[2]?.[0] ?? 0n),
       paused: !!base[3]?.[0],
       owner,

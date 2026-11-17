@@ -70,7 +70,7 @@ import {
   v2ShareAndAmounts,
 } from "./lp-positions.mjs?v=desk22";
 import { initProfile, loadProfile, profileAccountChanged } from "./profile.mjs?v=desk23";
-import { initMultiStake, loadMultiStake, multiStakeEnabled } from "./stake-multi.mjs?v=desk28";
+import { initMultiStake, loadMultiStake, multiStakeEnabled } from "./stake-multi.mjs?v=desk29";
 
 const $ = (id) => document.getElementById(id);
 const ethers = window.ethers;
@@ -200,6 +200,7 @@ function rpcFlaky(err) {
 }
 
 function explainError(err) {
+  if (err?.submittedTx) return String(err.message);
   const msg = String(err?.shortMessage || err?.reason || err?.message || err || "Request failed");
   if (err?.code === "CALL_EXCEPTION" || /execution reverted|revert/i.test(msg)) {
     const reason = err?.reason;
@@ -223,7 +224,19 @@ function dropReadProvider() {
 function log(id, message, kind) {
   const el = $(id);
   if (!el) return;
-  el.textContent = message || "";
+  // Plain text, except Polygonscan tx URLs become links (built with createElement, never innerHTML).
+  el.replaceChildren();
+  const parts = String(message || "").split(/(https:\/\/polygonscan\.com\/tx\/0x[0-9a-fA-F]{64})/);
+  for (const part of parts) {
+    if (/^https:\/\/polygonscan\.com\/tx\/0x[0-9a-fA-F]{64}$/.test(part)) {
+      const a = document.createElement("a");
+      a.href = part;
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.textContent = "Polygonscan";
+      el.append(a);
+    } else if (part) el.append(document.createTextNode(part));
+  }
   el.className = "log" + (kind ? " " + kind : "");
 }
 
@@ -1023,8 +1036,21 @@ async function send(tx, label) {
     throw err;
   }
   log(label, `Submitted ${short(response.hash)}`, "");
-  const receipt = await response.wait();
-  if (!receipt || receipt.status !== 1) throw new Error("Transaction failed");
+  const scan = `https://polygonscan.com/tx/${response.hash}`;
+  let receipt;
+  try {
+    receipt = await response.wait();
+  } catch (err) {
+    // The tx was already sent: never let an RPC hiccup here read as "nothing happened" (follow-up 3).
+    const e = new Error(`Sent, but the RPC failed while waiting for the receipt (${explainError(err)}). It may still confirm. Check ${scan} before trying again.`);
+    e.submittedTx = response.hash;
+    throw e;
+  }
+  if (!receipt || receipt.status !== 1) {
+    const e = new Error(`Transaction failed on-chain. Details: ${scan}`);
+    e.submittedTx = response.hash;
+    throw e;
+  }
   return receipt;
 }
 

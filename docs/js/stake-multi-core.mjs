@@ -12,7 +12,7 @@ export const LIMITS = Object.freeze({
   MAX_START_DELAY: 30 * 86_400,
   MAX_WEIGHT: 10_000,
   MAX_RUN_AMOUNT: (1n << 128n) - 1n,
-  MIN_STAKE: 10n ** 15n,
+  MIN_STAKE: 10n ** 18n, // deployed minStake (1 BZB); display fallback only, the contract enforces it
 });
 
 /** A future start must be at least this far out so the tx is mined before it (contract: start >= block.timestamp). */

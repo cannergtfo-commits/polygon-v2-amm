@@ -152,6 +152,7 @@ export const erc20Iface = new ethers.Interface([
 ]);
 
 export function decodeRevert(err) {
+  if (err?.submittedTx) return null; // already-sent tx: keep the message with its Polygonscan link
   const candidates = [err?.data, err?.info?.error?.data, err?.error?.data, err?.info?.error?.data?.data, err?.revert?.data];
   for (const data of candidates) {
     if (typeof data !== "string" || !data.startsWith("0x") || data.length < 10) continue;
