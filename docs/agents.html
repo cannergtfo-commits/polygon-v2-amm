@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>BlazarForce for AI agents · Polygon MCP</title>
-  <meta name="description" content="Connect any AI agent or bot to Polygon: BZB and any-token swaps, token safety checks, portfolio, tx status, gas, approvals, staking, trading rewards, NFTs and contract deploys over one MCP endpoint. Read-only and unsigned builds." />
+  <meta name="description" content="Connect any AI agent or bot to Polygon first, plus Base and Ethereum: BZB and any-token swaps, token safety checks, portfolio, tx status, gas, approvals, staking, trading rewards, NFTs and contract deploys over one MCP endpoint. Read-only and unsigned builds." />
   <link rel="canonical" href="https://blazarforce.net/agents.html" />
   <link rel="icon" href="favicon.ico" sizes="any" />
   <link rel="icon" type="image/png" sizes="64x64" href="favicon.png" />
@@ -101,7 +101,7 @@
     <section class="hero">
       <div class="kick">For AI agents &amp; trading bots</div>
       <h2>Plug your agent into <em>Polygon</em>.</h2>
-      <p>One MCP endpoint for BZB and any-token swaps, wallet checks, staking, trading rewards, NFTs and deploys on Polygon. Your agent reads and builds; your wallet signs.</p>
+      <p>One MCP endpoint for BZB and any-token swaps, wallet checks, staking, trading rewards, NFTs and deploys on Polygon, plus any-token swaps and wallet checks on Base and Ethereum. Your agent reads and builds; your wallet signs.</p>
       <div class="cta">
         <button class="connect" id="copyPromptHero" type="button" data-copy-from="#aiPrompt">Copy prompt</button>
         <button class="ghost" id="connectAgent" type="button">Connect your agent</button>
@@ -109,7 +109,7 @@
       </div>
       <div class="status">
         <span id="live"><span class="dot"></span>Checking endpoint…</span>
-        <span>Polygon PoS · chain 137</span>
+        <span>Polygon first · Base · Ethereum</span>
         <span>No API key</span>
       </div>
     </section>
@@ -146,10 +146,10 @@
     </section>
 
     <section class="grid" aria-label="What agents can do">
-      <div class="cap"><b>Swap BZB</b><p>Best route across BlazarSwap, QuickSwap and Sushi through the fee router. Earns trading rewards.</p><code>blazar_quote · blazar_build_swap</code></div>
-      <div class="cap"><b>Swap any token</b><p>Any Polygon pair via KyberSwap, with Velora fallback. Simulated before it is returned.</p><code>blazar_any_quote · blazar_build_any_swap</code></div>
+      <div class="cap"><b>Swap BZB</b><p>Best route across BlazarSwap, QuickSwap and Sushi through the fee router on Polygon. Earns trading rewards.</p><code>blazar_quote · blazar_build_swap</code></div>
+      <div class="cap"><b>Swap any token</b><p>Any pair on Polygon, Base or Ethereum via KyberSwap, with Velora fallback. Simulated before it is returned.</p><code>blazar_any_quote · blazar_build_any_swap</code></div>
       <div class="cap"><b>Token safety</b><p>Honeypot and transfer-tax checks, verified lists and a simulated sell before you buy.</p><code>blazar_token_safety</code></div>
-      <div class="cap"><b>Wallet</b><p>Portfolio in USD, tx status with revert reasons, gas costs, and an approvals audit with revokes.</p><code>blazar_portfolio · blazar_tx_status · blazar_allowances</code></div>
+      <div class="cap"><b>Wallet</b><p>Portfolio in USD, tx status with revert reasons, gas costs, and an approvals audit with revokes, on all three chains.</p><code>blazar_portfolio · blazar_tx_status · blazar_allowances</code></div>
       <div class="cap"><b>Stake</b><p>BZB staking and multi-reward staking v2: live APR, positions, stake and exit builds.</p><code>blazar_staking_info · blazar_build_stake</code></div>
       <div class="cap"><b>Rewards</b><p>Daily trading rewards. Every fee-router trade counts toward the leaderboard.</p><code>blazar_daily_rewards · blazar_build_claim</code></div>
       <div class="cap"><b>Earn</b><p>Ranked earning options from live reads, with dead rewards flagged.</p><code>blazar_rank_earning · blazar_earn_strategies</code></div>

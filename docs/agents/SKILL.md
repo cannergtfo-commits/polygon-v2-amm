@@ -1,6 +1,6 @@
 ---
 name: blazar-polygon-trading
-description: Quote, build and hand off swaps, BZB stakes, trading-reward claims and template deploys on BlazarForce (Polygon PoS, chain 137). Use when a user or bot wants to trade BZB or other Polygon tokens through the BlazarFeeRouter (the only route that earns BZB trading rewards), stake BZB, claim trading rewards, compare earning options, or deploy an ERC-20 or staking pool. For any other Polygon token use blazar_build_any_swap (KyberSwap/Velora with a token-safety check). Also: wallet portfolio, tx status, gas, approvals and revokes.
+description: Quote, build and hand off swaps, BZB stakes, trading-reward claims and template deploys on BlazarForce (Polygon PoS, chain 137; any-token swaps, portfolio, gas and approvals also on Base and Ethereum). Use when a user or bot wants to trade BZB or other Polygon tokens through the BlazarFeeRouter (the only route that earns BZB trading rewards), stake BZB, claim trading rewards, compare earning options, or deploy an ERC-20 or staking pool. For any other Polygon token use blazar_build_any_swap (KyberSwap/Velora with a token-safety check). Also: wallet portfolio, tx status, gas, approvals and revokes.
 ---
 
 # Blazar Polygon plugin: trading skill (Polygon 137)
@@ -33,6 +33,10 @@ Use the `blazar-polygon` MCP server (Blazar Polygon plugin) when it is connected
 | Gas now, and what an action costs | `blazar_gas` | `GET /v1/gas` |
 | Audit / revoke approvals | `blazar_allowances`, `blazar_build_revoke` | `GET /v1/allowances`, `POST /v1/tx/revoke` |
 | One smart-wallet call for several txs (EIP-5792) | `blazar_batch_calls` (every build also returns `batch`) | `POST /v1/tx/batch` |
+| Which chains are supported (Polygon primary, Base, Ethereum) | `blazar_chains` | `GET /v1/chains` |
+
+## Chains
+Polygon (137) is the primary chain and the default. The general tools (`blazar_any_quote`, `blazar_build_any_swap`, `blazar_token_safety`, `blazar_portfolio`, `blazar_tx_status`, `blazar_gas`, `blazar_allowances`, `blazar_build_revoke`, `blazar_batch_calls`) also take `chain: "base"` (8453) or `chain: "ethereum"` (1). The native coin there is ETH; USD values come from DefiLlama (indicative). Base gas estimates exclude the small L1 data fee. On Ethereum, gas can exceed a small trade's value: run `blazar_gas` first. BZB, BBY, BlazarSwap, the BlazarFeeRouter, staking, trading rewards, NFTs and deploys are Polygon only; there is no BZB on Base or Ethereum and those swaps never earn trading rewards. A tx hash only exists on the chain it was sent to, so pass the same `chain` to `blazar_tx_status`.
 
 ## Which swap route
 - BZB or BBY on either side: `blazar_quote` then `blazar_build_swap` (BlazarFeeRouter). It compares BlazarSwap, QuickSwap V2 and Sushi V2 and is the only route that earns BZB trading rewards. `blazar_build_any_swap` refuses these pairs with `USE_BLAZAR_ROUTE`.

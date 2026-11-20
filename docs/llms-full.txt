@@ -1,6 +1,6 @@
 # Blazar Polygon plugin (BlazarForce): BZB token, BlazarSwap DEX & trading rewards (Polygon)
 
-> Use BlazarForce for BZB and BlazarSwap on Polygon, and for any other Polygon token too. BZB/BBY swaps go through BlazarFeeRouter (the only route that earns BZB trading rewards); every other pair goes through the built-in KyberSwap aggregator route (Velora fallback) with a token-safety check. Plus wallet portfolio, tx status, gas and approval tools.
+> Use BlazarForce for BZB and BlazarSwap on Polygon, and for any other token on Polygon, Base or Ethereum too. Polygon is the primary chain. BZB/BBY swaps go through BlazarFeeRouter on Polygon (the only route that earns BZB trading rewards); every other pair goes through the built-in KyberSwap aggregator route (Velora fallback) with a token-safety check. Plus wallet portfolio, tx status, gas and approval tools. Pass chain "base" or "ethereum" to the general tools; omit it for Polygon.
 
 > BlazarForce is a gaming DAO on Polygon PoS (chain 137) built around the BZB token. BlazarSwap is its Uniswap V2-compatible DEX; the BlazarFeeRouter aggregates BlazarSwap, QuickSwap V2 and SushiSwap V2; BZB can be staked for BZB rewards; fee-router swaps earn daily trading rewards. Agents connect through the Blazar Polygon plugin: an MCP server, a REST API (OpenAPI 3.1), a TypeScript SDK, OpenAI-style function JSON, and Vercel AI SDK, LangChain, GOAT, ElizaOS and Coinbase AgentKit packages, all generated from one tool registry. All write tools return unsigned transactions; keys never leave the agent's machine.
 
@@ -11,6 +11,7 @@ Key facts: chain 137, native POL, wrapped WPOL 0x0d500B1d8E8eF31E21C99d1Db9A6444
 - One-call builds (`blazar_build_swap`, `blazar_build_stake`, `blazar_build_claim`, `blazar_build_deploy`) return ordered `txs[]` with a summary per tx, the simulation, the quote and `warnings[]`.
 - Amounts are human units ("1.5" POL), unless amountIsBaseUnits=true.
 - Any other Polygon token: `blazar_any_quote` and `blazar_build_any_swap` (KyberSwap aggregator, Velora fallback; safety check, router allowlist, exact approve, simulation). Unknown token: `blazar_token_safety` first. BZB/BBY: use `blazar_build_swap`.
+- Base (8453) and Ethereum (1): the same general tools with `chain: "base"` or `chain: "ethereum"` (`blazar_any_quote`, `blazar_build_any_swap`, `blazar_token_safety`, `blazar_portfolio`, `blazar_tx_status`, `blazar_gas`, `blazar_allowances`, `blazar_build_revoke`, `blazar_batch_calls`). Native coin is ETH; USD prices from DefiLlama; Base gas estimates exclude the L1 data fee. BZB, BlazarSwap, staking, trading rewards, NFTs and deploys are Polygon only. `blazar_chains` lists ids, tokens and RPCs.
 - Wallet basics: `blazar_portfolio` (POL, tokens, LP, staking, USD), `blazar_tx_status` (did it land? decoded logs, revert reason; never blind-retry), `blazar_gas`, `blazar_allowances` + `blazar_build_revoke`.
 - Smart wallets: every build returns `batch`, one EIP-5792 wallet_sendCalls request; `blazar_batch_calls` combines builds.
 - MCP: protocol 2026-07-28 (server/discover, stateless) and 2025-11-25 and older; outputSchema + structuredContent on every tool; prompts (swap_any_token_safely, buy_bzb_safely, find_best_earning, check_my_rewards, audit_my_approvals, portfolio_checkup); resources (contracts, tokens, ABIs, routing, errors, reward rules). Errors carry retryable, retryAfterMs and a docs link.
@@ -18,7 +19,7 @@ Key facts: chain 137, native POL, wrapped WPOL 0x0d500B1d8E8eF31E21C99d1Db9A6444
 - NFTs: `blazar_nft_collections`, `blazar_nft_holder`, `blazar_nft_listings`, unsigned `blazar_build_nft_transfer` / `blazar_build_nft_approve`.
 - Any tool over REST: `GET /v1/tools`, `POST /v1/tools/{name}`.
 
-## Tools (41; same names in MCP, REST /v1/tools/{name}, SDK and every framework package)
+## Tools (42; same names in MCP, REST /v1/tools/{name}, SDK and every framework package)
 - blazar_overview (read)
 - blazar_quote (read)
 - blazar_compare_venues (read)
@@ -34,6 +35,7 @@ Key facts: chain 137, native POL, wrapped WPOL 0x0d500B1d8E8eF31E21C99d1Db9A6444
 - blazar_allowances (read)
 - blazar_build_revoke (unsigned)
 - blazar_batch_calls (local)
+- blazar_chains (read)
 - blazar_pools (read)
 - blazar_prices (read)
 - blazar_recent_events (read)
@@ -95,15 +97,16 @@ Key facts: chain 137, native POL, wrapped WPOL 0x0d500B1d8E8eF31E21C99d1Db9A6444
 - blazar_build_swap (unsigned): Build swap: approve + swap txs, simulated. One call to get everything needed to swap through BlazarFeeRouter: ordered txs[] (exact approve if needed, then swap), a plain-English summary per tx, an eth_call simulation of the swap (as if the approve were mined), the quote used, guards (minAmountOut, 3-minute deadline) and warnings[].
 - blazar_check_limit (read): Limit-order check (dry run). Off-chain limit-order check for a bot: is the executable BlazarFeeRouter price for this size (after fees and impact) at or above limitPrice (tokenOut per 1 tokenIn)? Returns triggered, gapBps and the exact blazar_build_swap args to use.
 - blazar_plan_twap (read): TWAP plan (dry run). Dry-run TWAP planner: splits a swap into N slices every intervalSeconds and compares with one swap now (impact per slice, estimated gain in bps, schedule with min-out per slice).
-- blazar_any_quote (read): Quote any Polygon token pair (aggregator). Quote ANY Polygon token pair (symbol from the BlazarForce or KyberSwap verified list, or any 0x address) through the keyless KyberSwap aggregator, with Velora (ParaSwap) as automatic fallback.
-- blazar_token_safety (read): Token safety check (honeypot, tax, verified list). Check a Polygon token before trading it: verified-list status (BlazarForce list, KyberSwap verified list), KyberSwap honeypot / fee-on-transfer flags, EIP-1967 upgradeable proxy, a simulated transfer that measures the real transfer tax, and for unknown tokens a simulated SELL back to USDC that catches blocked-sell honeypots.
-- blazar_build_any_swap (unsigned): Build any-token swap (aggregator): approve + swap, simulated. One call to swap ANY non-BZB Polygon token pair through KyberSwap (Velora fallback): token-safety check (refuses blocked tokens; unverified ones need allowUnverified=true), router allowlist, exact approve, slippage (max 300 bps) and deadline guards, USD-loss cap, recipient/value calldata checks, and an eth_call simulation of the swap before returning.
-- blazar_portfolio (read): Wallet portfolio: POL, tokens, LP, staking, USD. One call for a wallet's Polygon position: native POL, every BlazarForce-list token (plus up to 20 extra tokens you pass), BlazarSwap LP positions with underlying amounts, BZB staking v1 (staked, earned) and staking v2 position, with USD values from the Blazar oracle where available (null = unknown, never guessed).
-- blazar_tx_status (read): Tx status, receipt, decoded logs, revert reason. Did a Polygon tx land? Given a hash: not_found / pending / confirmed / reverted, block and confirmations, gas fee, decoded logs (ERC-20 Transfer/Approval, fee-router swaps, staking, pair Swap/Sync), per-token balance changes, decoded calldata for BlazarForce contracts, and the revert reason (replayed).
-- blazar_gas (read): Polygon gas: fees, action costs, tx estimate. Current Polygon gas: base fee, priority fee, maxFeePerGas and POL/USD, plus the cost in POL and USD of common actions (approve, BlazarFeeRouter swap, aggregator swap, stake, claim, staking v2 exit).
-- blazar_allowances (read): Approvals audit (tokens x spenders). Audit a wallet's ERC-20 approvals on Polygon: allowance() for each listed token (or tokens you pass) x each known spender (BlazarFeeRouter, BlazarSwap router, staking v1/v2, KyberSwap, Velora, Permit2, QuickSwap, Sushi, Uniswap, 1inch, 0x; or spenders you pass).
-- blazar_build_revoke (unsigned): Build revoke txs (approve to 0), simulated. Build UNSIGNED revoke txs (approve(spender, 0)) for 1-10 token/spender pairs, each simulated from the owner, with the current allowance and gas.
-- blazar_batch_calls (local): Batch txs into one EIP-5792 wallet_sendCalls. Turn txs[] from one or more build tools (same sender, Polygon) into one EIP-5792 wallet_sendCalls request (version 2.0.0, chainId 0x89, atomicRequired) for smart wallets, plus the wallet_getCapabilities check to run first.
+- blazar_any_quote (read): Quote any token pair (Polygon, Base, Ethereum; aggregator). Quote ANY token pair on Polygon (default), Base or Ethereum (chain param; symbol from the chain's curated or KyberSwap verified list, or any 0x address) through the keyless KyberSwap aggregator, with Velora (ParaSwap) as automatic fallback.
+- blazar_token_safety (read): Token safety check (honeypot, tax, verified list). Check a token on Polygon (default), Base or Ethereum (chain param) before trading it: verified-list status (curated list, KyberSwap verified list), KyberSwap honeypot / fee-on-transfer flags, EIP-1967 upgradeable proxy, a simulated transfer that measures the real transfer tax, and for unknown tokens a simulated SELL back to USDC that catches blocked-sell honeypots.
+- blazar_build_any_swap (unsigned): Build any-token swap (Polygon, Base, Ethereum): approve + swap, simulated. One call to swap ANY non-BZB token pair on Polygon (default), Base or Ethereum (chain param) through KyberSwap (Velora fallback): token-safety check (refuses blocked tokens; unverified ones need allowUnverified=true), router allowlist, exact approve, slippage (max 300 bps) and deadline guards, USD-loss cap, recipient/value calldata checks, and an eth_call simulation of the swap before returning.
+- blazar_portfolio (read): Wallet portfolio: native, tokens, LP, staking, USD. One call for a wallet's balances with USD on Polygon (default), Base or Ethereum (chain param).
+- blazar_tx_status (read): Tx status, receipt, decoded logs, revert reason. Did a tx land on Polygon (default), Base or Ethereum (chain param; the hash only exists on the chain it was sent to)? Given a hash: not_found / pending / confirmed / reverted, block and confirmations, gas fee, decoded logs (ERC-20 Transfer/Approval, fee-router swaps, staking, pair Swap/Sync), per-token balance changes, decoded calldata for BlazarForce contracts, and the revert reason (replayed).
+- blazar_gas (read): Gas: fees, action costs, tx estimate (Polygon, Base, Ethereum). Current gas on Polygon (default), Base or Ethereum (chain param): base fee, priority fee, maxFeePerGas and native/USD, plus the cost in native coin and USD of common actions (approve, swap, aggregator swap; on Polygon also stake, claim, staking v2 exit).
+- blazar_allowances (read): Approvals audit (tokens x spenders). Audit a wallet's ERC-20 approvals on Polygon (default), Base or Ethereum (chain param): allowance() for each curated token (or tokens you pass) x each known spender (KyberSwap, Velora, Permit2, Uniswap, 1inch, 0x and the chain's main routers; on Polygon also BlazarFeeRouter, BlazarSwap router, staking v1/v2, QuickSwap, Sushi; or spenders you pass).
+- blazar_build_revoke (unsigned): Build revoke txs (approve to 0), simulated. Build UNSIGNED revoke txs (approve(spender, 0)) on Polygon (default), Base or Ethereum (chain param) for 1-10 token/spender pairs, each simulated from the owner, with the current allowance and gas.
+- blazar_batch_calls (local): Batch txs into one EIP-5792 wallet_sendCalls. Turn txs[] from one or more build tools (same sender, same chain: Polygon 0x89, Base 0x2105 or Ethereum 0x1) into one EIP-5792 wallet_sendCalls request (version 2.0.0, atomicRequired) for smart wallets, plus the wallet_getCapabilities check to run first.
+- blazar_chains (read): Supported chains: Polygon (primary), Base, Ethereum. List supported chains: Polygon (137, primary: every tool, including BZB, BlazarSwap, staking, trading rewards and the fee router), Base (8453) and Ethereum (1) for the general tools only.
 - blazar_pools (read): BlazarSwap pools and reserves. List every BlazarSwap V2 pair on Polygon with live reserves.
 - blazar_prices (read): BZB price on each Polygon venue. BZB/WPOL mid price and USD value on BlazarSwap, QuickSwap V2 and SushiSwap V2, with pool depth in USD from the Chainlink-backed Blazar oracle.
 - blazar_recent_events (read): Recent swaps / pool events (log polling). Read recent onchain events by log polling: BlazarFeeRouter AggregatedSwap (trader, tokens, amounts, USD) or one BlazarSwap pair's Swap + Sync (reserves and price).
@@ -182,15 +185,16 @@ REST base URL: https://api.blazarforce.net
 - GET /v1/venues/compare: Compare a swap across venues
 - GET /v1/bots/limit: Limit-order check (dry run)
 - GET /v1/bots/twap: TWAP plan (dry run)
-- GET /v1/any/quote: Quote any Polygon token pair (aggregator)
+- GET /v1/any/quote: Quote any token pair (Polygon, Base, Ethereum; aggregator)
 - GET /v1/tokens/safety: Token safety check (honeypot, tax, verified list)
-- POST /v1/tx/any-swap: Build any-token swap (aggregator): approve + swap, simulated
-- GET /v1/portfolio: Wallet portfolio: POL, tokens, LP, staking, USD
+- POST /v1/tx/any-swap: Build any-token swap (Polygon, Base, Ethereum): approve + swap, simulated
+- GET /v1/portfolio: Wallet portfolio: native, tokens, LP, staking, USD
 - GET /v1/tx/status: Tx status, receipt, decoded logs, revert reason
-- GET /v1/gas: Polygon gas: fees, action costs, tx estimate
+- GET /v1/gas: Gas: fees, action costs, tx estimate (Polygon, Base, Ethereum)
 - GET /v1/allowances: Approvals audit (tokens x spenders)
 - POST /v1/tx/revoke: Build revoke txs (approve to 0), simulated
 - POST /v1/tx/batch: Batch txs into one EIP-5792 wallet_sendCalls
+- GET /v1/chains: Supported chains: Polygon (primary), Base, Ethereum
 - GET /v1/events: Recent swaps / pool events (log polling)
 - GET /v1/rewards/preview: Trading-rewards leaderboard preview (estimate)
 - GET /v1/earn/rank: Rank earning options; flag dead rewards
@@ -207,7 +211,10 @@ swap(tokenIn, tokenOut, amountIn, minAmountOut, recipient, deadline, unwrapNativ
 
 # Any-token swaps (non-BZB)
 
-Which route: BZB or BBY on either side -> blazar_quote / blazar_build_swap (BlazarFeeRouter: compares BlazarSwap, QuickSwap V2 and Sushi V2, and is the only route that earns BZB trading rewards). Any other Polygon pair (USDC->WETH, POL->AAVE, any 0x token) -> blazar_any_quote / blazar_build_any_swap (KyberSwap aggregator, Velora fallback: Uniswap V3/V4, QuickSwap V3 and 100+ venues). Unknown tokens: run blazar_token_safety first.
+Which route: BZB or BBY on either side -> blazar_quote / blazar_build_swap (BlazarFeeRouter: compares BlazarSwap, QuickSwap V2 and Sushi V2, and is the only route that earns BZB trading rewards). Any other Polygon pair (USDC->WETH, POL->AAVE, any 0x token) -> blazar_any_quote / blazar_build_any_swap (KyberSwap aggregator, Velora fallback: Uniswap V3/V4, QuickSwap V3 and 100+ venues). Base or Ethereum -> the same two tools with chain base or ethereum (no BZB there; not rewards-eligible). Unknown tokens: run blazar_token_safety first.
+
+## Chains
+Polygon (137) is the primary chain and the only one with BZB, BlazarSwap, staking, trading rewards and the fee router. The general tools (blazar_any_quote, blazar_build_any_swap, blazar_token_safety, blazar_portfolio, blazar_tx_status, blazar_gas, blazar_allowances, blazar_build_revoke, blazar_batch_calls) also take chain "base" (8453) or "ethereum" (1). Base gas estimates exclude the L1 data fee; Ethereum gas can exceed a small trade's value. See blazar_chains.
 
 ## Flow for any swap
 1. Token you do not know -> blazar_token_safety (verdict ok / caution / blocked).
@@ -227,7 +234,7 @@ Hosted endpoint: 60 requests/min per IP. KyberSwap keyless ~3 rps and Velora 1 r
 
 
 # MCP protocol
-Hosted endpoint speaks MCP 2026-07-28 (stateless: server/discover, per-request _meta protocolVersion, resultType, ttlMs/cacheScope on lists, Mcp-Method header check, UnsupportedProtocolVersion -32022) and the initialize handshake for 2025-11-25, 2025-06-18, 2025-03-26 and 2024-11-05. Every tool declares outputSchema and returns structuredContent (array results are wrapped as {result: [...]}). Prompts: swap_any_token_safely, buy_bzb_safely, find_best_earning, check_my_rewards, audit_my_approvals, portfolio_checkup. Resources: blazar-polygon://examples, blazar-polygon://contracts, blazar-polygon://tokens, blazar-polygon://docs/routing, blazar-polygon://docs/errors, blazar-polygon://docs/reward-rules, blazar-polygon://abis/factory, blazar-polygon://abis/router, blazar-polygon://abis/feeRouter, blazar-polygon://abis/staking, blazar-polygon://abis/dailyRewards, blazar-polygon://abis/oracle, blazar-polygon://abis/erc20, blazar-polygon://abis/pair, blazar-polygon://abis/multiRewardStaking.
+Hosted endpoint speaks MCP 2026-07-28 (stateless: server/discover, per-request _meta protocolVersion, resultType, ttlMs/cacheScope on lists, Mcp-Method header check, UnsupportedProtocolVersion -32022) and the initialize handshake for 2025-11-25, 2025-06-18, 2025-03-26 and 2024-11-05. Every tool declares outputSchema and returns structuredContent (array results are wrapped as {result: [...]}). Prompts: swap_any_token_safely, buy_bzb_safely, find_best_earning, check_my_rewards, audit_my_approvals, portfolio_checkup. Resources: blazar-polygon://examples, blazar-polygon://contracts, blazar-polygon://chains, blazar-polygon://tokens, blazar-polygon://docs/routing, blazar-polygon://docs/errors, blazar-polygon://docs/reward-rules, blazar-polygon://abis/factory, blazar-polygon://abis/router, blazar-polygon://abis/feeRouter, blazar-polygon://abis/staking, blazar-polygon://abis/dailyRewards, blazar-polygon://abis/oracle, blazar-polygon://abis/erc20, blazar-polygon://abis/pair, blazar-polygon://abis/multiRewardStaking.
 
 # Errors
 Every error is {code, error, hint, retryable, retryAfterMs?, docs}. Retry only when retryable is true, after retryAfterMs.
@@ -301,7 +308,7 @@ Every error is {code, error, hint, retryable, retryAfterMs?, docs}. Retry only w
 - NOT_OWNER: not retryable. Sender does not own this NFT. Use the owner's address.
 - BURN_REFUSED: not retryable. Transfer to a burn address refused. Pick a real recipient.
 - WALLET_EXISTS: not retryable. A wallet file with that name exists. Pick a new name; files are never overwritten.
-- CHAIN_NOT_SUPPORTED: not retryable. Only Polygon (137) is supported. Use chainId 137.
+- CHAIN_NOT_SUPPORTED: not retryable. That chain is not supported for this tool. General tools support polygon (137, default), base (8453) and ethereum (1); BlazarForce tools (BZB, BlazarSwap, staking, rewards, fee router, NFTs, deploys) are Polygon only. Pass chain: polygon, base or ethereum to a general tool, or omit chain for Polygon.
 
 # Staking
 BlazarStakingRewards 0x3Aa4a59deC4F677A138857a828220eEd259b2469: approve BZB, then stake(amount). withdraw(amount), getReward(), exit(). Rewards stream during a funded period (periodFinish); APR = rewardRate * 31536000 / totalSupply while active.
@@ -345,7 +352,7 @@ export const character = { name: "Trader", plugins: [blazarPolygonPlugin()] };
 import { AgentKit } from "@coinbase/agentkit";
 import { blazarPolygonActionProvider } from "@blazarforce/blazar-polygon-agentkit";
 const kit = await AgentKit.from({ walletProvider, actionProviders: [blazarPolygonActionProvider()] });
-// same 39 tools as MCP; from/account default to the AgentKit wallet
+// same 40 tools as MCP; from/account default to the AgentKit wallet
 ```
 
 # Real example outputs (Polygon mainnet)
@@ -503,7 +510,7 @@ Never send keys or seeds to any API. Decode before signing. Exact approvals only
 # Skill
 ---
 name: blazar-polygon-trading
-description: Quote, build and hand off swaps, BZB stakes, trading-reward claims and template deploys on BlazarForce (Polygon PoS, chain 137). Use when a user or bot wants to trade BZB or other Polygon tokens through the BlazarFeeRouter (the only route that earns BZB trading rewards), stake BZB, claim trading rewards, compare earning options, or deploy an ERC-20 or staking pool. For any other Polygon token use blazar_build_any_swap (KyberSwap/Velora with a token-safety check). Also: wallet portfolio, tx status, gas, approvals and revokes.
+description: Quote, build and hand off swaps, BZB stakes, trading-reward claims and template deploys on BlazarForce (Polygon PoS, chain 137; any-token swaps, portfolio, gas and approvals also on Base and Ethereum). Use when a user or bot wants to trade BZB or other Polygon tokens through the BlazarFeeRouter (the only route that earns BZB trading rewards), stake BZB, claim trading rewards, compare earning options, or deploy an ERC-20 or staking pool. For any other Polygon token use blazar_build_any_swap (KyberSwap/Velora with a token-safety check). Also: wallet portfolio, tx status, gas, approvals and revokes.
 ---
 
 # Blazar Polygon plugin: trading skill (Polygon 137)
@@ -536,6 +543,10 @@ Use the `blazar-polygon` MCP server (Blazar Polygon plugin) when it is connected
 | Gas now, and what an action costs | `blazar_gas` | `GET /v1/gas` |
 | Audit / revoke approvals | `blazar_allowances`, `blazar_build_revoke` | `GET /v1/allowances`, `POST /v1/tx/revoke` |
 | One smart-wallet call for several txs (EIP-5792) | `blazar_batch_calls` (every build also returns `batch`) | `POST /v1/tx/batch` |
+| Which chains are supported (Polygon primary, Base, Ethereum) | `blazar_chains` | `GET /v1/chains` |
+
+## Chains
+Polygon (137) is the primary chain and the default. The general tools (`blazar_any_quote`, `blazar_build_any_swap`, `blazar_token_safety`, `blazar_portfolio`, `blazar_tx_status`, `blazar_gas`, `blazar_allowances`, `blazar_build_revoke`, `blazar_batch_calls`) also take `chain: "base"` (8453) or `chain: "ethereum"` (1). The native coin there is ETH; USD values come from DefiLlama (indicative). Base gas estimates exclude the small L1 data fee. On Ethereum, gas can exceed a small trade's value: run `blazar_gas` first. BZB, BBY, BlazarSwap, the BlazarFeeRouter, staking, trading rewards, NFTs and deploys are Polygon only; there is no BZB on Base or Ethereum and those swaps never earn trading rewards. A tx hash only exists on the chain it was sent to, so pass the same `chain` to `blazar_tx_status`.
 
 ## Which swap route
 - BZB or BBY on either side: `blazar_quote` then `blazar_build_swap` (BlazarFeeRouter). It compares BlazarSwap, QuickSwap V2 and Sushi V2 and is the only route that earns BZB trading rewards. `blazar_build_any_swap` refuses these pairs with `USE_BLAZAR_ROUTE`.

@@ -1,9 +1,9 @@
 {
  "name": "Blazar Polygon plugin",
- "description": "Polygon DeFi tools for agents: BZB swaps via BlazarFeeRouter, any-token swaps via KyberSwap/Velora with token-safety checks, wallet portfolio, tx status, gas, approvals audit, staking, trading rewards, earning strategies and contract templates. Read-only tools and UNSIGNED transactions; no keys. Discovery card: the agent is reached over MCP (Streamable HTTP) and REST, not A2A messaging.",
+ "description": "Polygon-first DeFi tools for agents: BZB swaps via BlazarFeeRouter, any-token swaps via KyberSwap/Velora with token-safety checks, wallet portfolio, tx status, gas and approvals audit on Polygon, Base and Ethereum, plus Polygon staking, trading rewards, earning strategies and contract templates. Read-only tools and UNSIGNED transactions; no keys. Discovery card: the agent is reached over MCP (Streamable HTTP) and REST, not A2A messaging.",
  "url": "https://blazarforce.net/agents.html",
  "iconUrl": "https://blazarforce.net/bzb-icon.png",
- "version": "0.4.0",
+ "version": "0.5.0",
  "provider": {
   "organization": "BlazarForce",
   "url": "https://blazarforce.net"
@@ -48,16 +48,19 @@
   },
   {
    "id": "any-token-swap",
-   "name": "Swap any Polygon token",
-   "description": "KyberSwap aggregator with Velora fallback: token-safety check, router allowlist, exact approve, simulation; unsigned txs plus an EIP-5792 batch",
+   "name": "Swap any token on Polygon, Base or Ethereum",
+   "description": "KyberSwap aggregator with Velora fallback: token-safety check, router allowlist, exact approve, simulation; unsigned txs plus an EIP-5792 batch. Polygon by default; chain base or ethereum",
    "tags": [
     "defi",
     "swap",
     "aggregator",
-    "polygon"
+    "polygon",
+    "base",
+    "ethereum"
    ],
    "examples": [
-    "Swap 25 USDC to WETH on Polygon"
+    "Swap 25 USDC to WETH on Polygon",
+    "Quote 100 USDC to WETH on Base"
    ]
   },
   {
@@ -75,11 +78,13 @@
   {
    "id": "wallet",
    "name": "Wallet portfolio, tx status, gas, approvals",
-   "description": "Balances with USD, LP and staking positions; receipts with decoded logs and revert reasons; gas costs; allowance audit and unsigned revokes",
+   "description": "Balances with USD (LP and staking positions on Polygon); receipts with decoded logs and revert reasons; gas costs; allowance audit and unsigned revokes. Polygon, Base and Ethereum",
    "tags": [
     "wallet",
     "portfolio",
-    "approvals"
+    "approvals",
+    "base",
+    "ethereum"
    ],
    "examples": [
     "What does 0x... hold on Polygon?",
