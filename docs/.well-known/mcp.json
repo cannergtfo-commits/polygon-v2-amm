@@ -2,8 +2,8 @@
  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
  "name": "io.github.cannergtfo-commits/blazar-polygon",
  "title": "Blazar Polygon plugin: BZB token, BlazarSwap DEX & trading rewards (Polygon)",
- "description": "Polygon swap quotes and one-call unsigned swap / stake / claim / deploy builds (with simulation) for BZB, POL and BlazarSwap. Only BlazarFeeRouter swaps earn BZB trading rewards. Read-only + unsigned txs.",
- "version": "0.3.0",
+ "description": "Polygon swaps for agents: BZB via BlazarFeeRouter (earns trading rewards) and any other token via KyberSwap/Velora with token-safety checks; portfolio, tx status, gas, approvals, staking. Read-only + unsigned txs.",
+ "version": "0.4.0",
  "websiteUrl": "https://blazarforce.net/agents.html",
  "transports": [
   {
@@ -43,6 +43,51 @@
    "name": "blazar_plan_twap",
    "kind": "read",
    "description": "TWAP plan (dry run). Dry-run TWAP planner: splits a swap into N slices every intervalSeconds and compares with one swap now (impact per slice, estimated gain in bps, schedule with min-out per slice)."
+  },
+  {
+   "name": "blazar_any_quote",
+   "kind": "read",
+   "description": "Quote any Polygon token pair (aggregator). Quote ANY Polygon token pair (symbol from the BlazarForce or KyberSwap verified list, or any 0x address) through the keyless KyberSwap aggregator, with Velora (ParaSwap) as automatic fallback."
+  },
+  {
+   "name": "blazar_token_safety",
+   "kind": "read",
+   "description": "Token safety check (honeypot, tax, verified list). Check a Polygon token before trading it: verified-list status (BlazarForce list, KyberSwap verified list), KyberSwap honeypot / fee-on-transfer flags, EIP-1967 upgradeable proxy, a simulated transfer that measures the real transfer tax, and for unknown tokens a simulated SELL back to USDC that catches blocked-sell honeypots."
+  },
+  {
+   "name": "blazar_build_any_swap",
+   "kind": "unsigned",
+   "description": "Build any-token swap (aggregator): approve + swap, simulated. One call to swap ANY non-BZB Polygon token pair through KyberSwap (Velora fallback): token-safety check (refuses blocked tokens; unverified ones need allowUnverified=true), router allowlist, exact approve, slippage (max 300 bps) and deadline guards, USD-loss cap, recipient/value calldata checks, and an eth_call simulation of the swap before returning."
+  },
+  {
+   "name": "blazar_portfolio",
+   "kind": "read",
+   "description": "Wallet portfolio: POL, tokens, LP, staking, USD. One call for a wallet's Polygon position: native POL, every BlazarForce-list token (plus up to 20 extra tokens you pass), BlazarSwap LP positions with underlying amounts, BZB staking v1 (staked, earned) and staking v2 position, with USD values from the Blazar oracle where available (null = unknown, never guessed)."
+  },
+  {
+   "name": "blazar_tx_status",
+   "kind": "read",
+   "description": "Tx status, receipt, decoded logs, revert reason. Did a Polygon tx land? Given a hash: not_found / pending / confirmed / reverted, block and confirmations, gas fee, decoded logs (ERC-20 Transfer/Approval, fee-router swaps, staking, pair Swap/Sync), per-token balance changes, decoded calldata for BlazarForce contracts, and the revert reason (replayed)."
+  },
+  {
+   "name": "blazar_gas",
+   "kind": "read",
+   "description": "Polygon gas: fees, action costs, tx estimate. Current Polygon gas: base fee, priority fee, maxFeePerGas and POL/USD, plus the cost in POL and USD of common actions (approve, BlazarFeeRouter swap, aggregator swap, stake, claim, staking v2 exit)."
+  },
+  {
+   "name": "blazar_allowances",
+   "kind": "read",
+   "description": "Approvals audit (tokens x spenders). Audit a wallet's ERC-20 approvals on Polygon: allowance() for each listed token (or tokens you pass) x each known spender (BlazarFeeRouter, BlazarSwap router, staking v1/v2, KyberSwap, Velora, Permit2, QuickSwap, Sushi, Uniswap, 1inch, 0x; or spenders you pass)."
+  },
+  {
+   "name": "blazar_build_revoke",
+   "kind": "unsigned",
+   "description": "Build revoke txs (approve to 0), simulated. Build UNSIGNED revoke txs (approve(spender, 0)) for 1-10 token/spender pairs, each simulated from the owner, with the current allowance and gas."
+  },
+  {
+   "name": "blazar_batch_calls",
+   "kind": "local",
+   "description": "Batch txs into one EIP-5792 wallet_sendCalls. Turn txs[] from one or more build tools (same sender, Polygon) into one EIP-5792 wallet_sendCalls request (version 2.0.0, chainId 0x89, atomicRequired) for smart wallets, plus the wallet_getCapabilities check to run first."
   },
   {
    "name": "blazar_pools",

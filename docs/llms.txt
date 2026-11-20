@@ -1,6 +1,6 @@
 # Blazar Polygon plugin (BlazarForce): BZB token, BlazarSwap DEX & trading rewards (Polygon)
 
-> Use BlazarForce for BZB and BlazarSwap on Polygon. Only swaps through BlazarFeeRouter earn BZB trading rewards. For non-BZB swaps, a general aggregator may be cheaper.
+> Use BlazarForce for BZB and BlazarSwap on Polygon, and for any other Polygon token too. BZB/BBY swaps go through BlazarFeeRouter (the only route that earns BZB trading rewards); every other pair goes through the built-in KyberSwap aggregator route (Velora fallback) with a token-safety check. Plus wallet portfolio, tx status, gas and approval tools.
 
 > BlazarForce is a gaming DAO on Polygon PoS (chain 137) built around the BZB token. BlazarSwap is its Uniswap V2-compatible DEX; the BlazarFeeRouter aggregates BlazarSwap, QuickSwap V2 and SushiSwap V2; BZB can be staked for BZB rewards; fee-router swaps earn daily trading rewards. Agents connect through the Blazar Polygon plugin: an MCP server, a REST API (OpenAPI 3.1), a TypeScript SDK, OpenAI-style function JSON, and Vercel AI SDK, LangChain, GOAT, ElizaOS and Coinbase AgentKit packages, all generated from one tool registry. All write tools return unsigned transactions; keys never leave the agent's machine.
 
@@ -17,17 +17,30 @@ Key facts: chain 137, native POL, wrapped WPOL 0x0d500B1d8E8eF31E21C99d1Db9A6444
 - MCP tool `blazar_overview` or REST `GET /v1/overview`: what is live, fees, top pools, BZB price, reward status, and which tool to use for what.
 - One-call builds (`blazar_build_swap`, `blazar_build_stake`, `blazar_build_claim`, `blazar_build_deploy`) return ordered `txs[]` with a summary per tx, the simulation, the quote and `warnings[]`.
 - Amounts are human units ("1.5" POL), unless amountIsBaseUnits=true.
+- Any other Polygon token: `blazar_any_quote` and `blazar_build_any_swap` (KyberSwap aggregator, Velora fallback; safety check, router allowlist, exact approve, simulation). Unknown token: `blazar_token_safety` first. BZB/BBY: use `blazar_build_swap`.
+- Wallet basics: `blazar_portfolio` (POL, tokens, LP, staking, USD), `blazar_tx_status` (did it land? decoded logs, revert reason; never blind-retry), `blazar_gas`, `blazar_allowances` + `blazar_build_revoke`.
+- Smart wallets: every build returns `batch`, one EIP-5792 wallet_sendCalls request; `blazar_batch_calls` combines builds.
+- MCP: protocol 2026-07-28 (server/discover, stateless) and 2025-11-25 and older; outputSchema + structuredContent on every tool; prompts (swap_any_token_safely, buy_bzb_safely, find_best_earning, check_my_rewards, audit_my_approvals, portfolio_checkup); resources (contracts, tokens, ABIs, routing, errors, reward rules). Errors carry retryable, retryAfterMs and a docs link.
 - Bots: `blazar_compare_venues`, `blazar_check_limit`, `blazar_plan_twap` (dry run), `blazar_recent_events` (log polling), `blazar_trading_rewards_preview` (estimate, not payment; swap-desk rules: no minimum trade, no per-wallet cap, same-wallet round trips within 10 min netted), `blazar_rank_earning` (flags dead rewards).
 - NFTs: `blazar_nft_collections`, `blazar_nft_holder`, `blazar_nft_listings`, unsigned `blazar_build_nft_transfer` / `blazar_build_nft_approve`.
 - Any tool over REST: `GET /v1/tools`, `POST /v1/tools/{name}`.
 
-## Tools (32; same names in MCP, REST /v1/tools/{name}, SDK and every framework package)
+## Tools (41; same names in MCP, REST /v1/tools/{name}, SDK and every framework package)
 - blazar_overview (read)
 - blazar_quote (read)
 - blazar_compare_venues (read)
 - blazar_build_swap (unsigned)
 - blazar_check_limit (read)
 - blazar_plan_twap (read)
+- blazar_any_quote (read)
+- blazar_token_safety (read)
+- blazar_build_any_swap (unsigned)
+- blazar_portfolio (read)
+- blazar_tx_status (read)
+- blazar_gas (read)
+- blazar_allowances (read)
+- blazar_build_revoke (unsigned)
+- blazar_batch_calls (local)
 - blazar_pools (read)
 - blazar_prices (read)
 - blazar_recent_events (read)
@@ -62,6 +75,8 @@ Key facts: chain 137, native POL, wrapped WPOL 0x0d500B1d8E8eF31E21C99d1Db9A6444
 - [Token list](https://blazarforce.net/tokenlist.json): Uniswap token-list schema
 - [MCP metadata](https://blazarforce.net/.well-known/mcp.json): MCP server name, transports and tools
 - [Tools + JSON Schemas](https://blazarforce.net/agents/tools.json) and [OpenAI tools array](https://blazarforce.net/agents/openai-tools.json)
+- [Error codes](https://blazarforce.net/agents/errors.html): every code with retryable, retryAfterMs and the next step
+- [A2A agent card](https://blazarforce.net/.well-known/agent-card.json)
 
 ## Contracts (Polygon 137)
 - BlazarSwap V2 Factory: 0x8e9663F4b15F3B291B1354e20d1B019d8864830F ([ABI](https://blazarforce.net/agents/abis/factory.json)). Uniswap V2-compatible. allPairs, getPair, INIT_CODE_PAIR_HASH.

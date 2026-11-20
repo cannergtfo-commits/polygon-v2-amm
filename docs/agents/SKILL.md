@@ -1,6 +1,6 @@
 ---
 name: blazar-polygon-trading
-description: Quote, build and hand off swaps, BZB stakes, trading-reward claims and template deploys on BlazarForce (Polygon PoS, chain 137). Use when a user or bot wants to trade BZB or other Polygon tokens through the BlazarFeeRouter (the only route that earns BZB trading rewards), stake BZB, claim trading rewards, compare earning options, or deploy an ERC-20 or staking pool. For non-BZB swaps, a general aggregator may be cheaper; say so.
+description: Quote, build and hand off swaps, BZB stakes, trading-reward claims and template deploys on BlazarForce (Polygon PoS, chain 137). Use when a user or bot wants to trade BZB or other Polygon tokens through the BlazarFeeRouter (the only route that earns BZB trading rewards), stake BZB, claim trading rewards, compare earning options, or deploy an ERC-20 or staking pool. For any other Polygon token use blazar_build_any_swap (KyberSwap/Velora with a token-safety check). Also: wallet portfolio, tx status, gas, approvals and revokes.
 ---
 
 # Blazar Polygon plugin: trading skill (Polygon 137)
@@ -26,13 +26,26 @@ Use the `blazar-polygon` MCP server (Blazar Polygon plugin) when it is connected
 | Staking v2 (not deployed yet) | `blazar_staking_v2_info`, `blazar_build_staking_v2` | `GET /v1/staking-v2`, `POST /v1/tx/staking-v2` |
 | BlazarForce NFTs | `blazar_nft_collections`, `blazar_nft_holder`, `blazar_nft_listings`, `blazar_build_nft_transfer`, `blazar_build_nft_approve` | `/v1/nfts*`, `POST /v1/tx/nft/*` |
 | Token list, pools, contracts | `blazar_tokens`, `blazar_pools`, `blazar_contracts` | `GET /v1/tokens`, `/v1/pools`, `/v1/contracts` |
+| Swap ANY other Polygon token (USDC->WETH, POL->AAVE, any 0x token) | `blazar_any_quote`, `blazar_build_any_swap` | `GET /v1/any/quote`, `POST /v1/tx/any-swap` |
+| Is this token safe? (honeypot, tax, verified list) | `blazar_token_safety` | `GET /v1/tokens/safety` |
+| Wallet balances, LP, staking, USD | `blazar_portfolio` | `GET /v1/portfolio` |
+| Did my tx land? Receipt, logs, revert reason | `blazar_tx_status` | `GET /v1/tx/status` |
+| Gas now, and what an action costs | `blazar_gas` | `GET /v1/gas` |
+| Audit / revoke approvals | `blazar_allowances`, `blazar_build_revoke` | `GET /v1/allowances`, `POST /v1/tx/revoke` |
+| One smart-wallet call for several txs (EIP-5792) | `blazar_batch_calls` (every build also returns `batch`) | `POST /v1/tx/batch` |
+
+## Which swap route
+- BZB or BBY on either side: `blazar_quote` then `blazar_build_swap` (BlazarFeeRouter). It compares BlazarSwap, QuickSwap V2 and Sushi V2 and is the only route that earns BZB trading rewards. `blazar_build_any_swap` refuses these pairs with `USE_BLAZAR_ROUTE`.
+- Any other pair: `blazar_any_quote` then `blazar_build_any_swap` (KyberSwap aggregator, Velora fallback; Uniswap V3/V4, QuickSwap V3 and 100+ venues). Tokens are resolved by symbol only from the BlazarForce list or an exact, unique KyberSwap-verified match; otherwise pass the 0x address.
+- Unknown token: `blazar_token_safety` first. `blocked` = never trade. `caution` = show every warned check; build with `allowUnverified=true` only if the user accepts.
 
 ## Workflow for a swap
 1. `blazar_quote`. Report `summary`, `priceImpactBps`, `venue` and every item in `warnings[]`.
 2. If `priceImpactBps` is over 100, say so. Use `sizing.maxAmountInAt100bpsImpact` / `maxAmountInAt500bpsImpact` to suggest a size. Pools are thin.
 3. `blazar_build_swap` with the user's address as `from` (`recipient` defaults to `from`). Default slippage is 50 bps; never above 300.
 4. Show each `txs[i].summary` and `guards.minAmountOut`. Check `simulation.ok`. If it is false, show `simulation.error.code` and `hint`; don't hand off.
-5. Hand `txs[]` to the user's wallet in order (approve first). The deadline is 150 s by default (max 180), so rebuild if signing is slow.
+5. Hand `txs[]` to the user's wallet in order (approve first). The deadline is 150 s by default (max 180), so rebuild if signing is slow. Smart wallets can send `batch` (one EIP-5792 `wallet_sendCalls`) instead; check `wallet_getCapabilities` first.
+6. After sending, call `blazar_tx_status` with the hash. Never re-send before it says `not_found` on more than one check AND the nonce shows nothing pending.
 
 ## Be honest about fees
 - Pool fee 0.30% on every venue. The fee router adds 5 bps only when a route uses QuickSwap or Sushi. `warnings[]` says how much more a direct pool swap would return. That direct swap would not earn trading rewards.
@@ -52,7 +65,7 @@ Use the `blazar-polygon` MCP server (Blazar Polygon plugin) when it is connected
 Only swaps through BlazarFeeRouter score, priced at previous-block Chainlink. A same-wallet reverse trade within 10 minutes is netted. Every trade counts, with no minimum size and no per-wallet cap; rank is by counted volume. Same-wallet round trips are netted, so they add gas and fees but no rank. If the status is `NOT_YET_POSTED`, payouts are not guaranteed.
 
 ## Errors
-Errors are `{code, error, hint}`. Follow the hint. Examples: `INSUFFICIENT_LIQUIDITY` gives the largest size under 5% impact; `NO_ROUTE` suggests a WPOL two-step; `UNKNOWN_TOKEN` means use a listed token.
+Errors are `{code, error, hint, retryable, retryAfterMs?, docs}`. Follow the hint; retry only when `retryable` is true, after `retryAfterMs`. Examples: `INSUFFICIENT_LIQUIDITY` gives the largest size under 5% impact; `NO_ROUTE` suggests a WPOL two-step; `UNKNOWN_TOKEN` means use a listed token.
 
 ## Hard rules
 - Never ask for, accept, print or store a seed phrase or private key. If a user pastes one, tell them to move funds to a new wallet.

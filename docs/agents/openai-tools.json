@@ -267,6 +267,410 @@
  {
   "type": "function",
   "function": {
+   "name": "blazar_any_quote",
+   "description": "Quote ANY Polygon token pair (symbol from the BlazarForce or KyberSwap verified list, or any 0x address) through the keyless KyberSwap aggregator, with Velora (ParaSwap) as automatic fallback. Covers Uniswap V3/V4, QuickSwap V3 and 100+ venues. Returns amountOut, USD in/out, usdLossBps, gas, venues and the router. Use for non-BZB pairs such as USDC->WETH; for BZB or BBY use blazar_quote (fee router, trading rewards). Read-only; quotes cached ~8 s.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "tokenIn": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 42,
+      "description": "Token to sell: a symbol (POL, USDC, WETH, AAVE, LINK... resolved only via the BlazarForce list or an exact unique KyberSwap-verified match) or any Polygon 0x token address. \"POL\" is native."
+     },
+     "tokenOut": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 42,
+      "description": "Token to buy: a symbol (POL, USDC, WETH, AAVE, LINK... resolved only via the BlazarForce list or an exact unique KyberSwap-verified match) or any Polygon 0x token address. \"POL\" is native."
+     },
+     "amount": {
+      "type": "string",
+      "maxLength": 40,
+      "pattern": "^\\d+(\\.\\d+)?$",
+      "description": "Amount of tokenIn in HUMAN units, not wei: \"1.5\" = 1.5 POL, \"250\" = 250 BZB. Set amountIsBaseUnits=true to pass wei/base units instead."
+     },
+     "amountIsBaseUnits": {
+      "description": "If true, amount is in base units (wei for 18-decimal tokens; 6 decimals for USDC). Default false.",
+      "type": "boolean"
+     },
+     "provider": {
+      "description": "auto (default): KyberSwap, falling back to Velora on errors or 429s.",
+      "type": "string",
+      "enum": [
+       "auto",
+       "kyberswap",
+       "velora"
+      ]
+     }
+    },
+    "required": [
+     "tokenIn",
+     "tokenOut",
+     "amount"
+    ]
+   }
+  }
+ },
+ {
+  "type": "function",
+  "function": {
+   "name": "blazar_token_safety",
+   "description": "Check a Polygon token before trading it: verified-list status (BlazarForce list, KyberSwap verified list), KyberSwap honeypot / fee-on-transfer flags, EIP-1967 upgradeable proxy, a simulated transfer that measures the real transfer tax, and for unknown tokens a simulated SELL back to USDC that catches blocked-sell honeypots. Returns verdict ok / caution / blocked with each check. Heuristics only; read-only, nothing is signed.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "token": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 42,
+      "description": "Token to check: a symbol (POL, USDC, WETH, AAVE, LINK... resolved only via the BlazarForce list or an exact unique KyberSwap-verified match) or any Polygon 0x token address. \"POL\" is native."
+     },
+     "amount": {
+      "description": "Test size in HUMAN units for the simulations. Default 1 token.",
+      "type": "string",
+      "maxLength": 40,
+      "pattern": "^\\d+(\\.\\d+)?$"
+     },
+     "deep": {
+      "description": "Run the sell simulation for unverified tokens (default true; 2 aggregator calls).",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "token"
+    ]
+   }
+  }
+ },
+ {
+  "type": "function",
+  "function": {
+   "name": "blazar_build_any_swap",
+   "description": "One call to swap ANY non-BZB Polygon token pair through KyberSwap (Velora fallback): token-safety check (refuses blocked tokens; unverified ones need allowUnverified=true), router allowlist, exact approve, slippage (max 300 bps) and deadline guards, USD-loss cap, recipient/value calldata checks, and an eth_call simulation of the swap before returning. Returns ordered UNSIGNED txs[] plus batch (EIP-5792). BZB/BBY pairs are refused with USE_BLAZAR_ROUTE: use blazar_build_swap (fee router, earns trading rewards). Not eligible for trading rewards.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "tokenIn": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 42,
+      "description": "Token to sell: a symbol (POL, USDC, WETH, AAVE, LINK... resolved only via the BlazarForce list or an exact unique KyberSwap-verified match) or any Polygon 0x token address. \"POL\" is native."
+     },
+     "tokenOut": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 42,
+      "description": "Token to buy: a symbol (POL, USDC, WETH, AAVE, LINK... resolved only via the BlazarForce list or an exact unique KyberSwap-verified match) or any Polygon 0x token address. \"POL\" is native."
+     },
+     "amount": {
+      "type": "string",
+      "maxLength": 40,
+      "pattern": "^\\d+(\\.\\d+)?$",
+      "description": "Amount of tokenIn in HUMAN units, not wei: \"1.5\" = 1.5 POL, \"250\" = 250 BZB. Set amountIsBaseUnits=true to pass wei/base units instead."
+     },
+     "amountIsBaseUnits": {
+      "description": "If true, amount is in base units (wei for 18-decimal tokens; 6 decimals for USDC). Default false.",
+      "type": "boolean"
+     },
+     "from": {
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$",
+      "description": "Address that will sign and send the txs. Required: used for allowance checks, simulation and nonce."
+     },
+     "recipient": {
+      "description": "Who receives the output. Defaults to `from`.",
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$"
+     },
+     "slippageBps": {
+      "description": "Max slippage in bps (50 = 0.5%). Default 50, max 300.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 300
+     },
+     "deadlineSeconds": {
+      "description": "Seconds until the swap expires. Default 150.",
+      "type": "integer",
+      "minimum": 30,
+      "maximum": 600
+     },
+     "maxPriceImpactBps": {
+      "description": "Refuse when the output is worth more than this many bps less than the input in USD. Default 500 (5%).",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10000
+     },
+     "provider": {
+      "description": "auto (default): KyberSwap, falling back to Velora on errors or 429s.",
+      "type": "string",
+      "enum": [
+       "auto",
+       "kyberswap",
+       "velora"
+      ]
+     },
+     "allowUnverified": {
+      "description": "Allow tokens whose safety verdict is caution (unverified, taxed, proxy). Blocked tokens are always refused. Default false.",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "tokenIn",
+     "tokenOut",
+     "amount",
+     "from"
+    ]
+   }
+  }
+ },
+ {
+  "type": "function",
+  "function": {
+   "name": "blazar_portfolio",
+   "description": "One call for a wallet's Polygon position: native POL, every BlazarForce-list token (plus up to 20 extra tokens you pass), BlazarSwap LP positions with underlying amounts, BZB staking v1 (staked, earned) and staking v2 position, with USD values from the Blazar oracle where available (null = unknown, never guessed). Read-only.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "account": {
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$",
+      "description": "Wallet to read."
+     },
+     "tokens": {
+      "description": "Extra tokens beyond the BlazarForce list (addresses or verified symbols).",
+      "maxItems": 20,
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 1,
+       "maxLength": 42,
+       "description": "Token to include: a symbol (POL, USDC, WETH, AAVE, LINK... resolved only via the BlazarForce list or an exact unique KyberSwap-verified match) or any Polygon 0x token address. \"POL\" is native."
+      }
+     }
+    },
+    "required": [
+     "account"
+    ]
+   }
+  }
+ },
+ {
+  "type": "function",
+  "function": {
+   "name": "blazar_tx_status",
+   "description": "Did a Polygon tx land? Given a hash: not_found / pending / confirmed / reverted, block and confirmations, gas fee, decoded logs (ERC-20 Transfer/Approval, fee-router swaps, staking, pair Swap/Sync), per-token balance changes, decoded calldata for BlazarForce contracts, and the revert reason (replayed). Pass from to also get latest vs pending nonce. Use after every send, and before ever re-sending: never blind-retry.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "hash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-fA-F]{64}$",
+      "description": "Transaction hash."
+     },
+     "from": {
+      "description": "Optional sender: adds latest vs pending nonce (useful when the hash is unknown).",
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$"
+     }
+    },
+    "required": [
+     "hash"
+    ]
+   }
+  }
+ },
+ {
+  "type": "function",
+  "function": {
+   "name": "blazar_gas",
+   "description": "Current Polygon gas: base fee, priority fee, maxFeePerGas and POL/USD, plus the cost in POL and USD of common actions (approve, BlazarFeeRouter swap, aggregator swap, stake, claim, staking v2 exit). Optionally estimate one tx (from, to, data, value). Use before small trades: on Polygon gas can exceed the trade's value.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "from": {
+      "description": "Optional: sender of a tx to estimate.",
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$"
+     },
+     "to": {
+      "description": "Optional: target of a tx to estimate.",
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$"
+     },
+     "data": {
+      "description": "Optional calldata.",
+      "type": "string",
+      "pattern": "^0x[0-9a-fA-F]*$"
+     },
+     "value": {
+      "description": "Optional wei value.",
+      "type": "string",
+      "pattern": "^\\d+$"
+     }
+    }
+   }
+  }
+ },
+ {
+  "type": "function",
+  "function": {
+   "name": "blazar_allowances",
+   "description": "Audit a wallet's ERC-20 approvals on Polygon: allowance() for each listed token (or tokens you pass) x each known spender (BlazarFeeRouter, BlazarSwap router, staking v1/v2, KyberSwap, Velora, Permit2, QuickSwap, Sushi, Uniswap, 1inch, 0x; or spenders you pass). Flags unlimited approvals and lists only active ones. Then use blazar_build_revoke. Read-only.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "owner": {
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$",
+      "description": "Wallet whose approvals to audit."
+     },
+     "tokens": {
+      "description": "Default: the BlazarForce token list.",
+      "maxItems": 20,
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 1,
+       "maxLength": 42,
+       "description": "Token to check: a symbol (POL, USDC, WETH, AAVE, LINK... resolved only via the BlazarForce list or an exact unique KyberSwap-verified match) or any Polygon 0x token address. \"POL\" is native."
+      }
+     },
+     "spenders": {
+      "description": "Default: known Polygon routers, staking and aggregator spenders.",
+      "maxItems": 20,
+      "type": "array",
+      "items": {
+       "type": "string",
+       "pattern": "^0x[a-fA-F0-9]{40}$"
+      }
+     }
+    },
+    "required": [
+     "owner"
+    ]
+   }
+  }
+ },
+ {
+  "type": "function",
+  "function": {
+   "name": "blazar_build_revoke",
+   "description": "Build UNSIGNED revoke txs (approve(spender, 0)) for 1-10 token/spender pairs, each simulated from the owner, with the current allowance and gas. Feed it the active entries from blazar_allowances. Returns txs[] plus batch (EIP-5792) to revoke several in one smart-wallet call.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "from": {
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$",
+      "description": "Address that will sign and send the txs. Required: used for allowance checks, simulation and nonce."
+     },
+     "revokes": {
+      "minItems": 1,
+      "maxItems": 10,
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "token": {
+         "type": "string",
+         "minLength": 1,
+         "maxLength": 42,
+         "description": "Token whose allowance to revoke: a symbol (POL, USDC, WETH, AAVE, LINK... resolved only via the BlazarForce list or an exact unique KyberSwap-verified match) or any Polygon 0x token address. \"POL\" is native."
+        },
+        "spender": {
+         "type": "string",
+         "pattern": "^0x[a-fA-F0-9]{40}$",
+         "description": "Spender to set to 0."
+        }
+       },
+       "required": [
+        "token",
+        "spender"
+       ]
+      },
+      "description": "1-10 token/spender pairs, e.g. the active entries from blazar_allowances."
+     }
+    },
+    "required": [
+     "from",
+     "revokes"
+    ]
+   }
+  }
+ },
+ {
+  "type": "function",
+  "function": {
+   "name": "blazar_batch_calls",
+   "description": "Turn txs[] from one or more build tools (same sender, Polygon) into one EIP-5792 wallet_sendCalls request (version 2.0.0, chainId 0x89, atomicRequired) for smart wallets, plus the wallet_getCapabilities check to run first. Local, no network. Every build tool already returns batch for its own txs; use this to combine builds (e.g. revoke + swap).",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "from": {
+      "description": "Sender (smart wallet).",
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$"
+     },
+     "txs": {
+      "minItems": 1,
+      "maxItems": 10,
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "to": {
+         "anyOf": [
+          {
+           "type": "string",
+           "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          {
+           "type": "null"
+          }
+         ],
+         "description": "Target (null = contract creation; cannot be batched)."
+        },
+        "data": {
+         "type": "string",
+         "pattern": "^0x[0-9a-fA-F]*$"
+        },
+        "value": {
+         "type": "string",
+         "pattern": "^\\d+$",
+         "description": "Wei, decimal string."
+        },
+        "from": {
+         "type": "string",
+         "pattern": "^0x[a-fA-F0-9]{40}$"
+        },
+        "chainId": {
+         "type": "number",
+         "const": 137
+        },
+        "summary": {
+         "type": "string",
+         "maxLength": 400
+        }
+       },
+       "required": [
+        "to",
+        "data",
+        "value"
+       ]
+      },
+      "description": "Ordered txs[] from build tools."
+     }
+    },
+    "required": [
+     "txs"
+    ]
+   }
+  }
+ },
+ {
+  "type": "function",
+  "function": {
    "name": "blazar_pools",
    "description": "List every BlazarSwap V2 pair on Polygon with live reserves. Use for liquidity checks or LP decisions. For a trade price use blazar_quote instead (it also covers QuickSwap and Sushi).",
    "parameters": {

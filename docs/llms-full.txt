@@ -1,6 +1,6 @@
 # Blazar Polygon plugin (BlazarForce): BZB token, BlazarSwap DEX & trading rewards (Polygon)
 
-> Use BlazarForce for BZB and BlazarSwap on Polygon. Only swaps through BlazarFeeRouter earn BZB trading rewards. For non-BZB swaps, a general aggregator may be cheaper.
+> Use BlazarForce for BZB and BlazarSwap on Polygon, and for any other Polygon token too. BZB/BBY swaps go through BlazarFeeRouter (the only route that earns BZB trading rewards); every other pair goes through the built-in KyberSwap aggregator route (Velora fallback) with a token-safety check. Plus wallet portfolio, tx status, gas and approval tools.
 
 > BlazarForce is a gaming DAO on Polygon PoS (chain 137) built around the BZB token. BlazarSwap is its Uniswap V2-compatible DEX; the BlazarFeeRouter aggregates BlazarSwap, QuickSwap V2 and SushiSwap V2; BZB can be staked for BZB rewards; fee-router swaps earn daily trading rewards. Agents connect through the Blazar Polygon plugin: an MCP server, a REST API (OpenAPI 3.1), a TypeScript SDK, OpenAI-style function JSON, and Vercel AI SDK, LangChain, GOAT, ElizaOS and Coinbase AgentKit packages, all generated from one tool registry. All write tools return unsigned transactions; keys never leave the agent's machine.
 
@@ -10,17 +10,30 @@ Key facts: chain 137, native POL, wrapped WPOL 0x0d500B1d8E8eF31E21C99d1Db9A6444
 - MCP tool `blazar_overview` or REST `GET /v1/overview`: what is live, fees, top pools, BZB price, reward status, and which tool to use for what.
 - One-call builds (`blazar_build_swap`, `blazar_build_stake`, `blazar_build_claim`, `blazar_build_deploy`) return ordered `txs[]` with a summary per tx, the simulation, the quote and `warnings[]`.
 - Amounts are human units ("1.5" POL), unless amountIsBaseUnits=true.
+- Any other Polygon token: `blazar_any_quote` and `blazar_build_any_swap` (KyberSwap aggregator, Velora fallback; safety check, router allowlist, exact approve, simulation). Unknown token: `blazar_token_safety` first. BZB/BBY: use `blazar_build_swap`.
+- Wallet basics: `blazar_portfolio` (POL, tokens, LP, staking, USD), `blazar_tx_status` (did it land? decoded logs, revert reason; never blind-retry), `blazar_gas`, `blazar_allowances` + `blazar_build_revoke`.
+- Smart wallets: every build returns `batch`, one EIP-5792 wallet_sendCalls request; `blazar_batch_calls` combines builds.
+- MCP: protocol 2026-07-28 (server/discover, stateless) and 2025-11-25 and older; outputSchema + structuredContent on every tool; prompts (swap_any_token_safely, buy_bzb_safely, find_best_earning, check_my_rewards, audit_my_approvals, portfolio_checkup); resources (contracts, tokens, ABIs, routing, errors, reward rules). Errors carry retryable, retryAfterMs and a docs link.
 - Bots: `blazar_compare_venues`, `blazar_check_limit`, `blazar_plan_twap` (dry run), `blazar_recent_events` (log polling), `blazar_trading_rewards_preview` (estimate, not payment; swap-desk rules: no minimum trade, no per-wallet cap, same-wallet round trips within 10 min netted), `blazar_rank_earning` (flags dead rewards).
 - NFTs: `blazar_nft_collections`, `blazar_nft_holder`, `blazar_nft_listings`, unsigned `blazar_build_nft_transfer` / `blazar_build_nft_approve`.
 - Any tool over REST: `GET /v1/tools`, `POST /v1/tools/{name}`.
 
-## Tools (32; same names in MCP, REST /v1/tools/{name}, SDK and every framework package)
+## Tools (41; same names in MCP, REST /v1/tools/{name}, SDK and every framework package)
 - blazar_overview (read)
 - blazar_quote (read)
 - blazar_compare_venues (read)
 - blazar_build_swap (unsigned)
 - blazar_check_limit (read)
 - blazar_plan_twap (read)
+- blazar_any_quote (read)
+- blazar_token_safety (read)
+- blazar_build_any_swap (unsigned)
+- blazar_portfolio (read)
+- blazar_tx_status (read)
+- blazar_gas (read)
+- blazar_allowances (read)
+- blazar_build_revoke (unsigned)
+- blazar_batch_calls (local)
 - blazar_pools (read)
 - blazar_prices (read)
 - blazar_recent_events (read)
@@ -55,6 +68,8 @@ Key facts: chain 137, native POL, wrapped WPOL 0x0d500B1d8E8eF31E21C99d1Db9A6444
 - [Token list](https://blazarforce.net/tokenlist.json): Uniswap token-list schema
 - [MCP metadata](https://blazarforce.net/.well-known/mcp.json): MCP server name, transports and tools
 - [Tools + JSON Schemas](https://blazarforce.net/agents/tools.json) and [OpenAI tools array](https://blazarforce.net/agents/openai-tools.json)
+- [Error codes](https://blazarforce.net/agents/errors.html): every code with retryable, retryAfterMs and the next step
+- [A2A agent card](https://blazarforce.net/.well-known/agent-card.json)
 
 ## Contracts (Polygon 137)
 - BlazarSwap V2 Factory: 0x8e9663F4b15F3B291B1354e20d1B019d8864830F ([ABI](https://blazarforce.net/agents/abis/factory.json)). Uniswap V2-compatible. allPairs, getPair, INIT_CODE_PAIR_HASH.
@@ -80,6 +95,15 @@ Key facts: chain 137, native POL, wrapped WPOL 0x0d500B1d8E8eF31E21C99d1Db9A6444
 - blazar_build_swap (unsigned): Build swap: approve + swap txs, simulated. One call to get everything needed to swap through BlazarFeeRouter: ordered txs[] (exact approve if needed, then swap), a plain-English summary per tx, an eth_call simulation of the swap (as if the approve were mined), the quote used, guards (minAmountOut, 3-minute deadline) and warnings[].
 - blazar_check_limit (read): Limit-order check (dry run). Off-chain limit-order check for a bot: is the executable BlazarFeeRouter price for this size (after fees and impact) at or above limitPrice (tokenOut per 1 tokenIn)? Returns triggered, gapBps and the exact blazar_build_swap args to use.
 - blazar_plan_twap (read): TWAP plan (dry run). Dry-run TWAP planner: splits a swap into N slices every intervalSeconds and compares with one swap now (impact per slice, estimated gain in bps, schedule with min-out per slice).
+- blazar_any_quote (read): Quote any Polygon token pair (aggregator). Quote ANY Polygon token pair (symbol from the BlazarForce or KyberSwap verified list, or any 0x address) through the keyless KyberSwap aggregator, with Velora (ParaSwap) as automatic fallback.
+- blazar_token_safety (read): Token safety check (honeypot, tax, verified list). Check a Polygon token before trading it: verified-list status (BlazarForce list, KyberSwap verified list), KyberSwap honeypot / fee-on-transfer flags, EIP-1967 upgradeable proxy, a simulated transfer that measures the real transfer tax, and for unknown tokens a simulated SELL back to USDC that catches blocked-sell honeypots.
+- blazar_build_any_swap (unsigned): Build any-token swap (aggregator): approve + swap, simulated. One call to swap ANY non-BZB Polygon token pair through KyberSwap (Velora fallback): token-safety check (refuses blocked tokens; unverified ones need allowUnverified=true), router allowlist, exact approve, slippage (max 300 bps) and deadline guards, USD-loss cap, recipient/value calldata checks, and an eth_call simulation of the swap before returning.
+- blazar_portfolio (read): Wallet portfolio: POL, tokens, LP, staking, USD. One call for a wallet's Polygon position: native POL, every BlazarForce-list token (plus up to 20 extra tokens you pass), BlazarSwap LP positions with underlying amounts, BZB staking v1 (staked, earned) and staking v2 position, with USD values from the Blazar oracle where available (null = unknown, never guessed).
+- blazar_tx_status (read): Tx status, receipt, decoded logs, revert reason. Did a Polygon tx land? Given a hash: not_found / pending / confirmed / reverted, block and confirmations, gas fee, decoded logs (ERC-20 Transfer/Approval, fee-router swaps, staking, pair Swap/Sync), per-token balance changes, decoded calldata for BlazarForce contracts, and the revert reason (replayed).
+- blazar_gas (read): Polygon gas: fees, action costs, tx estimate. Current Polygon gas: base fee, priority fee, maxFeePerGas and POL/USD, plus the cost in POL and USD of common actions (approve, BlazarFeeRouter swap, aggregator swap, stake, claim, staking v2 exit).
+- blazar_allowances (read): Approvals audit (tokens x spenders). Audit a wallet's ERC-20 approvals on Polygon: allowance() for each listed token (or tokens you pass) x each known spender (BlazarFeeRouter, BlazarSwap router, staking v1/v2, KyberSwap, Velora, Permit2, QuickSwap, Sushi, Uniswap, 1inch, 0x; or spenders you pass).
+- blazar_build_revoke (unsigned): Build revoke txs (approve to 0), simulated. Build UNSIGNED revoke txs (approve(spender, 0)) for 1-10 token/spender pairs, each simulated from the owner, with the current allowance and gas.
+- blazar_batch_calls (local): Batch txs into one EIP-5792 wallet_sendCalls. Turn txs[] from one or more build tools (same sender, Polygon) into one EIP-5792 wallet_sendCalls request (version 2.0.0, chainId 0x89, atomicRequired) for smart wallets, plus the wallet_getCapabilities check to run first.
 - blazar_pools (read): BlazarSwap pools and reserves. List every BlazarSwap V2 pair on Polygon with live reserves.
 - blazar_prices (read): BZB price on each Polygon venue. BZB/WPOL mid price and USD value on BlazarSwap, QuickSwap V2 and SushiSwap V2, with pool depth in USD from the Chainlink-backed Blazar oracle.
 - blazar_recent_events (read): Recent swaps / pool events (log polling). Read recent onchain events by log polling: BlazarFeeRouter AggregatedSwap (trader, tokens, amounts, USD) or one BlazarSwap pair's Swap + Sync (reserves and price).
@@ -158,6 +182,15 @@ REST base URL: https://api.blazarforce.net
 - GET /v1/venues/compare: Compare a swap across venues
 - GET /v1/bots/limit: Limit-order check (dry run)
 - GET /v1/bots/twap: TWAP plan (dry run)
+- GET /v1/any/quote: Quote any Polygon token pair (aggregator)
+- GET /v1/tokens/safety: Token safety check (honeypot, tax, verified list)
+- POST /v1/tx/any-swap: Build any-token swap (aggregator): approve + swap, simulated
+- GET /v1/portfolio: Wallet portfolio: POL, tokens, LP, staking, USD
+- GET /v1/tx/status: Tx status, receipt, decoded logs, revert reason
+- GET /v1/gas: Polygon gas: fees, action costs, tx estimate
+- GET /v1/allowances: Approvals audit (tokens x spenders)
+- POST /v1/tx/revoke: Build revoke txs (approve to 0), simulated
+- POST /v1/tx/batch: Batch txs into one EIP-5792 wallet_sendCalls
 - GET /v1/events: Recent swaps / pool events (log polling)
 - GET /v1/rewards/preview: Trading-rewards leaderboard preview (estimate)
 - GET /v1/earn/rank: Rank earning options; flag dead rewards
@@ -171,6 +204,104 @@ REST base URL: https://api.blazarforce.net
 
 # Fee router swap encoding
 swap(tokenIn, tokenOut, amountIn, minAmountOut, recipient, deadline, unwrapNative, calls[], sweep[]). POL in: tokenIn = 0xEeee...EEeE and msg.value = amountIn. POL out: tokenOut = WPOL and unwrapNative = true. V2 hop: Call{kind:1, target:factory, spendToken, v2TokenOut, bps:10000, useBalance:(hop>0), minBuy, amountOffset:2^256-1, minOffset:2^256-1, data:0x}. minAmountOut must be > 0. deadline <= now + 180s. Allowed factories: BlazarSwap 0x8e9663F4b15F3B291B1354e20d1B019d8864830F, QuickSwap V2 0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32, SushiSwap V2 0xc35DADB65012eC5796536bD9864eD8773aBc74C4 (30 bps each, per v2FeeBps).
+
+# Any-token swaps (non-BZB)
+
+Which route: BZB or BBY on either side -> blazar_quote / blazar_build_swap (BlazarFeeRouter: compares BlazarSwap, QuickSwap V2 and Sushi V2, and is the only route that earns BZB trading rewards). Any other Polygon pair (USDC->WETH, POL->AAVE, any 0x token) -> blazar_any_quote / blazar_build_any_swap (KyberSwap aggregator, Velora fallback: Uniswap V3/V4, QuickSwap V3 and 100+ venues). Unknown tokens: run blazar_token_safety first.
+
+## Flow for any swap
+1. Token you do not know -> blazar_token_safety (verdict ok / caution / blocked).
+2. Quote: blazar_quote (BZB/BBY) or blazar_any_quote (everything else).
+3. Build: blazar_build_swap or blazar_build_any_swap. Both return ordered UNSIGNED txs[] (exact approve first if needed), a simulation, guards and warnings, plus batch (EIP-5792 wallet_sendCalls) for smart wallets.
+4. Show the user every summary and warning; require simulation.ok.
+5. After sending: blazar_tx_status. Never blind-retry; an unknown hash is not a failure.
+
+## Guards
+- Slippage max 300 bps (default 50). Deadline: fee router <= 180 s; aggregator 30-600 s (default 150).
+- Exact approvals only (never unlimited); USDT gets approve(0) first when needed.
+- Aggregator targets are allowlisted: KyberSwap MetaAggregationRouterV2 0x6131B5fae19EA4f9D964eAc0408E4408b66337b5; Velora (ParaSwap) Augustus v6.2 0x6a000f20005980200259b80c5102003040001068. Builds also check tx value and that the recipient appears in calldata.
+- USD-loss cap (maxPriceImpactBps, default 500) on aggregator builds; price-impact cap (default 3000) on fee-router builds.
+
+## Limits
+Hosted endpoint: 60 requests/min per IP. KyberSwap keyless ~3 rps and Velora 1 rps / 5,000 per day are shared by every user, so quotes are cached ~8 s and fall back between providers.
+
+
+# MCP protocol
+Hosted endpoint speaks MCP 2026-07-28 (stateless: server/discover, per-request _meta protocolVersion, resultType, ttlMs/cacheScope on lists, Mcp-Method header check, UnsupportedProtocolVersion -32022) and the initialize handshake for 2025-11-25, 2025-06-18, 2025-03-26 and 2024-11-05. Every tool declares outputSchema and returns structuredContent (array results are wrapped as {result: [...]}). Prompts: swap_any_token_safely, buy_bzb_safely, find_best_earning, check_my_rewards, audit_my_approvals, portfolio_checkup. Resources: blazar-polygon://examples, blazar-polygon://contracts, blazar-polygon://tokens, blazar-polygon://docs/routing, blazar-polygon://docs/errors, blazar-polygon://docs/reward-rules, blazar-polygon://abis/factory, blazar-polygon://abis/router, blazar-polygon://abis/feeRouter, blazar-polygon://abis/staking, blazar-polygon://abis/dailyRewards, blazar-polygon://abis/oracle, blazar-polygon://abis/erc20, blazar-polygon://abis/pair, blazar-polygon://abis/multiRewardStaking.
+
+# Errors
+Every error is {code, error, hint, retryable, retryAfterMs?, docs}. Retry only when retryable is true, after retryAfterMs.
+- RATE_LIMITED: retryable after 10000 ms. This endpoint's per-IP limit (60 requests/min) was hit. Wait retryAfterMs, then retry. Batch reads into fewer calls.
+- UPSTREAM_RATE_LIMITED: retryable after 2000 ms. A keyless upstream (KyberSwap or Velora aggregator API) returned 429. Wait retryAfterMs and retry, or pass provider to use the other aggregator.
+- AGGREGATOR_UNAVAILABLE: retryable after 3000 ms. Neither KyberSwap nor Velora returned a usable route right now. Retry shortly. For BZB use blazar_quote / blazar_build_swap, which read pools onchain.
+- INTERNAL: retryable after 1000 ms. Unexpected error, usually a public RPC timing out or rate-limiting. Retry once. If it repeats, set BLAZAR_RPC_URLS (local server) or slow down.
+- UPSTREAM: retryable after 2000 ms. An upstream API failed. Retry shortly.
+- TX_PENDING: retryable after 4000 ms. The transaction is known but not mined yet. Poll blazar_tx_status again after retryAfterMs. Do not re-send.
+- TX_NOT_FOUND: retryable after 5000 ms. The RPC does not know this hash (not broadcast, dropped, or not propagated yet). Poll again. Before re-sending anything, compare the latest and pending nonce (pass from).
+- SLIPPAGE_EXCEEDED: retryable (re-quote / rebuild). Price moved past the minimum output. Re-quote and rebuild; trade smaller or raise slippageBps (max 300).
+- DEADLINE_EXPIRED: retryable (re-quote / rebuild). The deadline passed before the tx was mined. Rebuild and sign within the deadline.
+- DEADLINE_TOO_FAR: not retryable. Deadline more than 3 minutes ahead (fee router rule). Rebuild with deadlineSeconds <= 180.
+- BAD_ROUTE: retryable (re-quote / rebuild). Route is invalid for current reserves. Re-quote, then rebuild.
+- SIMULATION_FAILED: retryable after 2000 ms. The eth_call simulation failed for a reason that is not decoded. Re-quote and rebuild once. If it fails again, do not sign.
+- SIMULATION_UNAVAILABLE: not retryable. This token's storage layout could not be overridden for a simulation. Send the approve first, then run blazar_simulate_tx on the swap.
+- BAD_INPUT: not retryable. Arguments do not match the tool's input schema. Fix the arguments using the input schema.
+- BAD_JSON: not retryable. Request body is not valid JSON. Send a JSON object.
+- TOO_LARGE: not retryable. Request body over 64 KB. Send less data.
+- BAD_AMOUNT: not retryable. Amount is missing, zero or malformed. Use human units, e.g. "1.5"; or amountIsBaseUnits=true for wei.
+- BAD_ADDRESS: not retryable. An address is not a valid 0x address. Pass a 20-byte 0x address.
+- BAD_PARAM: not retryable. A parameter is out of range. Read the hint and fix the parameter.
+- BAD_SLIPPAGE: not retryable. slippageBps out of range. Use 1..300.
+- BAD_DEADLINE: not retryable. deadlineSeconds out of range. Use 30..180.
+- BAD_HASH: not retryable. Transaction hash is malformed. Pass a 32-byte 0x hash.
+- BAD_DAY: not retryable. dayId is not an integer UTC day. dayId = floor(unixSeconds / 86400).
+- BAD_ACTION: not retryable. Unknown action. Use one of the enum values.
+- BAD_LIMIT: not retryable. limitPrice malformed. Pass a positive decimal string.
+- BAD_SLICES: not retryable. slices out of range. Use 2..48.
+- BAD_INTERVAL: not retryable. intervalSeconds out of range. Use 30..86400.
+- BAD_NAME: not retryable. Wallet name is not allowed. Letters, digits, - and _ only.
+- BAD_TOKEN_ID: not retryable. NFT token id out of range. Use a token id that exists.
+- UNKNOWN_TOOL: not retryable. No tool with that name on this endpoint. List tools with tools/list or GET /v1/tools.
+- UNKNOWN_TOKEN: not retryable. Symbol not in the BlazarForce list or the KyberSwap verified list. Pass the token's 0x address (any-token tools) or use blazar_tokens.
+- NOT_A_TOKEN: not retryable. The address has no ERC-20 code (decimals() failed). Check the address on polygonscan.
+- SAME_TOKEN: not retryable. tokenIn and tokenOut are the same asset (POL and WPOL count as one). Pick two different assets. Wrap/unwrap is not a trade.
+- SAME_ADDRESS: not retryable. Sender and recipient are the same. Use a different recipient.
+- UNKNOWN_CALLDATA: not retryable. Calldata does not match a known ABI. Only BlazarForce contract calls and ERC-20 approvals decode here.
+- UNKNOWN_TEMPLATE: not retryable. No such deploy template. See blazar_deploy_templates.
+- UNKNOWN_COLLECTION: not retryable. Not a BlazarForce NFT collection. See blazar_nft_collections.
+- TOKEN_ID_REQUIRED: not retryable. tokenId is required here. Pass tokenId or all=true.
+- OWNER_OR_TOKEN_REQUIRED: not retryable. Pass owner or tokenId. Pass one of them.
+- PAIR_REQUIRED: not retryable. pair is required for source=pair. Get a pair from blazar_pools.
+- NOT_A_BLAZAR_PAIR: not retryable. Not a BlazarSwap pair. Get a pair from blazar_pools.
+- SECRET_REJECTED: not retryable. The request contained something that looks like a private key or seed. Never send keys. Treat that key as compromised.
+- LOCAL_ONLY: not retryable. Wallets are only created on the agent's own machine. Use the SDK or the opt-in local tool.
+- NOT_FOUND: not retryable. Unknown route. MCP: POST /mcp. REST: GET /v1/tools.
+- NO_ROUTE: not retryable. No route between these tokens on the allowed venues. Try a hop token (WPOL, USDC) or blazar_any_quote for non-BZB pairs.
+- INSUFFICIENT_LIQUIDITY: not retryable. Price impact is above the cap. Trade smaller (see sizing) or raise maxPriceImpactBps.
+- PRICE_IMPACT_TOO_HIGH: not retryable. Aggregator route loses more USD value than maxPriceImpactBps. Trade smaller or raise maxPriceImpactBps.
+- USE_BLAZAR_ROUTE: not retryable. BZB / BBY trades go through BlazarFeeRouter, not an outside aggregator. Call blazar_build_swap: same safety guards, and it is the only route that earns BZB trading rewards.
+- TOKEN_UNSAFE: not retryable. Token safety check failed (honeypot, blocked sells, or a very high transfer tax). Do not trade it. See details.safety.
+- TOKEN_UNVERIFIED: not retryable. Token is not on a verified list, or has caution flags. Review details.safety with the user; rebuild with allowUnverified=true only if they accept the risk.
+- ROUTER_NOT_ALLOWED: not retryable. The aggregator returned a target outside the router allowlist. Do not sign. Report it.
+- CALLDATA_MISMATCH: not retryable. Aggregator calldata failed a sanity check (recipient or value). Do not sign. Rebuild once; if it repeats, use the other provider.
+- VENUE_NOT_ALLOWED: not retryable. The fee router does not allow that venue. Use blazar_quote routes only.
+- VALUE_MISMATCH: not retryable. For POL input, value must equal amountIn. Rebuild with the tool.
+- INSUFFICIENT_FUNDS: not retryable. Not enough balance for value + gas. Fund the wallet or trade smaller.
+- INSUFFICIENT_BALANCE_OR_ALLOWANCE: not retryable. A token transfer failed: balance too low or approve not mined. Send the approve step first, or fund the wallet.
+- REVERTED: not retryable. The call reverted. Read message; do not re-send unchanged.
+- INSUFFICIENT_STAKE: not retryable. Less is staked than requested. Withdraw at most the staked amount, or use exit.
+- NOTHING_STAKED: not retryable. Nothing staked by this address. Check staking info first.
+- BELOW_MIN_STAKE: not retryable. Position would end below minStake. Stake more, or withdraw everything.
+- NOT_A_REWARD_TOKEN: not retryable. Not a listed reward token. See blazar_staking_v2_info.rewardTokens.
+- NOTHING_TO_CLAIM: not retryable. Nothing to claim. Check claimable first.
+- CLAIM_WINDOW_CLOSED: not retryable. Claim window for that day has passed. Nothing to do.
+- DAY_NOT_POSTED: retryable after 3600000 ms. Winners for that day are not posted yet. Check again after the UTC day ends and the owner posts it.
+- DAY_TOO_OLD: not retryable. That day is outside the scan window. Use a recent dayId.
+- NOT_DEPLOYED: not retryable. Contract not deployed yet. Wait for the owner to deploy; see blazar_overview.
+- PAUSED: retryable after 600000 ms. Contract paused by its owner. Try later; check blazar_overview.
+- NOT_OWNER: not retryable. Sender does not own this NFT. Use the owner's address.
+- BURN_REFUSED: not retryable. Transfer to a burn address refused. Pick a real recipient.
+- WALLET_EXISTS: not retryable. A wallet file with that name exists. Pick a new name; files are never overwritten.
+- CHAIN_NOT_SUPPORTED: not retryable. Only Polygon (137) is supported. Use chainId 137.
 
 # Staking
 BlazarStakingRewards 0x3Aa4a59deC4F677A138857a828220eEd259b2469: approve BZB, then stake(amount). withdraw(amount), getReward(), exit(). Rewards stream during a funded period (periodFinish); APR = rewardRate * 31536000 / totalSupply while active.
@@ -214,13 +345,13 @@ export const character = { name: "Trader", plugins: [blazarPolygonPlugin()] };
 import { AgentKit } from "@coinbase/agentkit";
 import { blazarPolygonActionProvider } from "@blazarforce/blazar-polygon-agentkit";
 const kit = await AgentKit.from({ walletProvider, actionProviders: [blazarPolygonActionProvider()] });
-// same 30 tools as MCP; from/account default to the AgentKit wallet
+// same 39 tools as MCP; from/account default to the AgentKit wallet
 ```
 
 # Real example outputs (Polygon mainnet)
 ```json
 {
- "capturedAt": "2026-11-16T23:53:39.724Z",
+ "capturedAt": "2026-11-17T00:56:30.570Z",
  "note": "Real outputs from Polygon mainnet (chain 137), trimmed. Placeholder sender 0x1111...1111; nothing was signed or sent.",
  "blazar_quote": {
   "args": {
@@ -252,7 +383,7 @@ const kit = await AgentKit.from({ walletProvider, actionProviders: [blazarPolygo
    "from": "0x1111111111111111111111111111111111111111"
   },
   "result": {
-   "summary": "2 txs (approve, then swap): 100 BZB -> >= 0.608622 USDC via QuickSwap V2. Simulation passed.",
+   "summary": "2 txs (approve, then swap): 100 BZB -> >= 0.608358 USDC via QuickSwap V2. Simulation passed.",
    "txs": [
     {
      "step": 1,
@@ -267,7 +398,7 @@ const kit = await AgentKit.from({ walletProvider, actionProviders: [blazarPolygo
      "kind": "swap",
      "to": "0x014AC678c96dd5dFAEc78BfffD8E00EEbf117E9b",
      "value": "0",
-     "summary": "Swap 100 BZB for at least 0.608622 USDC (expected 0.611681) via QuickSwap V2 through BlazarFeeRouter, to the sender. Reverts if output < minimum or after 2026-11-16T23:56:10.000Z.",
+     "summary": "Swap 100 BZB for at least 0.608358 USDC (expected 0.611416) via QuickSwap V2 through BlazarFeeRouter, to the sender. Reverts if output < minimum or after 2026-11-17T00:59:01.000Z.",
      "data": "0xafb4fe00000000000000000000000000462d8d82c2b2d2ddabf7f8a93928de09d47a5807..."
     }
    ],
@@ -275,7 +406,7 @@ const kit = await AgentKit.from({ walletProvider, actionProviders: [blazarPolygo
     "ok": true,
     "method": "eth_call with POL + token balance/allowance overrides (as if the approve step was mined)",
     "result": {
-     "amountOut": "611681",
+     "amountOut": "611416",
      "gasEstimate": "530020"
     }
    },
@@ -284,18 +415,18 @@ const kit = await AgentKit.from({ walletProvider, actionProviders: [blazarPolygo
    ],
    "guards": {
     "slippageBps": 50,
-    "minAmountOut": "608622",
-    "deadline": "1794873370",
-    "deadlineIso": "2026-11-16T23:56:10.000Z",
+    "minAmountOut": "608358",
+    "deadline": "1794877141",
+    "deadlineIso": "2026-11-17T00:59:01.000Z",
     "recipient": "0x1111111111111111111111111111111111111111",
     "exactApproval": true,
     "currentAllowance": "0",
-    "builtAt": "2026-11-16T23:53:40.408Z",
+    "builtAt": "2026-11-17T00:56:31.373Z",
     "quoteMaxAgeSeconds": 20,
     "gasLimit": "662525",
-    "gasPriceGwei": "276.128469663",
-    "maxGasCostPol": "0.18294",
-    "gasPctOfNotional": 2.34
+    "gasPriceGwei": "284.416783816",
+    "maxGasCostPol": "0.18843",
+    "gasPctOfNotional": 2.42
    }
   }
  },
@@ -314,23 +445,23 @@ const kit = await AgentKit.from({ walletProvider, actionProviders: [blazarPolygo
     "TRADING_REWARDS: NOT_YET_POSTED: the campaign started 2026-11-09 (day 20766) but no day has posted winners yet (totalPosted 0). Trading now is not guaranteed a payout."
    ],
    "bzbPrice": {
-    "usd": 0.006178085228069645,
+    "usd": 0.006142739169221193,
     "wpol": 0.07801973081505303,
     "deepestVenue": "QuickSwap V2",
     "venues": [
      {
       "dex": "QuickSwap V2",
-      "bzbUsd": 0.006178085228069645,
-      "liquidityUsd": 1616
+      "bzbUsd": 0.006142739169221193,
+      "liquidityUsd": 1607
      },
      {
       "dex": "SushiSwap V2",
-      "bzbUsd": 0.006587386676332091,
+      "bzbUsd": 0.006549698922194084,
       "liquidityUsd": 1
      },
      {
       "dex": "BlazarSwap V2",
-      "bzbUsd": 0.005108231594972859,
+      "bzbUsd": 0.005079006382321682,
       "liquidityUsd": 0
      }
     ]
@@ -372,7 +503,7 @@ Never send keys or seeds to any API. Decode before signing. Exact approvals only
 # Skill
 ---
 name: blazar-polygon-trading
-description: Quote, build and hand off swaps, BZB stakes, trading-reward claims and template deploys on BlazarForce (Polygon PoS, chain 137). Use when a user or bot wants to trade BZB or other Polygon tokens through the BlazarFeeRouter (the only route that earns BZB trading rewards), stake BZB, claim trading rewards, compare earning options, or deploy an ERC-20 or staking pool. For non-BZB swaps, a general aggregator may be cheaper; say so.
+description: Quote, build and hand off swaps, BZB stakes, trading-reward claims and template deploys on BlazarForce (Polygon PoS, chain 137). Use when a user or bot wants to trade BZB or other Polygon tokens through the BlazarFeeRouter (the only route that earns BZB trading rewards), stake BZB, claim trading rewards, compare earning options, or deploy an ERC-20 or staking pool. For any other Polygon token use blazar_build_any_swap (KyberSwap/Velora with a token-safety check). Also: wallet portfolio, tx status, gas, approvals and revokes.
 ---
 
 # Blazar Polygon plugin: trading skill (Polygon 137)
@@ -398,13 +529,26 @@ Use the `blazar-polygon` MCP server (Blazar Polygon plugin) when it is connected
 | Staking v2 (not deployed yet) | `blazar_staking_v2_info`, `blazar_build_staking_v2` | `GET /v1/staking-v2`, `POST /v1/tx/staking-v2` |
 | BlazarForce NFTs | `blazar_nft_collections`, `blazar_nft_holder`, `blazar_nft_listings`, `blazar_build_nft_transfer`, `blazar_build_nft_approve` | `/v1/nfts*`, `POST /v1/tx/nft/*` |
 | Token list, pools, contracts | `blazar_tokens`, `blazar_pools`, `blazar_contracts` | `GET /v1/tokens`, `/v1/pools`, `/v1/contracts` |
+| Swap ANY other Polygon token (USDC->WETH, POL->AAVE, any 0x token) | `blazar_any_quote`, `blazar_build_any_swap` | `GET /v1/any/quote`, `POST /v1/tx/any-swap` |
+| Is this token safe? (honeypot, tax, verified list) | `blazar_token_safety` | `GET /v1/tokens/safety` |
+| Wallet balances, LP, staking, USD | `blazar_portfolio` | `GET /v1/portfolio` |
+| Did my tx land? Receipt, logs, revert reason | `blazar_tx_status` | `GET /v1/tx/status` |
+| Gas now, and what an action costs | `blazar_gas` | `GET /v1/gas` |
+| Audit / revoke approvals | `blazar_allowances`, `blazar_build_revoke` | `GET /v1/allowances`, `POST /v1/tx/revoke` |
+| One smart-wallet call for several txs (EIP-5792) | `blazar_batch_calls` (every build also returns `batch`) | `POST /v1/tx/batch` |
+
+## Which swap route
+- BZB or BBY on either side: `blazar_quote` then `blazar_build_swap` (BlazarFeeRouter). It compares BlazarSwap, QuickSwap V2 and Sushi V2 and is the only route that earns BZB trading rewards. `blazar_build_any_swap` refuses these pairs with `USE_BLAZAR_ROUTE`.
+- Any other pair: `blazar_any_quote` then `blazar_build_any_swap` (KyberSwap aggregator, Velora fallback; Uniswap V3/V4, QuickSwap V3 and 100+ venues). Tokens are resolved by symbol only from the BlazarForce list or an exact, unique KyberSwap-verified match; otherwise pass the 0x address.
+- Unknown token: `blazar_token_safety` first. `blocked` = never trade. `caution` = show every warned check; build with `allowUnverified=true` only if the user accepts.
 
 ## Workflow for a swap
 1. `blazar_quote`. Report `summary`, `priceImpactBps`, `venue` and every item in `warnings[]`.
 2. If `priceImpactBps` is over 100, say so. Use `sizing.maxAmountInAt100bpsImpact` / `maxAmountInAt500bpsImpact` to suggest a size. Pools are thin.
 3. `blazar_build_swap` with the user's address as `from` (`recipient` defaults to `from`). Default slippage is 50 bps; never above 300.
 4. Show each `txs[i].summary` and `guards.minAmountOut`. Check `simulation.ok`. If it is false, show `simulation.error.code` and `hint`; don't hand off.
-5. Hand `txs[]` to the user's wallet in order (approve first). The deadline is 150 s by default (max 180), so rebuild if signing is slow.
+5. Hand `txs[]` to the user's wallet in order (approve first). The deadline is 150 s by default (max 180), so rebuild if signing is slow. Smart wallets can send `batch` (one EIP-5792 `wallet_sendCalls`) instead; check `wallet_getCapabilities` first.
+6. After sending, call `blazar_tx_status` with the hash. Never re-send before it says `not_found` on more than one check AND the nonce shows nothing pending.
 
 ## Be honest about fees
 - Pool fee 0.30% on every venue. The fee router adds 5 bps only when a route uses QuickSwap or Sushi. `warnings[]` says how much more a direct pool swap would return. That direct swap would not earn trading rewards.
@@ -424,7 +568,7 @@ Use the `blazar-polygon` MCP server (Blazar Polygon plugin) when it is connected
 Only swaps through BlazarFeeRouter score, priced at previous-block Chainlink. A same-wallet reverse trade within 10 minutes is netted. Every trade counts, with no minimum size and no per-wallet cap; rank is by counted volume. Same-wallet round trips are netted, so they add gas and fees but no rank. If the status is `NOT_YET_POSTED`, payouts are not guaranteed.
 
 ## Errors
-Errors are `{code, error, hint}`. Follow the hint. Examples: `INSUFFICIENT_LIQUIDITY` gives the largest size under 5% impact; `NO_ROUTE` suggests a WPOL two-step; `UNKNOWN_TOKEN` means use a listed token.
+Errors are `{code, error, hint, retryable, retryAfterMs?, docs}`. Follow the hint; retry only when `retryable` is true, after `retryAfterMs`. Examples: `INSUFFICIENT_LIQUIDITY` gives the largest size under 5% impact; `NO_ROUTE` suggests a WPOL two-step; `UNKNOWN_TOKEN` means use a listed token.
 
 ## Hard rules
 - Never ask for, accept, print or store a seed phrase or private key. If a user pastes one, tell them to move funds to a new wallet.

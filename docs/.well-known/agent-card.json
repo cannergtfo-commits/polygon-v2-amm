@@ -1,15 +1,29 @@
 {
  "name": "Blazar Polygon plugin",
- "description": "Polygon DeFi tools for agents: swap via BlazarFeeRouter, stake BZB, trading rewards, earning strategies, contract templates.",
+ "description": "Polygon DeFi tools for agents: BZB swaps via BlazarFeeRouter, any-token swaps via KyberSwap/Velora with token-safety checks, wallet portfolio, tx status, gas, approvals audit, staking, trading rewards, earning strategies and contract templates. Read-only tools and UNSIGNED transactions; no keys. Discovery card: the agent is reached over MCP (Streamable HTTP) and REST, not A2A messaging.",
  "url": "https://blazarforce.net/agents.html",
- "version": "0.3.0",
+ "iconUrl": "https://blazarforce.net/bzb-icon.png",
+ "version": "0.4.0",
  "provider": {
   "organization": "BlazarForce",
   "url": "https://blazarforce.net"
  },
  "documentationUrl": "https://blazarforce.net/llms.txt",
  "capabilities": {
-  "streaming": false
+  "streaming": false,
+  "pushNotifications": false,
+  "extensions": [
+   {
+    "uri": "https://modelcontextprotocol.io/specification/2026-07-28",
+    "description": "MCP server (Streamable HTTP, no auth): https://api.blazarforce.net/mcp",
+    "required": false
+   },
+   {
+    "uri": "https://spec.openapis.org/oas/v3.1.0",
+    "description": "REST API: https://api.blazarforce.net (OpenAPI at https://blazarforce.net/openapi.json)",
+    "required": false
+   }
+  ]
  },
  "defaultInputModes": [
   "application/json"
@@ -20,12 +34,56 @@
  "skills": [
   {
    "id": "quote-swap",
-   "name": "Quote and build swaps",
-   "description": "Best route across allowlisted V2 venues; unsigned fee-router tx",
+   "name": "Quote and build BZB swaps",
+   "description": "Best route across BlazarSwap, QuickSwap V2 and Sushi V2; unsigned fee-router tx that earns trading rewards",
    "tags": [
     "defi",
     "swap",
+    "polygon",
+    "bzb"
+   ],
+   "examples": [
+    "Buy 5 POL of BZB"
+   ]
+  },
+  {
+   "id": "any-token-swap",
+   "name": "Swap any Polygon token",
+   "description": "KyberSwap aggregator with Velora fallback: token-safety check, router allowlist, exact approve, simulation; unsigned txs plus an EIP-5792 batch",
+   "tags": [
+    "defi",
+    "swap",
+    "aggregator",
     "polygon"
+   ],
+   "examples": [
+    "Swap 25 USDC to WETH on Polygon"
+   ]
+  },
+  {
+   "id": "token-safety",
+   "name": "Token safety check",
+   "description": "Verified lists, honeypot / fee-on-transfer flags, proxy check, simulated transfer and sell",
+   "tags": [
+    "security",
+    "tokens"
+   ],
+   "examples": [
+    "Is 0x... safe to buy?"
+   ]
+  },
+  {
+   "id": "wallet",
+   "name": "Wallet portfolio, tx status, gas, approvals",
+   "description": "Balances with USD, LP and staking positions; receipts with decoded logs and revert reasons; gas costs; allowance audit and unsigned revokes",
+   "tags": [
+    "wallet",
+    "portfolio",
+    "approvals"
+   ],
+   "examples": [
+    "What does 0x... hold on Polygon?",
+    "Did my tx land?"
    ]
   },
   {
@@ -88,6 +146,8 @@
  ],
  "interfaces": {
   "openapi": "https://blazarforce.net/openapi.json",
-  "mcp": "https://blazarforce.net/.well-known/mcp.json"
+  "mcp": "https://blazarforce.net/.well-known/mcp.json",
+  "mcpEndpoint": "https://api.blazarforce.net/mcp",
+  "llms": "https://blazarforce.net/llms.txt"
  }
 }

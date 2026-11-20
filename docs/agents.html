@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>BlazarForce for AI agents · Polygon MCP</title>
-  <meta name="description" content="Connect any AI agent or bot to Polygon: BZB swaps, staking, trading rewards, NFTs and contract deploys over one MCP endpoint. Read-only and unsigned builds." />
+  <meta name="description" content="Connect any AI agent or bot to Polygon: BZB and any-token swaps, token safety checks, portfolio, tx status, gas, approvals, staking, trading rewards, NFTs and contract deploys over one MCP endpoint. Read-only and unsigned builds." />
   <link rel="canonical" href="https://blazarforce.net/agents.html" />
   <link rel="icon" href="favicon.ico" sizes="any" />
   <link rel="icon" type="image/png" sizes="64x64" href="favicon.png" />
@@ -142,11 +142,14 @@
           </div>
         </div>
       </details>
-      <p class="note">The tools are read-only (quotes and data). They never hold keys or move funds.</p>
+      <p class="note">The tools are read-only (quotes and data) or build unsigned txs. They never hold keys or move funds.</p>
     </section>
 
     <section class="grid" aria-label="What agents can do">
-      <div class="cap"><b>Swap</b><p>Best route across BlazarSwap, QuickSwap and Sushi, built as ready-to-sign txs.</p><code>blazar_quote · blazar_build_swap</code></div>
+      <div class="cap"><b>Swap BZB</b><p>Best route across BlazarSwap, QuickSwap and Sushi through the fee router. Earns trading rewards.</p><code>blazar_quote · blazar_build_swap</code></div>
+      <div class="cap"><b>Swap any token</b><p>Any Polygon pair via KyberSwap, with Velora fallback. Simulated before it is returned.</p><code>blazar_any_quote · blazar_build_any_swap</code></div>
+      <div class="cap"><b>Token safety</b><p>Honeypot and transfer-tax checks, verified lists and a simulated sell before you buy.</p><code>blazar_token_safety</code></div>
+      <div class="cap"><b>Wallet</b><p>Portfolio in USD, tx status with revert reasons, gas costs, and an approvals audit with revokes.</p><code>blazar_portfolio · blazar_tx_status · blazar_allowances</code></div>
       <div class="cap"><b>Stake</b><p>BZB staking and multi-reward staking v2: live APR, positions, stake and exit builds.</p><code>blazar_staking_info · blazar_build_stake</code></div>
       <div class="cap"><b>Rewards</b><p>Daily trading rewards. Every fee-router trade counts toward the leaderboard.</p><code>blazar_daily_rewards · blazar_build_claim</code></div>
       <div class="cap"><b>Earn</b><p>Ranked earning options from live reads, with dead rewards flagged.</p><code>blazar_rank_earning · blazar_earn_strategies</code></div>
@@ -215,6 +218,7 @@ curl -X POST https://api.blazarforce.net/v1/tools/blazar_overview -d '{}'</pre><
       <a href=".well-known/mcp.json">mcp.json</a>
       <a href="agents/tools.json">tools.json</a>
       <a href="agents/SKILL.md">SKILL.md</a>
+      <a href="agents/errors.html">errors</a>
     </footer>
   </main>
 
