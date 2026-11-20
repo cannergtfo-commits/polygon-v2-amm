@@ -40,7 +40,7 @@ Polygon (137) is the primary chain and the default. The general tools (`blazar_a
 
 ## Which swap route
 - BZB or BBY on either side: `blazar_quote` then `blazar_build_swap` (BlazarFeeRouter). It compares BlazarSwap, QuickSwap V2 and Sushi V2 and is the only route that earns BZB trading rewards. `blazar_build_any_swap` refuses these pairs with `USE_BLAZAR_ROUTE`.
-- Any other pair: `blazar_any_quote` then `blazar_build_any_swap` (KyberSwap aggregator, Velora fallback; Uniswap V3/V4, QuickSwap V3 and 100+ venues). Tokens are resolved by symbol only from the BlazarForce list or an exact, unique KyberSwap-verified match; otherwise pass the 0x address.
+- Any other pair: `blazar_any_quote` then `blazar_build_any_swap` (KyberSwap and LI.FI compared, Velora fallback; Uniswap V3/V4, QuickSwap V3 and 100+ venues). Tokens are resolved by symbol only from the BlazarForce list or an exact, unique KyberSwap-verified match; otherwise pass the 0x address.
 - Unknown token: `blazar_token_safety` first. `blocked` = never trade. `caution` = show every warned check; build with `allowUnverified=true` only if the user accepts.
 
 ## Workflow for a swap

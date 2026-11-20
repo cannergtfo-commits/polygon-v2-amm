@@ -3,7 +3,7 @@
  "name_for_human": "Blazar Polygon plugin",
  "name_for_model": "blazar_polygon",
  "description_for_human": "Swap, stake and earn on Polygon with BlazarForce.",
- "description_for_model": "Quotes and UNSIGNED transactions, Polygon 137 first: BZB via BlazarFeeRouter, any other token via KyberSwap/Velora with token-safety checks, plus portfolio, tx status, gas and approvals; the general tools also take chain base (8453) or ethereum (1). Never request keys.",
+ "description_for_model": "Quotes and UNSIGNED transactions, Polygon 137 first: BZB via BlazarFeeRouter, any other token via KyberSwap/LI.FI/Velora with token-safety checks, plus portfolio, tx status, gas and approvals; the general tools also take chain base (8453) or ethereum (1). Never request keys.",
  "auth": {
   "type": "none"
  },

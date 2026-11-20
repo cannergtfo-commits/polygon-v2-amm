@@ -268,7 +268,7 @@
   "type": "function",
   "function": {
    "name": "blazar_any_quote",
-   "description": "Quote ANY token pair on Polygon (default), Base or Ethereum (chain param; symbol from the chain's curated or KyberSwap verified list, or any 0x address) through the keyless KyberSwap aggregator, with Velora (ParaSwap) as automatic fallback. Covers Uniswap V3/V4, QuickSwap V3, Aerodrome and 100+ venues. Returns amountOut, USD in/out, usdLossBps, gas, venues and the router. Use for non-BZB pairs such as USDC->WETH; for BZB or BBY use blazar_quote (fee router, trading rewards). Read-only; quotes cached ~8 s.",
+   "description": "Quote ANY token pair on Polygon (default), Base or Ethereum (chain param; symbol from the chain's curated or KyberSwap verified list, or any 0x address) through KyberSwap and LI.FI (same-chain only, compared; best output wins), with Velora (ParaSwap) as automatic fallback. compared[] shows which aggregators answered. Covers Uniswap V3/V4, QuickSwap V3, Aerodrome and 100+ venues. Returns amountOut, USD in/out, usdLossBps, gas, venues and the router. Use for non-BZB pairs such as USDC->WETH; for BZB or BBY use blazar_quote (fee router, trading rewards). Read-only; quotes cached ~8 s.",
    "parameters": {
     "type": "object",
     "properties": {
@@ -295,11 +295,12 @@
       "type": "boolean"
      },
      "provider": {
-      "description": "auto (default): KyberSwap, falling back to Velora on errors or 429s.",
+      "description": "auto (default): KyberSwap and LI.FI compared, best output wins; Velora as fallback. Same-chain swaps only.",
       "type": "string",
       "enum": [
        "auto",
        "kyberswap",
+       "lifi",
        "velora"
       ]
      },
@@ -365,7 +366,7 @@
   "type": "function",
   "function": {
    "name": "blazar_build_any_swap",
-   "description": "One call to swap ANY non-BZB token pair on Polygon (default), Base or Ethereum (chain param) through KyberSwap (Velora fallback): token-safety check (refuses blocked tokens; unverified ones need allowUnverified=true), router allowlist, exact approve, slippage (max 300 bps) and deadline guards, USD-loss cap, recipient/value calldata checks, and an eth_call simulation of the swap before returning. Returns ordered UNSIGNED txs[] plus batch (EIP-5792). BZB/BBY pairs are refused with USE_BLAZAR_ROUTE: use blazar_build_swap (fee router, earns trading rewards). Not eligible for trading rewards.",
+   "description": "One call to swap ANY non-BZB token pair on Polygon (default), Base or Ethereum (chain param) through the best of KyberSwap and LI.FI (Velora fallback; same-chain only, no bridges): token-safety check (refuses blocked tokens; unverified ones need allowUnverified=true), router allowlist, exact approve, slippage (max 300 bps) and deadline guards, USD-loss cap, recipient/value calldata checks, and an eth_call simulation of the swap before returning. Returns ordered UNSIGNED txs[] plus batch (EIP-5792). BZB/BBY pairs are refused with USE_BLAZAR_ROUTE: use blazar_build_swap (fee router, earns trading rewards). Not eligible for trading rewards.",
    "parameters": {
     "type": "object",
     "properties": {
@@ -420,11 +421,12 @@
       "maximum": 10000
      },
      "provider": {
-      "description": "auto (default): KyberSwap, falling back to Velora on errors or 429s.",
+      "description": "auto (default): KyberSwap and LI.FI compared, best output wins; Velora as fallback. Same-chain swaps only.",
       "type": "string",
       "enum": [
        "auto",
        "kyberswap",
+       "lifi",
        "velora"
       ]
      },
@@ -570,7 +572,7 @@
   "type": "function",
   "function": {
    "name": "blazar_allowances",
-   "description": "Audit a wallet's ERC-20 approvals on Polygon (default), Base or Ethereum (chain param): allowance() for each curated token (or tokens you pass) x each known spender (KyberSwap, Velora, Permit2, Uniswap, 1inch, 0x and the chain's main routers; on Polygon also BlazarFeeRouter, BlazarSwap router, staking v1/v2, QuickSwap, Sushi; or spenders you pass). Flags unlimited approvals and lists only active ones. Then use blazar_build_revoke. Read-only.",
+   "description": "Audit a wallet's ERC-20 approvals on Polygon (default), Base or Ethereum (chain param): allowance() for each curated token (or tokens you pass) x each known spender (KyberSwap, LI.FI, Velora, Permit2, Uniswap, 1inch, 0x and the chain's main routers; on Polygon also BlazarFeeRouter, BlazarSwap router, staking v1/v2, QuickSwap, Sushi; or spenders you pass). Flags unlimited approvals and lists only active ones. Then use blazar_build_revoke. Read-only.",
    "parameters": {
     "type": "object",
     "properties": {

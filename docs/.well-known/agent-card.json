@@ -1,9 +1,9 @@
 {
  "name": "Blazar Polygon plugin",
- "description": "Polygon-first DeFi tools for agents: BZB swaps via BlazarFeeRouter, any-token swaps via KyberSwap/Velora with token-safety checks, wallet portfolio, tx status, gas and approvals audit on Polygon, Base and Ethereum, plus Polygon staking, trading rewards, earning strategies and contract templates. Read-only tools and UNSIGNED transactions; no keys. Discovery card: the agent is reached over MCP (Streamable HTTP) and REST, not A2A messaging.",
+ "description": "Polygon-first DeFi tools for agents: BZB swaps via BlazarFeeRouter, any-token swaps via KyberSwap/LI.FI/Velora with token-safety checks, wallet portfolio, tx status, gas and approvals audit on Polygon, Base and Ethereum, plus Polygon staking, trading rewards, earning strategies and contract templates. Read-only tools and UNSIGNED transactions; no keys. Discovery card: the agent is reached over MCP (Streamable HTTP) and REST, not A2A messaging.",
  "url": "https://blazarforce.net/agents.html",
  "iconUrl": "https://blazarforce.net/bzb-icon.png",
- "version": "0.5.0",
+ "version": "0.5.1",
  "provider": {
   "organization": "BlazarForce",
   "url": "https://blazarforce.net"
@@ -49,7 +49,7 @@
   {
    "id": "any-token-swap",
    "name": "Swap any token on Polygon, Base or Ethereum",
-   "description": "KyberSwap aggregator with Velora fallback: token-safety check, router allowlist, exact approve, simulation; unsigned txs plus an EIP-5792 batch. Polygon by default; chain base or ethereum",
+   "description": "KyberSwap and LI.FI compared (same-chain only), Velora fallback: token-safety check, router allowlist, exact approve, simulation; unsigned txs plus an EIP-5792 batch. Polygon by default; chain base or ethereum",
    "tags": [
     "defi",
     "swap",

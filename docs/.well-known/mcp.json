@@ -2,8 +2,8 @@
  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
  "name": "io.github.cannergtfo-commits/blazar-polygon",
  "title": "Blazar Polygon plugin: BZB token, BlazarSwap DEX & trading rewards (Polygon)",
- "description": "Polygon-first swaps for agents: BZB via BlazarFeeRouter (earns trading rewards) and any other token via KyberSwap/Velora with token-safety checks on Polygon, Base and Ethereum; portfolio, tx status, gas, approvals, staking. Read-only + unsigned txs.",
- "version": "0.5.0",
+ "description": "Polygon-first swaps for agents: BZB via BlazarFeeRouter (earns trading rewards) and any other token via KyberSwap/LI.FI/Velora with token-safety checks on Polygon, Base and Ethereum; portfolio, tx status, gas, approvals, staking. Read-only + unsigned txs.",
+ "version": "0.5.1",
  "websiteUrl": "https://blazarforce.net/agents.html",
  "remotes": [
   {
@@ -53,7 +53,7 @@
   {
    "name": "blazar_any_quote",
    "kind": "read",
-   "description": "Quote any token pair (Polygon, Base, Ethereum; aggregator). Quote ANY token pair on Polygon (default), Base or Ethereum (chain param; symbol from the chain's curated or KyberSwap verified list, or any 0x address) through the keyless KyberSwap aggregator, with Velora (ParaSwap) as automatic fallback."
+   "description": "Quote any token pair (Polygon, Base, Ethereum; aggregator). Quote ANY token pair on Polygon (default), Base or Ethereum (chain param; symbol from the chain's curated or KyberSwap verified list, or any 0x address) through KyberSwap and LI.FI (same-chain only, compared; best output wins), with Velora (ParaSwap) as automatic fallback."
   },
   {
    "name": "blazar_token_safety",
@@ -63,7 +63,7 @@
   {
    "name": "blazar_build_any_swap",
    "kind": "unsigned",
-   "description": "Build any-token swap (Polygon, Base, Ethereum): approve + swap, simulated. One call to swap ANY non-BZB token pair on Polygon (default), Base or Ethereum (chain param) through KyberSwap (Velora fallback): token-safety check (refuses blocked tokens; unverified ones need allowUnverified=true), router allowlist, exact approve, slippage (max 300 bps) and deadline guards, USD-loss cap, recipient/value calldata checks, and an eth_call simulation of the swap before returning."
+   "description": "Build any-token swap (Polygon, Base, Ethereum): approve + swap, simulated. One call to swap ANY non-BZB token pair on Polygon (default), Base or Ethereum (chain param) through the best of KyberSwap and LI.FI (Velora fallback; same-chain only, no bridges): token-safety check (refuses blocked tokens; unverified ones need allowUnverified=true), router allowlist, exact approve, slippage (max 300 bps) and deadline guards, USD-loss cap, recipient/value calldata checks, and an eth_call simulation of the swap before returning."
   },
   {
    "name": "blazar_portfolio",
@@ -83,7 +83,7 @@
   {
    "name": "blazar_allowances",
    "kind": "read",
-   "description": "Approvals audit (tokens x spenders). Audit a wallet's ERC-20 approvals on Polygon (default), Base or Ethereum (chain param): allowance() for each curated token (or tokens you pass) x each known spender (KyberSwap, Velora, Permit2, Uniswap, 1inch, 0x and the chain's main routers; on Polygon also BlazarFeeRouter, BlazarSwap router, staking v1/v2, QuickSwap, Sushi; or spenders you pass)."
+   "description": "Approvals audit (tokens x spenders). Audit a wallet's ERC-20 approvals on Polygon (default), Base or Ethereum (chain param): allowance() for each curated token (or tokens you pass) x each known spender (KyberSwap, LI.FI, Velora, Permit2, Uniswap, 1inch, 0x and the chain's main routers; on Polygon also BlazarFeeRouter, BlazarSwap router, staking v1/v2, QuickSwap, Sushi; or spenders you pass)."
   },
   {
    "name": "blazar_build_revoke",
