@@ -1,6 +1,6 @@
 {
  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
- "name": "io.github.cannergtfo-commits/blazar-polygon",
+ "name": "net.blazarforce/blazar-polygon",
  "title": "Blazar Polygon plugin: BZB token, BlazarSwap DEX & trading rewards (Polygon)",
  "description": "Polygon-first swaps for agents: BZB via BlazarFeeRouter (earns trading rewards) and any other token via KyberSwap/LI.FI/Velora with token-safety checks on Polygon, Base and Ethereum; portfolio, tx status, gas, approvals, staking. Read-only + unsigned txs.",
  "version": "0.5.1",
