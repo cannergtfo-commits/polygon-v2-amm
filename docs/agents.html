@@ -165,6 +165,7 @@
         <button role="tab" data-tab="openai" type="button">ChatGPT / OpenAI</button>
         <button role="tab" data-tab="grok" type="button">Grok</button>
         <button role="tab" data-tab="rest" type="button">REST</button>
+        <button role="tab" data-tab="npm" type="button">Local (npm)</button>
       </div>
       <div class="snip" data-pane="cursor">
         <p>Add to <code class="mono">~/.cursor/mcp.json</code> (VS Code: same block under <code class="mono">"servers"</code> with <code class="mono">"type": "http"</code>).</p>
@@ -207,6 +208,16 @@
         <pre>curl "https://api.blazarforce.net/v1/quote?tokenIn=POL&amp;tokenOut=BZB&amp;amount=10"
 curl -X POST https://api.blazarforce.net/v1/tools/blazar_overview -d '{}'</pre><button class="mini" type="button" data-copy-pre>Copy</button>
       </div>
+      <div class="snip" data-pane="npm" hidden>
+        <p>Run it on your own machine (stdio, Node 20+): npm package <a href="https://www.npmjs.com/package/blazar-polygon-plugin">blazar-polygon-plugin</a>. Optional env: <code class="mono">BLAZAR_RPC_URLS</code>, <code class="mono">BLAZAR_RPC_URLS_BASE</code>, <code class="mono">BLAZAR_RPC_URLS_ETHEREUM</code>.</p>
+        <pre>npx -y blazar-polygon-plugin
+
+# Cursor / Claude Desktop config
+{ "mcpServers": { "blazar-polygon": { "command": "npx", "args": ["-y", "blazar-polygon-plugin"] } } }
+
+# Claude Code
+claude mcp add blazar-polygon -- npx -y blazar-polygon-plugin</pre><button class="mini" type="button" data-copy-pre>Copy</button>
+      </div>
     </section>
 
     <p class="safe"><b>&#10003; No tool signs.</b> Builds are unsigned and simulated; nothing moves until your wallet signs. Never share a seed phrase or private key.</p>
@@ -219,6 +230,8 @@ curl -X POST https://api.blazarforce.net/v1/tools/blazar_overview -d '{}'</pre><
       <a href="agents/tools.json">tools.json</a>
       <a href="agents/SKILL.md">SKILL.md</a>
       <a href="agents/errors.html">errors</a>
+      <a href="https://www.npmjs.com/package/blazar-polygon-plugin">npm</a>
+      <a href="https://registry.modelcontextprotocol.io/v0/servers?search=net.blazarforce">MCP Registry</a>
     </footer>
   </main>
 

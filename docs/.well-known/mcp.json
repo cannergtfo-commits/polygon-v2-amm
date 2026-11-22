@@ -3,7 +3,7 @@
  "name": "net.blazarforce/blazar-polygon",
  "title": "Blazar Polygon plugin: BZB token, BlazarSwap DEX & trading rewards (Polygon)",
  "description": "Polygon-first swaps for agents: BZB via BlazarFeeRouter (earns trading rewards) and any other token via KyberSwap/LI.FI/Velora with token-safety checks on Polygon, Base and Ethereum; portfolio, tx status, gas, approvals, staking. Read-only + unsigned txs.",
- "version": "0.5.1",
+ "version": "0.5.2",
  "websiteUrl": "https://blazarforce.net/agents.html",
  "remotes": [
   {
@@ -221,5 +221,16 @@
    "description": "Simulate any tx (read-only). Dry-run any Polygon tx with eth_call + estimateGas from `from` (POL balance overridden, token balances real)."
   }
  ],
- "status": "live: hosted read-only endpoint; not yet submitted to any registry"
+ "status": "live: hosted read-only endpoint + npm package blazar-polygon-plugin (npx -y blazar-polygon-plugin); listed on the official MCP Registry as net.blazarforce/blazar-polygon",
+ "packages": [
+  {
+   "registryType": "npm",
+   "registryBaseUrl": "https://registry.npmjs.org",
+   "identifier": "blazar-polygon-plugin",
+   "version": "0.5.2",
+   "transport": {
+    "type": "stdio"
+   }
+  }
+ ]
 }

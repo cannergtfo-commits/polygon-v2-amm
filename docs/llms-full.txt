@@ -157,6 +157,8 @@ Grok via xAI API (remote MCP tool, Responses API at https://api.x.ai/v1/response
 ```
 xai-sdk (Python): `from xai_sdk.tools import mcp` then `tools=[mcp(server_url="https://api.blazarforce.net/mcp", server_label="blazar_polygon")]`
 
+Local (npm, stdio, Node 20+): `npx -y blazar-polygon-plugin`, or config `{"mcpServers":{"blazar-polygon":{"command":"npx","args":["-y","blazar-polygon-plugin"]}}}`. Claude Code: `claude mcp add blazar-polygon -- npx -y blazar-polygon-plugin`
+
 REST base URL: https://api.blazarforce.net
 
 # REST endpoints
@@ -317,7 +319,7 @@ BlazarStakingRewards 0x3Aa4a59deC4F677A138857a828220eEd259b2469: approve BZB, th
 BlazarDailyRewards 0x323DCb75A4f265D26dd3f5F203e12e7625d49951: only fee-router swaps score, at previous-block Chainlink prices. No minimum trade and no per-wallet daily cap. Reverse trades by the same wallet within 10 minutes are netted. Top 50 listed, top 25 paid fixed shares of the daily cap; claim(dayId) within the claim window. Preview: blazar_trading_rewards_preview (estimate, not payment).
 
 # Framework packages
-Note: the @blazarforce/* framework packages below are not published to npm yet; use the hosted MCP or REST endpoint today.
+Note: the @blazarforce/* framework packages below are not published to npm yet; use the hosted MCP/REST endpoint or the npm package blazar-polygon-plugin (npx -y blazar-polygon-plugin) today.
 
 ## OpenAI-style function calling (@blazarforce/blazar-polygon-openai)
 ```ts

@@ -3,7 +3,7 @@
  "description": "Polygon-first DeFi tools for agents: BZB swaps via BlazarFeeRouter, any-token swaps via KyberSwap/LI.FI/Velora with token-safety checks, wallet portfolio, tx status, gas and approvals audit on Polygon, Base and Ethereum, plus Polygon staking, trading rewards, earning strategies and contract templates. Read-only tools and UNSIGNED transactions; no keys. Discovery card: the agent is reached over MCP (Streamable HTTP) and REST, not A2A messaging.",
  "url": "https://blazarforce.net/agents.html",
  "iconUrl": "https://blazarforce.net/bzb-icon.png",
- "version": "0.5.1",
+ "version": "0.5.2",
  "provider": {
   "organization": "BlazarForce",
   "url": "https://blazarforce.net"
