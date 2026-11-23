@@ -99,7 +99,7 @@ window.SEALFORGE_APPS = [
     size: "1.5 MB",
     updated: "November 22, 2026",
     summary: "A calm, classy comic reader. New chapters arrive in the app as soon as they're published.",
-    notes: "Discover is an online library: pull down to check for new chapters, tap Get, and the chapter lands on your shelf to read offline. Lyra (B&W edition) chapters 1 to 6 are waiting. You can also open your own CBZ and PDF files or a folder of page images. Pinch or double-tap to zoom, two-page spreads in landscape, right-to-left for manga, and a warm night filter. No account and no wallet. Install over Folio 1.0 to keep your shelf.",
+    notes: "Discover is an online library: pull down to check for new chapters, tap Get, and the chapter lands on your shelf to read offline. The Lyra comic is waiting, chapters 1 to 8. You can also open your own CBZ and PDF files or a folder of page images. Pinch or double-tap to zoom, two-page spreads in landscape, right-to-left for manga, and a warm night filter. No account and no wallet. Install over Folio 1.0 to keep your shelf.",
     shots: ["folio/shot-1-discover.jpg", "folio/shot-2-chapters.jpg", "folio/shot-3-shelf.jpg", "folio/shot-4-reader.jpg"],
     sha256: "89df7c16118c2acec66eb280e9d38d3148bd71bbf9a48ac22fec6f01beb876c3"
   }
