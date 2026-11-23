@@ -92,15 +92,15 @@ window.SEALFORGE_APPS = [
     name: "Folio",
     kind: "tool",
     icon: "folio-icon.png",
-    file: "Folio-1.1.apk",
-    href: "https://github.com/cannergtfo-commits/polygon-v2-amm/releases/download/blazar-apps/Folio-1.1.apk",
+    file: "Folio-1.2.apk",
+    href: "https://github.com/cannergtfo-commits/polygon-v2-amm/releases/download/blazar-apps/Folio-1.2.apk",
     match: "Folio",
-    version: "1.1",
+    version: "1.2",
     size: "1.5 MB",
     updated: "November 22, 2026",
     summary: "A calm, classy comic reader. New chapters arrive in the app as soon as they're published.",
-    notes: "Discover is an online library: pull down to check for new chapters, tap Get, and the chapter lands on your shelf to read offline. The Lyra comic is waiting, chapters 1 to 8. You can also open your own CBZ and PDF files or a folder of page images. Pinch or double-tap to zoom, two-page spreads in landscape, right-to-left for manga, and a warm night filter. No account and no wallet. Install over Folio 1.0 to keep your shelf.",
-    shots: ["folio/shot-1-discover.jpg", "folio/shot-2-chapters.jpg", "folio/shot-3-shelf.jpg", "folio/shot-4-reader.jpg"],
-    sha256: "89df7c16118c2acec66eb280e9d38d3148bd71bbf9a48ac22fec6f01beb876c3"
+    notes: "New in 1.2: a richer ink-and-gold look, covers that zoom open into the reader, Page flip and Depth page turns, and downloads you can watch fill and finish. Discover is an online library: pull down to check for new chapters, tap Get, and the chapter lands on your shelf to read offline. Lyra (chapters 1 to 8) and Dead Letter Riders (chapters 1 to 3) are waiting. You can also open your own CBZ and PDF files or a folder of page images. Pinch or double-tap to zoom, two-page spreads in landscape, right-to-left for manga, and a warm night filter. No account and no wallet. Install over Folio 1.0 or 1.1 to keep your shelf.",
+    shots: ["folio/v12-1-discover.jpg", "folio/v12-2-series.jpg", "folio/v12-3-shelf.jpg", "folio/v12-4-page-flip.jpg", "folio/v12-5-reader.jpg"],
+    sha256: "516ee1c56dae9c16f75c1039ce5703218f8140c29207a1025de37866dfa06abc"
   }
 ];
