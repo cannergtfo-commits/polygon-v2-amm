@@ -43,6 +43,8 @@
     .tags span{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);border:1px solid rgba(240,195,106,.35);border-radius:999px;padding:5px 8px}
     .sheet .lead{font-size:15px;line-height:1.55}
     .sheet .notes{color:var(--muted);font-size:13px;line-height:1.5;margin-top:10px}
+    .shots{display:flex;gap:10px;overflow-x:auto;margin-top:14px;padding-bottom:6px;scroll-snap-type:x mandatory}
+    .shots img{height:300px;width:auto;flex:none;border-radius:14px;border:1px solid var(--stroke);scroll-snap-align:start;background:#030712}
     .hash{margin-top:12px;font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--muted);word-break:break-all}
     .sheet-actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:18px}
     @media(max-width:800px){
@@ -72,7 +74,7 @@
       <div class="hero-copy">
         <p class="store-kicker">Android</p>
         <h2>Blazar Apps</h2>
-        <p>Official builds for games on BlazarSwap. Download the APK, or play Seal Forge, Lyra Starfall, and Mythbind in the browser.</p>
+        <p>Official builds for games and tools on BlazarSwap. Download the APK, or play Seal Forge, Lyra Starfall, and Mythbind in the browser.</p>
         <div class="store-tools">
           <input class="search" id="storeSearch" type="search" placeholder="Search titles" aria-label="Search titles" />
           <div class="chips" id="kindRow">
@@ -109,6 +111,7 @@
       <div class="tags"><span id="sheetKind"></span></div>
       <p class="lead" id="sheetSummary"></p>
       <p class="notes" id="sheetNotes"></p>
+      <div class="shots" id="sheetShots" hidden></div>
       <p class="hash" id="sheetHash" hidden></p>
       <div class="sheet-actions">
         <a class="connect" id="sheetPlay" href="https://play.blazarforce.net" hidden>Play in browser</a>
@@ -127,7 +130,7 @@
       if (space && imgs.blazar) space.style.backgroundImage = "linear-gradient(180deg, rgba(3,7,18,.2), rgba(3,7,18,.78)), url(" + imgs.blazar + ")";
     })();
   </script>
-  <script src="js/sealforge-catalog.js?v=store23"></script>
-  <script src="js/sealforge.js?v=store23"></script>
+  <script src="js/sealforge-catalog.js?v=store24"></script>
+  <script src="js/sealforge.js?v=store24"></script>
 </body>
 </html>

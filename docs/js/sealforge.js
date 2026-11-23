@@ -78,6 +78,18 @@
     document.getElementById("sheetSummary").textContent = app.summary || "";
     document.getElementById("sheetNotes").textContent = app.notes || "";
     document.getElementById("sheetKind").textContent = kindLabel(app.kind);
+    var shots = document.getElementById("sheetShots");
+    if (shots) {
+      shots.innerHTML = "";
+      (app.shots || []).forEach(function (src) {
+        var img = document.createElement("img");
+        img.src = src;
+        img.alt = app.name + " screenshot";
+        img.loading = "lazy";
+        shots.appendChild(img);
+      });
+      shots.hidden = !(app.shots && app.shots.length);
+    }
     var hash = document.getElementById("sheetHash");
     if (app.sha256) {
       hash.hidden = false;
@@ -143,6 +155,16 @@
       })
       .catch(function () {});
   }
+  function slugOf(name) {
+    return String(name || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  }
+  function openFromHash() {
+    var want = decodeURIComponent((location.hash || "").slice(1)).toLowerCase();
+    if (!want) return;
+    for (var i = 0; i < APPS.length; i++) if (slugOf(APPS[i].name) === want) { openSheet(APPS[i]); return; }
+  }
   render();
+  openFromHash();
+  window.addEventListener("hashchange", openFromHash);
   loadCounts();
 })();
