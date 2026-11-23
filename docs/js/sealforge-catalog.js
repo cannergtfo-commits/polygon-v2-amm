@@ -92,15 +92,15 @@ window.SEALFORGE_APPS = [
     name: "Folio",
     kind: "tool",
     icon: "folio-icon.png",
-    file: "Folio-1.2.apk",
-    href: "https://github.com/cannergtfo-commits/polygon-v2-amm/releases/download/blazar-apps/Folio-1.2.apk",
+    file: "Folio-1.3.apk",
+    href: "https://github.com/cannergtfo-commits/polygon-v2-amm/releases/download/blazar-apps/Folio-1.3.apk",
     match: "Folio",
-    version: "1.2",
+    version: "1.3",
     size: "1.5 MB",
     updated: "November 22, 2026",
     summary: "A calm, classy comic reader. New chapters arrive in the app as soon as they're published.",
-    notes: "New in 1.2: a richer ink-and-gold look, covers that zoom open into the reader, Page flip and Depth page turns, and downloads you can watch fill and finish. Discover is an online library: pull down to check for new chapters, tap Get, and the chapter lands on your shelf to read offline. Lyra (chapters 1 to 8) and Dead Letter Riders (chapters 1 to 3) are waiting. You can also open your own CBZ and PDF files or a folder of page images. Pinch or double-tap to zoom, two-page spreads in landscape, right-to-left for manga, and a warm night filter. No account and no wallet. Install over Folio 1.0 or 1.1 to keep your shelf.",
-    shots: ["folio/v12-1-discover.jpg", "folio/v12-2-series.jpg", "folio/v12-3-shelf.jpg", "folio/v12-4-page-flip.jpg", "folio/v12-5-reader.jpg"],
-    sha256: "516ee1c56dae9c16f75c1039ce5703218f8140c29207a1025de37866dfa06abc"
+    notes: "New in 1.3: Discover lists each comic as its own card, so the library is easy to scroll; tap one to see its chapters, blurb and Get all. 1.2 brought the ink-and-gold look, covers that zoom into the reader, and Page flip and Depth page turns. Pull down in Discover to check for new chapters, tap Get, and the chapter lands on your shelf to read offline. Lyra (chapters 1 to 8) and Dead Letter Riders (chapters 1 to 3) are waiting. You can also open your own CBZ and PDF files or a folder of page images. Pinch or double-tap to zoom, two-page spreads in landscape, right-to-left for manga, and a warm night filter. No account and no wallet. Install over any earlier Folio to keep your shelf.",
+    shots: ["folio/v13-1-discover.jpg", "folio/v13-2-comic-page.jpg", "folio/v12-3-shelf.jpg", "folio/v12-4-page-flip.jpg", "folio/v12-5-reader.jpg"],
+    sha256: "4aca03dcb03dfe6ad98e3e4e2b0517b8eadfdfee500b3faeabc439b359e00384"
   }
 ];
