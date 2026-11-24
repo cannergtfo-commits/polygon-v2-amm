@@ -89,18 +89,18 @@ window.SEALFORGE_APPS = [
     notes: "Play in the browser. Market and Inscribe use Polygon mainnet. The Game Wallet stays on the device."
   },
   {
-    name: "Folio",
+    name: "Blazar Reader",
     kind: "tool",
     icon: "folio-icon.png",
-    file: "Folio-1.3.apk",
-    href: "https://github.com/cannergtfo-commits/polygon-v2-amm/releases/download/blazar-apps/Folio-1.3.apk",
-    match: "Folio",
-    version: "1.3",
+    file: "BlazarReader-1.4.apk",
+    href: "https://github.com/cannergtfo-commits/polygon-v2-amm/releases/download/blazar-apps/BlazarReader-1.4.apk",
+    match: "BlazarReader",
+    version: "1.4",
     size: "1.5 MB",
-    updated: "November 22, 2026",
-    summary: "A calm, classy comic reader. New chapters arrive in the app as soon as they're published.",
-    notes: "New in 1.3: Discover lists each comic as its own card, so the library is easy to scroll; tap one to see its chapters, blurb and Get all. 1.2 brought the ink-and-gold look, covers that zoom into the reader, and Page flip and Depth page turns. Pull down in Discover to check for new chapters, tap Get, and the chapter lands on your shelf to read offline. Lyra (chapters 1 to 8) and Dead Letter Riders (chapters 1 to 3) are waiting. You can also open your own CBZ and PDF files or a folder of page images. Pinch or double-tap to zoom, two-page spreads in landscape, right-to-left for manga, and a warm night filter. No account and no wallet. Install over any earlier Folio to keep your shelf.",
-    shots: ["folio/v13-1-discover.jpg", "folio/v13-2-comic-page.jpg", "folio/v12-3-shelf.jpg", "folio/v12-4-page-flip.jpg", "folio/v12-5-reader.jpg"],
-    sha256: "4aca03dcb03dfe6ad98e3e4e2b0517b8eadfdfee500b3faeabc439b359e00384"
+    updated: "November 23, 2026",
+    summary: "A calm, classy comic reader, formerly Folio. New chapters arrive in the app as soon as they're published.",
+    notes: "New in 1.4: Folio is now Blazar Reader, with a new Play Store package ID (net.blazarforce.blazarreader). It installs cleanly alongside Folio 1.1–1.3; uninstall Folio once you have switched. Discover lists each comic as its own card, so the library is easy to scroll; tap one to see its chapters, blurb and Get all. 1.2 brought the ink-and-gold look, covers that zoom into the reader, and Page flip and Depth page turns. Pull down in Discover to check for new chapters, tap Get, and the chapter lands on your shelf to read offline. Lyra, Dead Letter Riders and Undirheim are waiting. You can also open your own CBZ and PDF files or a folder of page images. Pinch or double-tap to zoom, two-page spreads in landscape, right-to-left for manga, and a warm night filter. No account and no wallet.",
+    shots: ["folio/v14-1-discover.jpg", "folio/v14-2-series.jpg", "folio/v14-3-shelf.jpg", "folio/v14-4-settings.jpg"],
+    sha256: "f11b24da1c64c19a80b532616d2504e952d1079ff5171925f235b797b0d8f48e"
   }
 ];

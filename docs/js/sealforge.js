@@ -158,9 +158,11 @@
   function slugOf(name) {
     return String(name || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   }
+  var HASH_ALIASES = { folio: "blazar-reader" };
   function openFromHash() {
     var want = decodeURIComponent((location.hash || "").slice(1)).toLowerCase();
     if (!want) return;
+    if (HASH_ALIASES[want]) want = HASH_ALIASES[want];
     for (var i = 0; i < APPS.length; i++) if (slugOf(APPS[i].name) === want) { openSheet(APPS[i]); return; }
   }
   render();
