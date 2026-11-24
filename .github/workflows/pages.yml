@@ -22,5 +22,9 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: docs
+      # deploy-pages can race the artifact API and report "github-pages" missing
+      # even after a successful upload (seen 2026-11-23).
+      - name: Wait for artifact registration
+        run: sleep 20
       - id: deployment
         uses: actions/deploy-pages@v4
