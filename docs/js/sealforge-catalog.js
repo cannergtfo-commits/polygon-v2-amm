@@ -102,5 +102,20 @@ window.SEALFORGE_APPS = [
     notes: "New in 1.5: Android 16 support, and a new About & Privacy screen (the info button on the shelf) linking to the privacy policy at https://blazarforce.net/blazar-reader-privacy.html. Dead Letter Riders is now credited to Blazar Force. Updates 1.4 in place. Folio is now Blazar Reader (package net.blazarforce.blazarreader); it installs alongside Folio 1.1–1.3, so uninstall Folio once you have switched. Discover lists each comic as its own card, so the library is easy to scroll; tap one to see its chapters, blurb and Get all. 1.2 brought the ink-and-gold look, covers that zoom into the reader, and Page flip and Depth page turns. Pull down in Discover to check for new chapters, tap Get, and the chapter lands on your shelf to read offline. Lyra, Dead Letter Riders and Undirheim are waiting. You can also open your own CBZ and PDF files or a folder of page images. Pinch or double-tap to zoom, two-page spreads in landscape, right-to-left for manga, and a warm night filter. No account and no wallet.",
     shots: ["folio/v15-1-discover.jpg", "folio/v15-2-series.jpg", "folio/v15-3-shelf.jpg", "folio/v15-4-settings.jpg", "folio/v15-5-about-privacy.jpg"],
     sha256: "d2e0638e09b162fa64182b0e7aa40876a2b0e201909f6effdcfb9861b3c8ad18"
+  },
+  {
+    name: "Dicebound Tales",
+    kind: "game",
+    icon: "dicebound-icon.png",
+    file: "DiceboundTales-1.0.apk",
+    href: "https://github.com/cannergtfo-commits/polygon-v2-amm/releases/download/blazar-apps/DiceboundTales-1.0.apk",
+    match: "DiceboundTales",
+    version: "1.0",
+    size: "4.0 MB",
+    updated: "November 27, 2026",
+    summary: "Offline text RPG with an automated narrator, branching tales in Thalorin, dice rolls, and a hero who levels up through missions.",
+    notes: "New in 1.0: four branching stories (including The Nine Falls of Ilsavel), a saved hero profile, guild missions, a shop, and up to two Redo charges you can spend to rewind a choice, a fight turn, or a death. Run out of Redos and a fallen hero is archived in the Hall of the Fallen. Sideload this debug-signed APK (package tales.dicebound.game). Android will ask before the install. Everything runs offline; no account and no wallet. Source and release notes: https://github.com/cannergtfo-commits/dicebound-tales. This work includes material from the SRD 5.1 by Wizards of the Coast LLC, licensed under CC BY 4.0.",
+    shots: ["dicebound/title.jpg", "dicebound/hero-profile.jpg", "dicebound/tale-select.jpg", "dicebound/story.jpg", "dicebound/combat.jpg", "dicebound/missions.jpg"],
+    sha256: "83121b461c7dd309dd2d726162de21fe165b1180189af90f1e91b103a5f5261b"
   }
 ];
