@@ -107,15 +107,15 @@ window.SEALFORGE_APPS = [
     name: "Dicebound Tales",
     kind: "game",
     icon: "dicebound-icon.png",
-    file: "DiceboundTales-1.0.apk",
-    href: "https://github.com/cannergtfo-commits/polygon-v2-amm/releases/download/blazar-apps/DiceboundTales-1.0.apk",
+    file: "DiceboundTales-1.1.apk",
+    href: "https://github.com/cannergtfo-commits/polygon-v2-amm/releases/download/blazar-apps/DiceboundTales-1.1.apk",
     match: "DiceboundTales",
-    version: "1.0",
+    version: "1.1",
     size: "4.0 MB",
     updated: "November 27, 2026",
     summary: "Offline text RPG with an automated narrator, branching tales in Thalorin, dice rolls, and a hero who levels up through missions.",
-    notes: "New in 1.0: four branching stories (including The Nine Falls of Ilsavel), a saved hero profile, guild missions, a shop, and up to two Redo charges you can spend to rewind a choice, a fight turn, or a death. Run out of Redos and a fallen hero is archived in the Hall of the Fallen. Sideload this debug-signed APK (package tales.dicebound.game). Android will ask before the install. Everything runs offline; no account and no wallet. Source and release notes: https://github.com/cannergtfo-commits/dicebound-tales. This work includes material from the SRD 5.1 by Wizards of the Coast LLC, licensed under CC BY 4.0.",
-    shots: ["dicebound/title.jpg", "dicebound/hero-profile.jpg", "dicebound/tale-select.jpg", "dicebound/story.jpg", "dicebound/combat.jpg", "dicebound/missions.jpg"],
-    sha256: "83121b461c7dd309dd2d726162de21fe165b1180189af90f1e91b103a5f5261b"
+    notes: "New in 1.1: upload a custom hero portrait (it stays on the device), up to two Redo charges to rewind a choice, a fight turn, or a death, and the Hall of the Fallen — a read-only archive if a hero dies without a Redo. Four branching stories, a saved hero profile, guild missions and a shop. Sideload this debug-signed APK (package tales.dicebound.game, versionCode 2). You can install over 1.0. Android will ask before the install. Everything runs offline; no account and no wallet. Source and release notes: https://github.com/cannergtfo-commits/dicebound-tales/releases/tag/v1.1.0. This work includes material from the SRD 5.1 by Wizards of the Coast LLC, licensed under CC BY 4.0.",
+    shots: ["dicebound/title.jpg", "dicebound/hero-profile.jpg", "dicebound/portrait-upload.jpg", "dicebound/hub-custom-portrait.jpg", "dicebound/story.jpg", "dicebound/combat.jpg", "dicebound/missions.jpg"],
+    sha256: "51609519dd05f8f179d99b8073e325662e244a00930db33b63a531e5d9247b4d"
   }
 ];
